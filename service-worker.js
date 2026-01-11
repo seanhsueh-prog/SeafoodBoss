@@ -1,4 +1,4 @@
-const CACHE_NAME = 'seafood-boss-v1.1';
+const CACHE_NAME = 'seafood-boss-v1.2';
 const urlsToCache = [
   './index.html',
   './manifest.json',
@@ -10,7 +10,6 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        // console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
   );

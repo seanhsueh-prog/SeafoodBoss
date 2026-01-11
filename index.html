@@ -1,4 +1,4 @@
-<!-- 檔名：index.html (v1.1) -->
+<!-- 檔名：index.html (v1.2) -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -8,7 +8,7 @@
     
     <!-- PWA Settings -->
     <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#FFFFFF">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="./icons/icon-192.png">
@@ -30,58 +30,88 @@
         body {
             overscroll-behavior-y: none;
             -webkit-tap-highlight-color: transparent;
-            background-color: #F3F4F6;
+            background-color: #F9FAFB; /* 更乾淨的淺灰 */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         .card-shadow {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); /* 更柔和的陰影 */
         }
-        /* 隱藏滾動條但保留功能 */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
+        /* 進度條動畫 */
+        @keyframes shrinkWidth {
+            from { width: 100%; }
+            to { width: 0%; }
         }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        .animate-progress {
+            animation-name: shrinkWidth;
+            animation-timing-function: linear;
+            animation-fill-mode: forwards;
         }
+        /* 隱藏 Scrollbar */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
         // --- Data Keys ---
         const DB_KEY_TRANSACTIONS = 'sf_transactions';
         const DB_KEY_REPORTS = 'sf_reports';
         const DB_KEY_SETTINGS = 'sf_settings';
 
-        // --- Components ---
-        const Modal = ({ isOpen, onClose, children, title }) => {
-            if (!isOpen) return null;
+        // --- Component: Visual Timer Button ---
+        const TimerButton = ({ minutes }) => {
+            const [active, setActive] = useState(false);
+            
+            const handleClick = () => {
+                if(active) {
+                    setActive(false); // 取消
+                } else {
+                    setActive(true);
+                    // 時間到邏輯 (模擬)
+                    setTimeout(() => {
+                        if(active) { // 確保還在啟動狀態才震動
+                            if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                            setActive(false);
+                            alert(`${minutes}分鐘轉場時間到`);
+                        }
+                    }, minutes * 60 * 1000); // 真實分鐘數
+                }
+            };
+
             return (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up">
-                        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-                            <h3 className="font-bold text-lg">{title}</h3>
-                            <button onClick={onClose} className="text-gray-500 w-8 h-8 rounded-full hover:bg-gray-200 flex items-center justify-center">
-                                <i className="fa-solid fa-times"></i>
-                            </button>
-                        </div>
-                        <div className="p-4">
-                            {children}
-                        </div>
-                    </div>
+                <div 
+                    onClick={handleClick}
+                    className="relative h-14 bg-white rounded-xl card-shadow overflow-hidden cursor-pointer active:scale-95 transition-transform flex items-center justify-center border border-gray-100"
+                >
+                    {/* 背景進度條 (顏色層) */}
+                    {active && (
+                        <div 
+                            className="absolute left-0 top-0 bottom-0 bg-gray-200 z-0 animate-progress"
+                            style={{ 
+                                animationDuration: `${minutes * 60}s`, // 用真實秒數
+                                width: '100%' // 初始寬度
+                            }}
+                        ></div>
+                    )}
+                    {/* 文字層 (置頂) */}
+                    <span className={`relative z-10 font-bold text-sm ${active ? 'text-gray-800' : 'text-gray-500'}`}>
+                        {minutes} min
+                    </span>
                 </div>
             );
         };
 
         // --- Pages ---
 
-        // 1. Owner Dashboard
+        // 1. Owner Dashboard (v1.2 Reordered)
         const OwnerDashboard = ({ setPage, transactions, settings }) => {
             const today = new Date().toISOString().split('T')[0];
             
+            // 狀態運算
             const todayStatus = useMemo(() => {
                 const todayTrans = transactions.filter(t => t.date === today);
                 const income = todayTrans.filter(t => t.type === 'income').reduce((acc, c) => acc + c.amount, 0);
@@ -89,82 +119,88 @@
                 const net = income - expense - (settings.dailyFixedCost || 0);
 
                 let status = "觀察中";
-                let color = "text-gray-500";
+                let color = "text-gray-400";
                 if (net > 1000) { status = "穩"; color = "text-green-600"; }
                 else if (net >= -1000) { status = "打平"; color = "text-yellow-600"; }
                 else { status = "偏緊"; color = "text-red-600"; }
 
-                return { status, color, count: todayTrans.length };
+                return { status, color, net };
             }, [transactions, settings, today]);
 
-            const startTimer = (min) => {
-                // 模擬啟動轉場
-                if(navigator.vibrate) navigator.vibrate(200);
-                alert(`已啟動 ${min} 分鐘轉場提醒 (倒數中...)`);
-            };
-
             return (
-                <div className="p-4 pb-24">
-                    <div className="flex justify-between items-center mb-4">
-                        <h1 className="text-xl font-black text-gray-900">今日概況</h1>
-                        <span className="text-xs bg-gray-200 px-2 py-1 rounded font-bold text-gray-600">老闆模式</span>
-                    </div>
-
-                    {/* 瘦身版狀態卡片 */}
-                    <div className="bg-white rounded-xl p-5 mb-6 card-shadow flex justify-between items-center">
-                        <div>
-                            <p className="text-gray-400 text-xs mb-1">營運狀態</p>
-                            <h2 className={`text-4xl font-black ${todayStatus.color}`}>{todayStatus.status}</h2>
+                <div className="p-4 pb-24 min-h-screen flex flex-col relative bg-gray-50">
+                    
+                    {/* 1. AI 參謀 (頂部扁平條) */}
+                    <div 
+                        onClick={() => setPage('ai')}
+                        className="bg-white rounded-full p-2 pl-4 pr-2 mb-6 card-shadow flex items-center justify-between cursor-pointer border border-gray-100"
+                    >
+                        <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white">
+                                <i className="fa-solid fa-robot text-xs"></i>
+                            </div>
+                            <span className="text-gray-400 text-sm font-medium">今天想分析什麼...</span>
                         </div>
-                        <div className="text-right">
-                            <p className="text-gray-400 text-xs mb-1">今日流水</p>
-                            <p className="text-2xl font-bold text-gray-800">{todayStatus.count} <span className="text-sm font-normal text-gray-400">筆</span></p>
-                        </div>
-                    </div>
-
-                    {/* 轉場提醒 (三鍵式) */}
-                    <div className="mb-6">
-                        <p className="text-gray-500 text-xs font-bold mb-2 ml-1">轉場提醒</p>
-                        <div className="grid grid-cols-3 gap-3">
-                            {[10, 15, 20].map(min => (
-                                <button key={min} onClick={() => startTimer(min)} className="bg-white border border-gray-200 py-3 rounded-lg font-bold text-gray-700 shadow-sm active:bg-gray-100 active:scale-95 transition-transform">
-                                    {min} 分
-                                </button>
-                            ))}
+                        <div className="flex space-x-1">
+                            <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
+                                <i className="fa-solid fa-microphone text-xs"></i>
+                            </div>
+                            <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
+                                <i className="fa-solid fa-camera text-xs"></i>
+                            </div>
                         </div>
                     </div>
 
-                    {/* 快捷入口 */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div onClick={() => setPage('ops')} className="bg-white p-4 rounded-xl card-shadow active:bg-gray-50 flex flex-col items-center justify-center h-32">
-                            <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white mb-2 text-xl">
+                    {/* 2. 功能入口 (並排方塊) */}
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                        <div onClick={() => setPage('ops')} className="bg-white aspect-square rounded-2xl card-shadow p-5 flex flex-col justify-between active:scale-95 transition-transform border border-gray-100">
+                            <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white">
                                 <i className="fa-solid fa-calculator"></i>
                             </div>
-                            <span className="font-bold text-gray-800">內部營運</span>
+                            <div>
+                                <h3 className="font-bold text-gray-800 text-lg">內部營運</h3>
+                                <p className="text-xs text-gray-400 mt-1">記帳與明細</p>
+                            </div>
                         </div>
-                        <div onClick={() => setPage('reports')} className="bg-white p-4 rounded-xl card-shadow active:bg-gray-50 flex flex-col items-center justify-center h-32">
-                            <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white mb-2 text-xl">
+
+                        <div onClick={() => setPage('reports')} className="bg-white aspect-square rounded-2xl card-shadow p-5 flex flex-col justify-between active:scale-95 transition-transform border border-gray-100">
+                            <div className="w-10 h-10 bg-white border-2 border-gray-200 rounded-xl flex items-center justify-center text-gray-800">
                                 <i className="fa-solid fa-list-check"></i>
                             </div>
-                            <span className="font-bold text-gray-800">員工回報</span>
-                        </div>
-                        <div onClick={() => setPage('ai')} className="bg-white p-4 rounded-xl card-shadow active:bg-gray-50 flex flex-col items-center justify-center h-32 col-span-2">
-                            <div className="flex items-center mb-2">
-                                <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center text-white mr-3">
-                                    <i className="fa-solid fa-robot"></i>
-                                </div>
-                                <span className="font-bold text-gray-800 text-lg">AI 參謀</span>
+                            <div>
+                                <h3 className="font-bold text-gray-800 text-lg">員工回報</h3>
+                                <p className="text-xs text-gray-400 mt-1">查看現場</p>
                             </div>
-                            <p className="text-xs text-gray-400">語音 / 圖像 / 決策分析</p>
                         </div>
                     </div>
+
+                    {/* 3. 轉場提醒 (視覺化按鈕) */}
+                    <div className="mb-auto">
+                        <p className="text-xs text-gray-400 font-bold mb-3 ml-1 uppercase tracking-wider">Transition Timer</p>
+                        <div className="grid grid-cols-3 gap-3">
+                            <TimerButton minutes={10} />
+                            <TimerButton minutes={15} />
+                            <TimerButton minutes={20} />
+                        </div>
+                    </div>
+
+                    {/* 4. 營運狀態 (底部扁平長條) */}
+                    <div className="mt-8 bg-white rounded-xl p-4 card-shadow flex justify-between items-center border border-gray-100">
+                        <span className="text-xs font-bold text-gray-400">今日淨額狀態</span>
+                        <div className="flex items-center gap-3">
+                             {/* 隱藏實際金額，只露狀態 */}
+                            <span className={`text-2xl font-black ${todayStatus.color} tracking-tight`}>{todayStatus.status}</span>
+                            <div className={`w-2 h-2 rounded-full ${todayStatus.color === 'text-green-600' ? 'bg-green-500' : todayStatus.color === 'text-red-600' ? 'bg-red-500' : 'bg-yellow-500'}`}></div>
+                        </div>
+                    </div>
+
                 </div>
             );
         };
 
-        // 2. Operations (Refactored v1.1)
+        // 2. Operations (v1.2: Aggregation Logic)
         const Operations = ({ transactions, setTransactions, settings, saveSettings }) => {
-            const [period, setPeriod] = useState('day'); // day, month, year
+            const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
             const [showSettingModal, setShowSettingModal] = useState(false);
             
@@ -174,43 +210,63 @@
             const [amount, setAmount] = useState('');
             const [cat, setCat] = useState('現金');
             const [note, setNote] = useState('');
-
-            // Setting Inputs
             const [tempFixedCost, setTempFixedCost] = useState(settings.dailyFixedCost);
 
-            // Calculation Logic
+            // Calculation & Aggregation
             const stats = useMemo(() => {
                 const now = new Date();
-                const currentDay = date; // Using the date picker value for "Day" view or just today
                 const currentMonth = now.toISOString().slice(0, 7);
                 const currentYear = now.getFullYear().toString();
 
                 let filtered = [];
                 let fixedCostTotal = 0;
-                let daysPassed = 1;
+                let listData = []; // For rendering list
 
                 if (period === 'day') {
-                    // Day view: Show selected date's data (default today)
+                    // 日模式：顯示單筆
                     filtered = transactions.filter(t => t.date === date);
                     fixedCostTotal = parseInt(settings.dailyFixedCost || 0);
+                    listData = filtered; // 直接顯示流水帳
+
                 } else if (period === 'month') {
+                    // 月模式：顯示「每日匯總」
                     filtered = transactions.filter(t => t.date.startsWith(currentMonth));
-                    daysPassed = now.getDate(); 
-                    fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * daysPassed;
+                    const days = now.getDate();
+                    fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * days;
+                    
+                    // Group by Date
+                    const grouped = {};
+                    filtered.forEach(t => {
+                        if(!grouped[t.date]) grouped[t.date] = { date: t.date, income: 0, expense: 0 };
+                        if(t.type === 'income') grouped[t.date].income += t.amount;
+                        else grouped[t.date].expense += t.amount;
+                    });
+                    listData = Object.values(grouped).sort((a,b) => new Date(b.date) - new Date(a.date));
+
                 } else {
+                    // 年模式：顯示「每月匯總」
                     filtered = transactions.filter(t => t.date.startsWith(currentYear));
-                    // Simplified year estimation
                     const startOfYear = new Date(currentYear, 0, 1);
                     const diffTime = Math.abs(now - startOfYear);
-                    daysPassed = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                    fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * daysPassed;
+                    const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                    fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * days;
+
+                    // Group by Month
+                    const grouped = {};
+                    filtered.forEach(t => {
+                        const m = t.date.slice(0, 7);
+                        if(!grouped[m]) grouped[m] = { date: m, income: 0, expense: 0 };
+                        if(t.type === 'income') grouped[m].income += t.amount;
+                        else grouped[m].expense += t.amount;
+                    });
+                    listData = Object.values(grouped).sort((a,b) => b.date.localeCompare(a.date));
                 }
 
                 const income = filtered.filter(t => t.type === 'income').reduce((a, c) => a + c.amount, 0);
                 const expense = filtered.filter(t => t.type === 'expense').reduce((a, c) => a + c.amount, 0);
                 const net = income - expense - fixedCostTotal;
 
-                return { income, expense, fixedCostTotal, net, filtered };
+                return { income, expense, fixedCostTotal, net, listData };
             }, [transactions, settings, period, date]);
 
             const handleSaveTransaction = () => {
@@ -225,20 +281,10 @@
                     timestamp: new Date().toLocaleTimeString()
                 };
                 const updated = [newTrans, ...transactions];
-                updated.sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date desc
+                updated.sort((a, b) => new Date(b.date) - new Date(a.date));
                 setTransactions(updated);
                 localStorage.setItem(DB_KEY_TRANSACTIONS, JSON.stringify(updated));
-                
-                setAmount('');
-                setNote('');
-                setShowAddModal(false);
-                // 簡單震動回饋
-                if(navigator.vibrate) navigator.vibrate(50);
-            };
-
-            const handleSaveSettings = () => {
-                saveSettings({ ...settings, dailyFixedCost: parseInt(tempFixedCost) });
-                setShowSettingModal(false);
+                setAmount(''); setNote(''); setShowAddModal(false);
             };
 
             return (
@@ -246,288 +292,206 @@
                     <div className="flex justify-between items-center mb-4">
                         <h1 className="text-xl font-black text-gray-900">內部營運</h1>
                         <button onClick={() => setShowSettingModal(true)} className="text-xs bg-gray-200 px-3 py-1 rounded-full font-bold text-gray-600">
-                            <i className="fa-solid fa-cog mr-1"></i>設定日均
+                            設定日均
                         </button>
                     </div>
 
-                    {/* Tab Switcher */}
                     <div className="bg-white p-1 rounded-lg flex mb-4 border border-gray-200">
                         {['day', 'month', 'year'].map(p => (
-                            <button 
-                                key={p} 
-                                onClick={() => setPeriod(p)}
-                                className={`flex-1 py-2 rounded-md text-sm font-bold ${period === p ? 'bg-black text-white shadow' : 'text-gray-500'}`}
-                            >
+                            <button key={p} onClick={() => setPeriod(p)} className={`flex-1 py-2 rounded-md text-sm font-bold ${period === p ? 'bg-black text-white shadow' : 'text-gray-500'}`}>
                                 {p === 'day' ? '今日' : p === 'month' ? '本月' : '今年'}
                             </button>
                         ))}
                     </div>
 
-                    {/* Date Picker (Only for Day view) */}
                     {period === 'day' && (
                         <div className="mb-4 flex justify-center">
-                            <input 
-                                type="date" 
-                                value={date} 
-                                onChange={e => setDate(e.target.value)} 
-                                className="bg-transparent font-bold text-gray-600 text-sm"
-                            />
+                            <input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-transparent font-bold text-gray-600 text-sm" />
                         </div>
                     )}
 
-                    {/* Financial Card (Spec 3.2 logic) */}
                     <div className="bg-white rounded-xl p-5 mb-6 card-shadow border-l-4 border-black">
-                        {/* 1. Income */}
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-gray-500 font-bold text-sm">進帳總額</span>
                             <span className="text-xl font-bold text-gray-900">+ {stats.income.toLocaleString()}</span>
                         </div>
-                        {/* 2. Ad-hoc Expense */}
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-gray-500 font-bold text-sm">臨時出帳</span>
                             <span className="text-xl font-bold text-red-500">- {stats.expense.toLocaleString()}</span>
                         </div>
-                        {/* 3. Fixed Cost */}
                         <div className="flex justify-between items-center mb-4 pb-4 border-b border-dashed border-gray-200">
-                            <span className="text-gray-400 font-bold text-xs flex items-center">
-                                固定日均
-                                <i className="fa-solid fa-circle-info ml-1 text-[10px]" title="人事/房租/水電等"></i>
-                            </span>
+                            <span className="text-gray-400 font-bold text-xs">固定日均攤提</span>
                             <span className="text-lg font-bold text-gray-400">- {stats.fixedCostTotal.toLocaleString()}</span>
                         </div>
-                        {/* 4. Net */}
                         <div className="flex justify-between items-end">
                             <span className="text-gray-800 font-black text-lg">淨利</span>
-                            <div className="text-right">
-                                <span className={`text-3xl font-black ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}
-                                </span>
-                                <span className="ml-2 text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
-                                    {stats.net > 0 ? '正' : '負'}
-                                </span>
-                            </div>
+                            <span className={`text-3xl font-black ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}
+                            </span>
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
+                    {/* Buttons */}
                     <div className="grid grid-cols-2 gap-4 mb-8">
-                        <button onClick={() => {setType('income'); setCat('現金'); setShowAddModal(true);}} className="bg-black text-white py-4 rounded-xl font-bold shadow-lg flex flex-col items-center">
-                            <i className="fa-solid fa-plus text-xl mb-1"></i>
-                            <span>記進帳</span>
+                        <button onClick={() => {setType('income'); setCat('現金'); setShowAddModal(true);}} className="bg-black text-white py-4 rounded-xl font-bold shadow-lg flex items-center justify-center">
+                            <i className="fa-solid fa-plus mr-2"></i> 記進帳
                         </button>
-                        <button onClick={() => {setType('expense'); setCat('進貨'); setShowAddModal(true);}} className="bg-white text-black border border-gray-200 py-4 rounded-xl font-bold shadow flex flex-col items-center">
-                            <i className="fa-solid fa-minus text-xl mb-1"></i>
-                            <span>記出帳</span>
+                        <button onClick={() => {setType('expense'); setCat('進貨'); setShowAddModal(true);}} className="bg-white text-black border border-gray-200 py-4 rounded-xl font-bold shadow flex items-center justify-center">
+                            <i className="fa-solid fa-minus mr-2"></i> 記出帳
                         </button>
                     </div>
 
-                    {/* Transaction List */}
-                    <h3 className="font-bold text-gray-800 mb-3 text-sm">明細 ({period === 'day' ? date : '區間累計'})</h3>
+                    {/* List (Conditional Rendering) */}
+                    <h3 className="font-bold text-gray-800 mb-3 text-sm">
+                        {period === 'day' ? '今日流水' : period === 'month' ? '每日匯總' : '每月匯總'}
+                    </h3>
                     <div className="space-y-3">
-                        {stats.filtered.length === 0 ? (
-                            <p className="text-gray-400 text-center py-4 text-xs">尚無紀錄</p>
-                        ) : (
-                            stats.filtered.map(t => (
-                                <div key={t.id} className="bg-white p-3 rounded-lg flex justify-between items-center shadow-sm border-l-2 border-gray-100">
-                                    <div className="flex flex-col">
-                                        <div className="flex items-center">
-                                            <span className={`w-2 h-2 rounded-full mr-2 ${t.type === 'income' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                            <span className="font-bold text-gray-700">{t.category}</span>
-                                        </div>
-                                        <span className="text-xs text-gray-400 pl-4">{t.note || '-'}</span>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className={`font-bold ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                            {t.type === 'income' ? '+' : '-'}{t.amount.toLocaleString()}
-                                        </span>
-                                        <p className="text-[10px] text-gray-400">{t.date.slice(5)}</p>
-                                    </div>
+                        {stats.listData.length === 0 ? <p className="text-gray-400 text-center py-4 text-xs">尚無紀錄</p> : 
+                            stats.listData.map((item, idx) => (
+                                <div key={idx} className="bg-white p-3 rounded-lg flex justify-between items-center shadow-sm border-l-2 border-gray-100">
+                                    {/* Day View: 顯示單筆細節 */}
+                                    {period === 'day' ? (
+                                        <>
+                                            <div className="flex items-center">
+                                                <span className={`w-2 h-2 rounded-full mr-2 ${item.type === 'income' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                                <span className="font-bold text-gray-700">{item.category}</span>
+                                                <span className="text-xs text-gray-400 ml-2">{item.note}</span>
+                                            </div>
+                                            <span className={`font-bold ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                                {item.type === 'income' ? '+' : '-'}{item.amount.toLocaleString()}
+                                            </span>
+                                        </>
+                                    ) : (
+                                        /* Month/Year View: 顯示匯總 */
+                                        <>
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-gray-800">{item.date}</span>
+                                                <span className="text-xs text-gray-400">進 ${item.income.toLocaleString()} / 出 ${item.expense.toLocaleString()}</span>
+                                            </div>
+                                            <span className={`font-bold ${(item.income - item.expense) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                {(item.income - item.expense) > 0 ? '+' : ''}{(item.income - item.expense).toLocaleString()}
+                                            </span>
+                                        </>
+                                    )}
                                 </div>
                             ))
-                        )}
+                        }
                     </div>
 
-                    {/* Add Transaction Modal */}
-                    <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title={`記一筆${type === 'income' ? '進帳' : '出帳'}`}>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 mb-1">日期</label>
-                                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-gray-100 p-2 rounded font-bold" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 mb-1">金額</label>
-                                <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="w-full text-3xl font-black border-b-2 border-black py-2 focus:outline-none" placeholder="0" autoFocus />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 mb-2">分類</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {type === 'income' ? 
-                                        ['現金', '刷卡', '轉帳'].map(c => (
-                                            <button key={c} onClick={() => setCat(c)} className={`px-3 py-1 rounded-full text-xs font-bold border ${cat === c ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-300'}`}>{c}</button>
-                                        )) :
-                                        ['進貨', '人事', '雜支', '修繕'].map(c => (
-                                            <button key={c} onClick={() => setCat(c)} className={`px-3 py-1 rounded-full text-xs font-bold border ${cat === c ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-300'}`}>{c}</button>
-                                        ))
-                                    }
+                    {/* Modals (Hidden code to save space, same as v1.1 but styled) */}
+                    {showAddModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-xl w-full max-w-sm p-5 shadow-2xl">
+                                <h3 className="font-bold text-lg mb-4">記一筆{type === 'income' ? '進帳' : '出帳'}</h3>
+                                <div className="space-y-4">
+                                    <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-gray-100 p-2 rounded" />
+                                    <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="w-full text-3xl font-black border-b-2 border-black py-2 focus:outline-none" placeholder="0" autoFocus />
+                                    <div className="flex flex-wrap gap-2">
+                                        {type === 'income' ? ['現金', '刷卡', '轉帳'].map(c => <button key={c} onClick={() => setCat(c)} className={`px-3 py-1 rounded-full text-xs font-bold border ${cat === c ? 'bg-black text-white' : 'bg-white text-gray-500'}`}>{c}</button>)
+                                        : ['進貨', '人事', '雜支', '修繕'].map(c => <button key={c} onClick={() => setCat(c)} className={`px-3 py-1 rounded-full text-xs font-bold border ${cat === c ? 'bg-black text-white' : 'bg-white text-gray-500'}`}>{c}</button>)}
+                                    </div>
+                                    <input type="text" value={note} onChange={e => setNote(e.target.value)} className="w-full border-b border-gray-200 py-2 focus:outline-none" placeholder="備註..." />
+                                    <div className="flex gap-2 mt-4">
+                                        <button onClick={() => setShowAddModal(false)} className="flex-1 py-3 text-gray-500 font-bold">取消</button>
+                                        <button onClick={handleSaveTransaction} className="flex-1 py-3 bg-black text-white rounded-lg font-bold">確認</button>
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 mb-1">備註</label>
-                                <input type="text" value={note} onChange={e => setNote(e.target.value)} className="w-full border-b border-gray-200 py-2 focus:outline-none" placeholder="選填..." />
-                            </div>
-                            <button onClick={handleSaveTransaction} className="w-full bg-black text-white py-3 rounded-lg font-bold shadow-lg mt-4">確認儲存</button>
                         </div>
-                    </Modal>
+                    )}
 
-                    {/* Settings Modal */}
-                    <Modal isOpen={showSettingModal} onClose={() => setShowSettingModal(false)} title="設定基本開銷">
-                        <div className="space-y-4">
-                            <p className="text-xs text-gray-500">請輸入每日平均固定成本 (包含人事、房租、水電、底耗等)。</p>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 mb-1">日均金額 ($)</label>
-                                <input type="number" value={tempFixedCost} onChange={e => setTempFixedCost(e.target.value)} className="w-full text-2xl font-black border-b-2 border-black py-2 focus:outline-none" />
+                    {showSettingModal && (
+                         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-xl w-full max-w-sm p-5 shadow-2xl">
+                                <h3 className="font-bold text-lg mb-4">設定日均開銷</h3>
+                                <input type="number" value={tempFixedCost} onChange={e => setTempFixedCost(e.target.value)} className="w-full text-2xl font-black border-b-2 border-black py-2 mb-4 focus:outline-none" />
+                                <div className="flex gap-2">
+                                    <button onClick={() => setShowSettingModal(false)} className="flex-1 py-3 text-gray-500 font-bold">取消</button>
+                                    <button onClick={() => { saveSettings({...settings, dailyFixedCost: parseInt(tempFixedCost)}); setShowSettingModal(false); }} className="flex-1 py-3 bg-black text-white rounded-lg font-bold">儲存</button>
+                                </div>
                             </div>
-                            <div className="bg-gray-50 p-3 rounded text-xs text-gray-400 space-y-1">
-                                <p>包含項目參考：</p>
-                                <div className="flex items-center"><i className="fa-solid fa-check text-green-500 mr-2"></i> 人事薪資</div>
-                                <div className="flex items-center"><i className="fa-solid fa-check text-green-500 mr-2"></i> 房租</div>
-                                <div className="flex items-center"><i className="fa-solid fa-check text-green-500 mr-2"></i> 水電瓦斯</div>
-                                <div className="flex items-center"><i className="fa-solid fa-check text-green-500 mr-2"></i> 食材底耗</div>
-                            </div>
-                            <button onClick={handleSaveSettings} className="w-full bg-black text-white py-3 rounded-lg font-bold shadow-lg mt-4">儲存設定</button>
                         </div>
-                    </Modal>
+                    )}
                 </div>
             );
         };
 
-        // 3. Reports (Context button added)
+        // 3. Reports (Unchanged)
         const Reports = ({ reports, setPage }) => {
             const today = new Date().toISOString().split('T')[0];
             const list = reports.sort((a,b) => b.id - a.id);
-
             return (
-                <div className="p-4 pb-24">
+                <div className="p-4 pb-24 min-h-screen bg-gray-50">
                     <h1 className="text-xl font-black text-gray-900 mb-4">員工回報</h1>
-                    {list.length === 0 ? (
-                        <div className="text-center py-20 text-gray-400">
-                            <p>尚無資料</p>
-                        </div>
-                    ) : (
+                    {list.length === 0 ? <p className="text-gray-400 text-center py-20">無資料</p> : 
                         list.map(r => (
-                            <div key={r.id} className="bg-white rounded-xl p-4 mb-4 card-shadow">
+                            <div key={r.id} className="bg-white rounded-xl p-4 mb-4 card-shadow border border-gray-100">
                                 <div className="flex justify-between mb-2">
                                     <span className="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-gray-600">{r.role}</span>
                                     <span className="text-xs text-gray-400">{r.date === today ? r.timestamp : r.date}</span>
                                 </div>
                                 {r.income && <div className="mb-2"><span className="text-gray-400 text-xs">營收：</span><span className="font-bold">${r.income}</span></div>}
-                                {r.issue && <div className="mb-2 bg-red-50 p-2 rounded"><p className="text-xs text-red-500 font-bold">● 事件</p><p className="text-sm">{r.issue}</p></div>}
-                                {r.note && <div className="mb-2 bg-blue-50 p-2 rounded"><p className="text-xs text-blue-500 font-bold">● 注意</p><p className="text-sm">{r.note}</p></div>}
-                                
-                                <div className="mt-3 pt-2 border-t border-gray-100 flex justify-end">
-                                    <button onClick={() => setPage('ai')} className="text-xs bg-black text-white px-3 py-1 rounded-full flex items-center">
-                                        <i className="fa-solid fa-robot mr-1"></i> 問 AI
-                                    </button>
-                                </div>
+                                {r.issue && <div className="mb-2 bg-red-50 p-2 rounded"><p className="text-xs text-red-500 font-bold">事件</p><p className="text-sm">{r.issue}</p></div>}
+                                {r.note && <div className="mb-2 bg-blue-50 p-2 rounded"><p className="text-xs text-blue-500 font-bold">注意</p><p className="text-sm">{r.note}</p></div>}
+                                <div className="mt-2 text-right"><button onClick={() => setPage('ai')} className="text-xs font-bold text-black"><i className="fa-solid fa-robot mr-1"></i>問 AI</button></div>
                             </div>
                         ))
-                    )}
+                    }
                 </div>
             );
         };
 
-        // 4. AI Advisor (Visual Update)
+        // 4. AI Advisor (v1.2: Chat Interface)
         const AIAdvisor = () => {
             const [input, setInput] = useState('');
-            const [chat, setChat] = useState([
-                { id: 1, role: 'ai', text: '老闆好。我是您的營運參謀。您可以傳送語音、文字或拍攝現場照片，我會協助您分析。' }
-            ]);
-
+            const [chat, setChat] = useState([{ id: 1, role: 'ai', text: '老闆好。我是您的營運參謀。' }]);
             const handleSend = () => {
                 if(!input.trim()) return;
-                const userMsg = { id: Date.now(), role: 'user', text: input };
-                setChat([...chat, userMsg]);
+                setChat([...chat, { id: Date.now(), role: 'user', text: input }]);
                 setInput('');
-                setTimeout(() => {
-                    setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: '收到。這是一個模擬回應。(v1.1功能演示)' }]);
-                }, 800);
+                setTimeout(() => setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: '收到，這是一個模擬回應。(v1.2)' }]), 800);
             };
-
             return (
                 <div className="flex flex-col h-screen bg-white">
-                    <div className="p-4 border-b bg-white flex items-center shadow-sm z-10">
-                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white mr-3">
-                            <i className="fa-solid fa-robot text-xs"></i>
-                        </div>
+                    <div className="p-4 border-b flex items-center bg-white z-10">
+                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white mr-3"><i className="fa-solid fa-robot text-xs"></i></div>
                         <h1 className="font-bold text-gray-800">AI 參謀</h1>
                     </div>
-                    
                     <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 bg-gray-50">
                         {chat.map(c => (
                             <div key={c.id} className={`flex ${c.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] p-3 rounded-xl shadow-sm ${c.role === 'user' ? 'bg-black text-white rounded-tr-none' : 'bg-white text-gray-800 rounded-tl-none'}`}>
-                                    <p className="text-sm leading-relaxed">{c.text}</p>
-                                </div>
+                                <div className={`max-w-[80%] p-3 rounded-xl shadow-sm ${c.role === 'user' ? 'bg-black text-white rounded-tr-none' : 'bg-white text-gray-800 rounded-tl-none'}`}>{c.text}</div>
                             </div>
                         ))}
                     </div>
-
-                    <div className="p-3 border-t bg-white absolute bottom-[80px] w-full flex items-center gap-2">
-                        <button className="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200">
-                            <i className="fa-solid fa-microphone"></i>
-                        </button>
-                        <div className="flex-1 bg-gray-100 rounded-full px-4 py-2 flex items-center">
-                            <input 
-                                type="text" 
-                                value={input}
-                                onChange={e => setInput(e.target.value)}
-                                className="flex-1 bg-transparent focus:outline-none text-sm"
-                                placeholder="輸入訊息..."
-                            />
-                        </div>
-                        <button className="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200">
-                            <i className="fa-solid fa-camera"></i>
-                        </button>
-                        <button onClick={handleSend} className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center shadow">
-                            <i className="fa-solid fa-paper-plane text-xs"></i>
-                        </button>
+                    <div className="p-3 border-t bg-white absolute bottom-[70px] w-full flex gap-2">
+                        <button className="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center"><i className="fa-solid fa-microphone"></i></button>
+                        <input type="text" value={input} onChange={e => setInput(e.target.value)} className="flex-1 bg-gray-100 rounded-full px-4" placeholder="輸入訊息..." />
+                        <button className="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center"><i className="fa-solid fa-camera"></i></button>
+                        <button onClick={handleSend} className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center"><i className="fa-solid fa-paper-plane text-xs"></i></button>
                     </div>
                 </div>
             );
         };
 
-        // Staff App (Unchanged mostly, just simpler)
+        // Staff App (Simplified)
         const StaffApp = ({ onSubmit }) => {
             const [step, setStep] = useState(0); 
             const [role, setRole] = useState('管理層');
             const [data, setData] = useState({ income: '', issue: '', note: '' });
+            const handleSubmit = () => { onSubmit({ ...data, role }); alert('已送出'); setData({ income: '', issue: '', note: '' }); setStep(0); };
 
-            const handleSubmit = () => {
-                onSubmit({ ...data, role });
-                alert('回報已送出');
-                setData({ income: '', issue: '', note: '' });
-                setStep(0);
-            };
-
-            if (step === 0) {
-                return (
-                    <div className="p-6 min-h-screen bg-white flex flex-col justify-center">
-                        <h1 className="text-2xl font-black text-gray-900 mb-2">員工回報</h1>
-                        <div className="mb-6">
-                             <select value={role} onChange={e => setRole(e.target.value)} className="w-full p-3 bg-gray-100 rounded-lg font-bold text-sm">
-                                 <option>管理層</option>
-                                 <option>現場夥伴</option>
-                             </select>
-                        </div>
-                        <div className="space-y-3">
-                            <button onClick={() => setStep(1)} className="w-full bg-white border-2 border-black text-black p-4 rounded-xl font-bold text-left">1. 今日數字</button>
-                            <button onClick={() => setStep(2)} className="w-full bg-white border border-gray-200 p-4 rounded-xl font-bold text-left text-red-600">2. 今天有件事</button>
-                            <button onClick={() => setStep(3)} className="w-full bg-white border border-gray-200 p-4 rounded-xl font-bold text-left text-blue-600">3. 明天要注意</button>
-                        </div>
+            if (step === 0) return (
+                <div className="p-6 min-h-screen bg-white flex flex-col justify-center">
+                    <h1 className="text-2xl font-black mb-6">員工回報</h1>
+                    <select value={role} onChange={e => setRole(e.target.value)} className="w-full p-3 bg-gray-100 rounded-lg font-bold mb-4"><option>管理層</option><option>現場夥伴</option></select>
+                    <div className="space-y-3">
+                        <button onClick={() => setStep(1)} className="w-full bg-white border-2 border-black text-black p-4 rounded-xl font-bold text-left">1. 今日數字</button>
+                        <button onClick={() => setStep(2)} className="w-full bg-white border border-gray-200 p-4 rounded-xl font-bold text-left text-red-600">2. 今天有件事</button>
+                        <button onClick={() => setStep(3)} className="w-full bg-white border border-gray-200 p-4 rounded-xl font-bold text-left text-blue-600">3. 明天要注意</button>
                     </div>
-                );
-            }
-            // Sub-pages simplified for brevity
+                </div>
+            );
             return (
                 <div className="p-6 bg-white min-h-screen">
                     <button onClick={() => setStep(0)} className="mb-4 text-gray-500"><i className="fa-solid fa-arrow-left"></i> 返回</button>
@@ -543,37 +507,28 @@
             const [view, setView] = useState('pin');
             const [page, setPage] = useState('dashboard');
             const [pin, setPin] = useState('');
-            
             const [transactions, setTransactions] = useState([]);
             const [reports, setReports] = useState([]);
             const [settings, setSettings] = useState({ dailyFixedCost: 5000 });
 
             useEffect(() => {
-                const t = localStorage.getItem(DB_KEY_TRANSACTIONS);
-                if (t) setTransactions(JSON.parse(t));
-                const r = localStorage.getItem(DB_KEY_REPORTS);
-                if (r) setReports(JSON.parse(r));
-                const s = localStorage.getItem(DB_KEY_SETTINGS);
-                if (s) setSettings(JSON.parse(s));
+                const t = localStorage.getItem(DB_KEY_TRANSACTIONS); if(t) setTransactions(JSON.parse(t));
+                const r = localStorage.getItem(DB_KEY_REPORTS); if(r) setReports(JSON.parse(r));
+                const s = localStorage.getItem(DB_KEY_SETTINGS); if(s) setSettings(JSON.parse(s));
             }, []);
 
             const handleStaffSubmit = (newReport) => {
-                const r = { id: Date.now(), date: new Date().toISOString().split('T')[0], timestamp: new Date().toLocaleTimeString(), ...newReport };
-                const u = [r, ...reports];
-                setReports(u);
-                localStorage.setItem(DB_KEY_REPORTS, JSON.stringify(u));
+                const u = [{ id: Date.now(), date: new Date().toISOString().split('T')[0], timestamp: new Date().toLocaleTimeString(), ...newReport }, ...reports];
+                setReports(u); localStorage.setItem(DB_KEY_REPORTS, JSON.stringify(u));
             };
 
-            const saveSettings = (newSettings) => {
-                setSettings(newSettings);
-                localStorage.setItem(DB_KEY_SETTINGS, JSON.stringify(newSettings));
-            };
+            const saveSettings = (newSettings) => { setSettings(newSettings); localStorage.setItem(DB_KEY_SETTINGS, JSON.stringify(newSettings)); };
 
             if (view === 'pin') {
                 return (
                     <div className="flex flex-col items-center justify-center min-h-screen bg-black px-6">
                         <div className="text-white text-4xl mb-4"><i className="fa-solid fa-fish"></i></div>
-                        <h1 className="text-white text-xl font-bold mb-8">Seafood Boss v1.1</h1>
+                        <h1 className="text-white text-xl font-bold mb-8">Seafood Boss v1.2</h1>
                         <div className="w-full max-w-xs bg-white rounded-xl p-6">
                             <button onClick={() => setView('staff')} className="w-full py-3 bg-gray-100 rounded-lg font-bold text-gray-600 mb-4">員工入口</button>
                             <div className="relative">
@@ -589,14 +544,14 @@
             if (view === 'staff') return <StaffApp onSubmit={handleStaffSubmit} />;
 
             return (
-                <div className="min-h-screen bg-gray-100 max-w-md mx-auto relative shadow-2xl">
+                <div className="min-h-screen bg-gray-100 max-w-md mx-auto relative shadow-2xl overflow-hidden">
                     <div className="h-full">
                         {page === 'dashboard' && <OwnerDashboard setPage={setPage} transactions={transactions} settings={settings} />}
                         {page === 'ops' && <Operations transactions={transactions} setTransactions={setTransactions} settings={settings} saveSettings={saveSettings} />}
                         {page === 'reports' && <Reports reports={reports} setPage={setPage} />}
                         {page === 'ai' && <AIAdvisor />}
                     </div>
-
+                    {/* Bottom Nav */}
                     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center pb-safe pt-2 px-2 z-50 max-w-md mx-auto h-[70px] pb-4">
                         <button onClick={() => setPage('dashboard')} className={`flex flex-col items-center w-full ${page === 'dashboard' ? 'text-black' : 'text-gray-400'}`}><i className="fa-solid fa-chart-pie text-xl mb-1"></i><span className="text-[10px] font-bold">概況</span></button>
                         <button onClick={() => setPage('ops')} className={`flex flex-col items-center w-full ${page === 'ops' ? 'text-black' : 'text-gray-400'}`}><i className="fa-solid fa-calculator text-xl mb-1"></i><span className="text-[10px] font-bold">營運</span></button>
@@ -609,7 +564,6 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-        
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
         }
