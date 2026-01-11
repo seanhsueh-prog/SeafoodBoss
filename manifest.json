@@ -1,0 +1,21 @@
+{
+  "short_name": "SeafoodBoss",
+  "name": "Seafood Boss App",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./SeafoodBossApp_Spec_v0.1.html",
+  "background_color": "#F3F4F6",
+  "display": "standalone",
+  "scope": "./",
+  "theme_color": "#000000"
+}
