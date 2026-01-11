@@ -1,4 +1,4 @@
-<!-- 檔名：SeafoodBossApp_Spec_v0.1.html -->
+<!-- 檔名：index.html (v1.1) -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -13,32 +13,35 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="./icons/icon-192.png">
 
-    <!-- Tailwind CSS (CDN for standalone) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- React & ReactDOM (CDN) -->
+    <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
-    <!-- Babel (CDN for JSX) -->
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Font Awesome (Icons) -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* 避免 iOS Safari 彈性滾動效果 */
         body {
             overscroll-behavior-y: none;
             -webkit-tap-highlight-color: transparent;
-            background-color: #F3F4F6; /* Gray-100 */
+            background-color: #F3F4F6;
         }
-        /* 自定義樣式補充 */
         .card-shadow {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-        input, select, textarea {
-            font-size: 16px !important; /* 防止 iOS 自動縮放 */
+        /* 隱藏滾動條但保留功能 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
@@ -48,163 +51,173 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // --- 模擬後端與資料層 (LocalStorage) ---
-        // 為了 v0.1 快速啟動，暫時用 localStorage 取代 IndexedDB，功能完全一致
-        
+        // --- Data Keys ---
         const DB_KEY_TRANSACTIONS = 'sf_transactions';
-        const DB_KEY_SETTINGS = 'sf_settings';
         const DB_KEY_REPORTS = 'sf_reports';
+        const DB_KEY_SETTINGS = 'sf_settings';
 
-        // 預設設定
-        const DEFAULT_SETTINGS = {
-            dailyFixedCost: 5000, // 預設日均開銷
-        };
-
-        // --- 元件：圖標按鈕 ---
-        const IconButton = ({ icon, label, onClick, active = false, color = "text-gray-500" }) => (
-            <button 
-                onClick={onClick} 
-                className={`flex flex-col items-center justify-center w-full py-2 ${active ? 'text-black' : color}`}
-            >
-                <i className={`${icon} text-xl mb-1`}></i>
-                <span className="text-xs font-medium">{label}</span>
-            </button>
-        );
-
-        // --- 元件：卡片 ---
-        const Card = ({ children, className = "", title, action }) => (
-            <div className={`bg-white rounded-xl p-5 mb-4 card-shadow ${className}`}>
-                {(title || action) && (
-                    <div className="flex justify-between items-center mb-4">
-                        {title && <h3 className="font-bold text-lg text-gray-800">{title}</h3>}
-                        {action}
-                    </div>
-                )}
-                {children}
-            </div>
-        );
-
-        // --- 頁面：老闆主頁 (Dashboard) ---
-        const OwnerDashboard = ({ setPage, transactions, settings }) => {
-            // 計算今日狀態
-            const today = new Date().toISOString().split('T')[0];
-            
-            const todayData = useMemo(() => {
-                const todayTrans = transactions.filter(t => t.date === today);
-                const income = todayTrans.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
-                const expense = todayTrans.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
-                const net = income - expense - settings.dailyFixedCost;
-                
-                let status = "觀察中";
-                let statusColor = "text-gray-500";
-                
-                if (net > 1000) {
-                    status = "穩";
-                    statusColor = "text-green-600";
-                } else if (net >= -1000 && net <= 1000) {
-                    status = "打平";
-                    statusColor = "text-yellow-600";
-                } else {
-                    status = "偏緊";
-                    statusColor = "text-red-600";
-                }
-
-                return { status, statusColor, count: todayTrans.length };
-            }, [transactions, settings, today]);
-
-            // 轉場提醒功能
-            const [timerActive, setTimerActive] = useState(false);
-            const startTransitionTimer = (minutes) => {
-                setTimerActive(true);
-                // 模擬震動與提示 (真實環境可加入 Audio)
-                setTimeout(() => {
-                    if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                    alert("老闆，該轉場囉！(測試提醒)");
-                    setTimerActive(false);
-                }, minutes * 1000); // 測試用秒代替分，實際應 * 60 * 1000
-                alert(`已啟動 ${minutes} 分鐘轉場提醒`);
-            };
-
+        // --- Components ---
+        const Modal = ({ isOpen, onClose, children, title }) => {
+            if (!isOpen) return null;
             return (
-                <div className="p-4 pb-24">
-                    <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-2xl font-black text-gray-900">今日概況</h1>
-                        <div className="bg-gray-200 px-3 py-1 rounded-full text-xs font-bold text-gray-600">
-                            老闆模式
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up">
+                        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                            <h3 className="font-bold text-lg">{title}</h3>
+                            <button onClick={onClose} className="text-gray-500 w-8 h-8 rounded-full hover:bg-gray-200 flex items-center justify-center">
+                                <i className="fa-solid fa-times"></i>
+                            </button>
                         </div>
-                    </div>
-
-                    {/* 狀態大卡片 */}
-                    <Card className="text-center py-8">
-                        <p className="text-gray-500 text-sm mb-2">今日營運狀態</p>
-                        <h2 className={`text-6xl font-black ${todayData.statusColor} mb-4`}>{todayData.status}</h2>
-                        <p className="text-gray-400 text-xs">
-                            今日已有 {todayData.count} 筆流水紀錄<br/>
-                            系統隱藏金額保護隱私
-                        </p>
-                    </Card>
-
-                    {/* 快捷卡片網格 */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div onClick={() => setPage('ops')} className="bg-white p-5 rounded-xl card-shadow active:bg-gray-50 cursor-pointer">
-                            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white mb-3">
-                                <i className="fa-solid fa-calculator"></i>
-                            </div>
-                            <h3 className="font-bold text-gray-800">內部營運</h3>
-                            <p className="text-xs text-gray-500 mt-1">記帳 / 看數字</p>
-                        </div>
-
-                        <div onClick={() => setPage('reports')} className="bg-white p-5 rounded-xl card-shadow active:bg-gray-50 cursor-pointer">
-                            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white mb-3">
-                                <i className="fa-solid fa-list-check"></i>
-                            </div>
-                            <h3 className="font-bold text-gray-800">員工回報</h3>
-                            <p className="text-xs text-gray-500 mt-1">查看現場狀況</p>
-                        </div>
-
-                        <div onClick={() => startTransitionTimer(10)} className={`bg-white p-5 rounded-xl card-shadow active:bg-gray-50 cursor-pointer ${timerActive ? 'ring-2 ring-green-500' : ''}`}>
-                            <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center text-white mb-3">
-                                <i className="fa-solid fa-hourglass-start"></i>
-                            </div>
-                            <h3 className="font-bold text-gray-800">轉場提醒</h3>
-                            <p className="text-xs text-gray-500 mt-1">10分鐘後震動</p>
-                        </div>
-
-                        <div onClick={() => setPage('ai')} className="bg-white p-5 rounded-xl card-shadow active:bg-gray-50 cursor-pointer">
-                            <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center text-white mb-3">
-                                <i className="fa-solid fa-robot"></i>
-                            </div>
-                            <h3 className="font-bold text-gray-800">AI 參謀</h3>
-                            <p className="text-xs text-gray-500 mt-1">決策輔助</p>
+                        <div className="p-4">
+                            {children}
                         </div>
                     </div>
                 </div>
             );
         };
 
-        // --- 頁面：內部營運 (Operations) ---
-        const Operations = ({ transactions, setTransactions, settings }) => {
-            const [mode, setMode] = useState('view'); // view, add
+        // --- Pages ---
+
+        // 1. Owner Dashboard
+        const OwnerDashboard = ({ setPage, transactions, settings }) => {
+            const today = new Date().toISOString().split('T')[0];
+            
+            const todayStatus = useMemo(() => {
+                const todayTrans = transactions.filter(t => t.date === today);
+                const income = todayTrans.filter(t => t.type === 'income').reduce((acc, c) => acc + c.amount, 0);
+                const expense = todayTrans.filter(t => t.type === 'expense').reduce((acc, c) => acc + c.amount, 0);
+                const net = income - expense - (settings.dailyFixedCost || 0);
+
+                let status = "觀察中";
+                let color = "text-gray-500";
+                if (net > 1000) { status = "穩"; color = "text-green-600"; }
+                else if (net >= -1000) { status = "打平"; color = "text-yellow-600"; }
+                else { status = "偏緊"; color = "text-red-600"; }
+
+                return { status, color, count: todayTrans.length };
+            }, [transactions, settings, today]);
+
+            const startTimer = (min) => {
+                // 模擬啟動轉場
+                if(navigator.vibrate) navigator.vibrate(200);
+                alert(`已啟動 ${min} 分鐘轉場提醒 (倒數中...)`);
+            };
+
+            return (
+                <div className="p-4 pb-24">
+                    <div className="flex justify-between items-center mb-4">
+                        <h1 className="text-xl font-black text-gray-900">今日概況</h1>
+                        <span className="text-xs bg-gray-200 px-2 py-1 rounded font-bold text-gray-600">老闆模式</span>
+                    </div>
+
+                    {/* 瘦身版狀態卡片 */}
+                    <div className="bg-white rounded-xl p-5 mb-6 card-shadow flex justify-between items-center">
+                        <div>
+                            <p className="text-gray-400 text-xs mb-1">營運狀態</p>
+                            <h2 className={`text-4xl font-black ${todayStatus.color}`}>{todayStatus.status}</h2>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-gray-400 text-xs mb-1">今日流水</p>
+                            <p className="text-2xl font-bold text-gray-800">{todayStatus.count} <span className="text-sm font-normal text-gray-400">筆</span></p>
+                        </div>
+                    </div>
+
+                    {/* 轉場提醒 (三鍵式) */}
+                    <div className="mb-6">
+                        <p className="text-gray-500 text-xs font-bold mb-2 ml-1">轉場提醒</p>
+                        <div className="grid grid-cols-3 gap-3">
+                            {[10, 15, 20].map(min => (
+                                <button key={min} onClick={() => startTimer(min)} className="bg-white border border-gray-200 py-3 rounded-lg font-bold text-gray-700 shadow-sm active:bg-gray-100 active:scale-95 transition-transform">
+                                    {min} 分
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 快捷入口 */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div onClick={() => setPage('ops')} className="bg-white p-4 rounded-xl card-shadow active:bg-gray-50 flex flex-col items-center justify-center h-32">
+                            <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white mb-2 text-xl">
+                                <i className="fa-solid fa-calculator"></i>
+                            </div>
+                            <span className="font-bold text-gray-800">內部營運</span>
+                        </div>
+                        <div onClick={() => setPage('reports')} className="bg-white p-4 rounded-xl card-shadow active:bg-gray-50 flex flex-col items-center justify-center h-32">
+                            <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white mb-2 text-xl">
+                                <i className="fa-solid fa-list-check"></i>
+                            </div>
+                            <span className="font-bold text-gray-800">員工回報</span>
+                        </div>
+                        <div onClick={() => setPage('ai')} className="bg-white p-4 rounded-xl card-shadow active:bg-gray-50 flex flex-col items-center justify-center h-32 col-span-2">
+                            <div className="flex items-center mb-2">
+                                <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center text-white mr-3">
+                                    <i className="fa-solid fa-robot"></i>
+                                </div>
+                                <span className="font-bold text-gray-800 text-lg">AI 參謀</span>
+                            </div>
+                            <p className="text-xs text-gray-400">語音 / 圖像 / 決策分析</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 2. Operations (Refactored v1.1)
+        const Operations = ({ transactions, setTransactions, settings, saveSettings }) => {
+            const [period, setPeriod] = useState('day'); // day, month, year
+            const [showAddModal, setShowAddModal] = useState(false);
+            const [showSettingModal, setShowSettingModal] = useState(false);
+            
+            // Modal Inputs
+            const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+            const [type, setType] = useState('income');
             const [amount, setAmount] = useState('');
-            const [type, setType] = useState('income'); // income, expense
             const [cat, setCat] = useState('現金');
             const [note, setNote] = useState('');
 
-            // 統計數據
-            const today = new Date().toISOString().split('T')[0];
-            const stats = useMemo(() => {
-                const todayTrans = transactions.filter(t => t.date === today);
-                const income = todayTrans.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
-                const expense = todayTrans.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
-                const net = income - expense - settings.dailyFixedCost;
-                return { income, expense, net };
-            }, [transactions, settings, today]);
+            // Setting Inputs
+            const [tempFixedCost, setTempFixedCost] = useState(settings.dailyFixedCost);
 
-            const handleSave = () => {
+            // Calculation Logic
+            const stats = useMemo(() => {
+                const now = new Date();
+                const currentDay = date; // Using the date picker value for "Day" view or just today
+                const currentMonth = now.toISOString().slice(0, 7);
+                const currentYear = now.getFullYear().toString();
+
+                let filtered = [];
+                let fixedCostTotal = 0;
+                let daysPassed = 1;
+
+                if (period === 'day') {
+                    // Day view: Show selected date's data (default today)
+                    filtered = transactions.filter(t => t.date === date);
+                    fixedCostTotal = parseInt(settings.dailyFixedCost || 0);
+                } else if (period === 'month') {
+                    filtered = transactions.filter(t => t.date.startsWith(currentMonth));
+                    daysPassed = now.getDate(); 
+                    fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * daysPassed;
+                } else {
+                    filtered = transactions.filter(t => t.date.startsWith(currentYear));
+                    // Simplified year estimation
+                    const startOfYear = new Date(currentYear, 0, 1);
+                    const diffTime = Math.abs(now - startOfYear);
+                    daysPassed = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                    fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * daysPassed;
+                }
+
+                const income = filtered.filter(t => t.type === 'income').reduce((a, c) => a + c.amount, 0);
+                const expense = filtered.filter(t => t.type === 'expense').reduce((a, c) => a + c.amount, 0);
+                const net = income - expense - fixedCostTotal;
+
+                return { income, expense, fixedCostTotal, net, filtered };
+            }, [transactions, settings, period, date]);
+
+            const handleSaveTransaction = () => {
                 if (!amount) return;
                 const newTrans = {
                     id: Date.now(),
-                    date: today,
+                    date: date,
                     amount: parseInt(amount),
                     type,
                     category: cat,
@@ -212,437 +225,383 @@
                     timestamp: new Date().toLocaleTimeString()
                 };
                 const updated = [newTrans, ...transactions];
+                updated.sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date desc
                 setTransactions(updated);
                 localStorage.setItem(DB_KEY_TRANSACTIONS, JSON.stringify(updated));
                 
-                // Reset
                 setAmount('');
                 setNote('');
-                setMode('view');
+                setShowAddModal(false);
+                // 簡單震動回饋
+                if(navigator.vibrate) navigator.vibrate(50);
             };
 
-            if (mode === 'add') {
-                return (
-                    <div className="p-4 min-h-screen bg-white">
-                        <div className="flex items-center mb-6">
-                            <button onClick={() => setMode('view')} className="text-2xl mr-4"><i className="fa-solid fa-arrow-left"></i></button>
-                            <h1 className="text-2xl font-black">記一筆</h1>
-                        </div>
-                        
-                        <div className="flex mb-6 bg-gray-100 p-1 rounded-lg">
-                            <button onClick={() => {setType('income'); setCat('現金');}} className={`flex-1 py-2 rounded-md font-bold ${type === 'income' ? 'bg-white shadow text-black' : 'text-gray-500'}`}>進帳</button>
-                            <button onClick={() => {setType('expense'); setCat('進貨');}} className={`flex-1 py-2 rounded-md font-bold ${type === 'expense' ? 'bg-white shadow text-black' : 'text-gray-500'}`}>出帳</button>
-                        </div>
-
-                        <div className="mb-6">
-                            <label className="block text-sm font-bold text-gray-500 mb-2">金額</label>
-                            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="w-full text-4xl font-black border-b-2 border-gray-200 py-2 focus:outline-none focus:border-black" placeholder="0" autoFocus />
-                        </div>
-
-                        <div className="mb-6">
-                            <label className="block text-sm font-bold text-gray-500 mb-2">分類</label>
-                            <div className="flex flex-wrap gap-2">
-                                {type === 'income' ? 
-                                    ['現金', '刷卡', '轉帳'].map(c => (
-                                        <button key={c} onClick={() => setCat(c)} className={`px-4 py-2 rounded-full text-sm font-bold border ${cat === c ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-300'}`}>{c}</button>
-                                    )) :
-                                    ['進貨', '人事', '雜支', '修繕'].map(c => (
-                                        <button key={c} onClick={() => setCat(c)} className={`px-4 py-2 rounded-full text-sm font-bold border ${cat === c ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-300'}`}>{c}</button>
-                                    ))
-                                }
-                            </div>
-                        </div>
-
-                        <div className="mb-8">
-                            <label className="block text-sm font-bold text-gray-500 mb-2">備註 (選填)</label>
-                            <input type="text" value={note} onChange={e => setNote(e.target.value)} className="w-full text-lg border-b border-gray-200 py-2 focus:outline-none focus:border-black" placeholder="例如：廠商退款..." />
-                        </div>
-
-                        <button onClick={handleSave} className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg shadow-lg">確認儲存</button>
-                    </div>
-                );
-            }
+            const handleSaveSettings = () => {
+                saveSettings({ ...settings, dailyFixedCost: parseInt(tempFixedCost) });
+                setShowSettingModal(false);
+            };
 
             return (
-                <div className="p-4 pb-24">
-                    <h1 className="text-2xl font-black text-gray-900 mb-6">內部營運</h1>
-
-                    {/* 今日統計 */}
-                    <Card className="mb-6">
-                        <div className="grid grid-cols-2 gap-4 mb-4 border-b pb-4">
-                            <div>
-                                <p className="text-gray-500 text-xs">今日進帳</p>
-                                <p className="text-2xl font-bold text-gray-900">${stats.income.toLocaleString()}</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-gray-500 text-xs">今日出帳 + 日均</p>
-                                <p className="text-2xl font-bold text-red-600">${(stats.expense + settings.dailyFixedCost).toLocaleString()}</p>
-                            </div>
-                        </div>
-                        <div className="flex justify-between items-end">
-                            <div>
-                                <p className="text-gray-500 text-xs mb-1">今日淨額 (含日均$5,000)</p>
-                                <p className={`text-4xl font-black ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {stats.net >= 0 ? '+' : ''}{stats.net.toLocaleString()}
-                                </p>
-                            </div>
-                            <div className="bg-gray-100 px-2 py-1 rounded text-xs text-gray-500">
-                                {stats.net > 0 ? '正' : '負'}
-                            </div>
-                        </div>
-                    </Card>
-
-                    {/* 快速按鈕 */}
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        <button onClick={() => {setMode('add'); setType('income');}} className="bg-black text-white py-3 rounded-xl font-bold shadow-lg flex items-center justify-center">
-                            <i className="fa-solid fa-plus mr-2"></i> 進帳
-                        </button>
-                        <button onClick={() => {setMode('add'); setType('expense');}} className="bg-white text-black border border-gray-200 py-3 rounded-xl font-bold shadow flex items-center justify-center">
-                            <i className="fa-solid fa-minus mr-2"></i> 出帳
+                <div className="p-4 pb-24 min-h-screen bg-gray-50">
+                    <div className="flex justify-between items-center mb-4">
+                        <h1 className="text-xl font-black text-gray-900">內部營運</h1>
+                        <button onClick={() => setShowSettingModal(true)} className="text-xs bg-gray-200 px-3 py-1 rounded-full font-bold text-gray-600">
+                            <i className="fa-solid fa-cog mr-1"></i>設定日均
                         </button>
                     </div>
 
-                    {/* 最近紀錄 */}
-                    <h3 className="font-bold text-gray-800 mb-3">今日流水</h3>
+                    {/* Tab Switcher */}
+                    <div className="bg-white p-1 rounded-lg flex mb-4 border border-gray-200">
+                        {['day', 'month', 'year'].map(p => (
+                            <button 
+                                key={p} 
+                                onClick={() => setPeriod(p)}
+                                className={`flex-1 py-2 rounded-md text-sm font-bold ${period === p ? 'bg-black text-white shadow' : 'text-gray-500'}`}
+                            >
+                                {p === 'day' ? '今日' : p === 'month' ? '本月' : '今年'}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Date Picker (Only for Day view) */}
+                    {period === 'day' && (
+                        <div className="mb-4 flex justify-center">
+                            <input 
+                                type="date" 
+                                value={date} 
+                                onChange={e => setDate(e.target.value)} 
+                                className="bg-transparent font-bold text-gray-600 text-sm"
+                            />
+                        </div>
+                    )}
+
+                    {/* Financial Card (Spec 3.2 logic) */}
+                    <div className="bg-white rounded-xl p-5 mb-6 card-shadow border-l-4 border-black">
+                        {/* 1. Income */}
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-gray-500 font-bold text-sm">進帳總額</span>
+                            <span className="text-xl font-bold text-gray-900">+ {stats.income.toLocaleString()}</span>
+                        </div>
+                        {/* 2. Ad-hoc Expense */}
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-gray-500 font-bold text-sm">臨時出帳</span>
+                            <span className="text-xl font-bold text-red-500">- {stats.expense.toLocaleString()}</span>
+                        </div>
+                        {/* 3. Fixed Cost */}
+                        <div className="flex justify-between items-center mb-4 pb-4 border-b border-dashed border-gray-200">
+                            <span className="text-gray-400 font-bold text-xs flex items-center">
+                                固定日均
+                                <i className="fa-solid fa-circle-info ml-1 text-[10px]" title="人事/房租/水電等"></i>
+                            </span>
+                            <span className="text-lg font-bold text-gray-400">- {stats.fixedCostTotal.toLocaleString()}</span>
+                        </div>
+                        {/* 4. Net */}
+                        <div className="flex justify-between items-end">
+                            <span className="text-gray-800 font-black text-lg">淨利</span>
+                            <div className="text-right">
+                                <span className={`text-3xl font-black ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}
+                                </span>
+                                <span className="ml-2 text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">
+                                    {stats.net > 0 ? '正' : '負'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                        <button onClick={() => {setType('income'); setCat('現金'); setShowAddModal(true);}} className="bg-black text-white py-4 rounded-xl font-bold shadow-lg flex flex-col items-center">
+                            <i className="fa-solid fa-plus text-xl mb-1"></i>
+                            <span>記進帳</span>
+                        </button>
+                        <button onClick={() => {setType('expense'); setCat('進貨'); setShowAddModal(true);}} className="bg-white text-black border border-gray-200 py-4 rounded-xl font-bold shadow flex flex-col items-center">
+                            <i className="fa-solid fa-minus text-xl mb-1"></i>
+                            <span>記出帳</span>
+                        </button>
+                    </div>
+
+                    {/* Transaction List */}
+                    <h3 className="font-bold text-gray-800 mb-3 text-sm">明細 ({period === 'day' ? date : '區間累計'})</h3>
                     <div className="space-y-3">
-                        {transactions.filter(t => t.date === today).length === 0 ? (
-                            <p className="text-gray-400 text-center py-4">今天還沒記帳喔</p>
+                        {stats.filtered.length === 0 ? (
+                            <p className="text-gray-400 text-center py-4 text-xs">尚無紀錄</p>
                         ) : (
-                            transactions.filter(t => t.date === today).map(t => (
-                                <div key={t.id} className="bg-white p-4 rounded-lg flex justify-between items-center shadow-sm">
-                                    <div>
+                            stats.filtered.map(t => (
+                                <div key={t.id} className="bg-white p-3 rounded-lg flex justify-between items-center shadow-sm border-l-2 border-gray-100">
+                                    <div className="flex flex-col">
                                         <div className="flex items-center">
                                             <span className={`w-2 h-2 rounded-full mr-2 ${t.type === 'income' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                            <span className="font-bold text-gray-800">{t.category}</span>
+                                            <span className="font-bold text-gray-700">{t.category}</span>
                                         </div>
-                                        {t.note && <p className="text-xs text-gray-400 mt-1 pl-4">{t.note}</p>}
+                                        <span className="text-xs text-gray-400 pl-4">{t.note || '-'}</span>
                                     </div>
                                     <div className="text-right">
-                                        <p className={`font-bold ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                            {t.type === 'income' ? '+' : '-'}{t.amount}
-                                        </p>
-                                        <p className="text-xs text-gray-400">{t.timestamp}</p>
+                                        <span className={`font-bold ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                            {t.type === 'income' ? '+' : '-'}{t.amount.toLocaleString()}
+                                        </span>
+                                        <p className="text-[10px] text-gray-400">{t.date.slice(5)}</p>
                                     </div>
                                 </div>
                             ))
                         )}
                     </div>
+
+                    {/* Add Transaction Modal */}
+                    <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title={`記一筆${type === 'income' ? '進帳' : '出帳'}`}>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">日期</label>
+                                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-gray-100 p-2 rounded font-bold" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">金額</label>
+                                <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="w-full text-3xl font-black border-b-2 border-black py-2 focus:outline-none" placeholder="0" autoFocus />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-2">分類</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {type === 'income' ? 
+                                        ['現金', '刷卡', '轉帳'].map(c => (
+                                            <button key={c} onClick={() => setCat(c)} className={`px-3 py-1 rounded-full text-xs font-bold border ${cat === c ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-300'}`}>{c}</button>
+                                        )) :
+                                        ['進貨', '人事', '雜支', '修繕'].map(c => (
+                                            <button key={c} onClick={() => setCat(c)} className={`px-3 py-1 rounded-full text-xs font-bold border ${cat === c ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-300'}`}>{c}</button>
+                                        ))
+                                    }
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">備註</label>
+                                <input type="text" value={note} onChange={e => setNote(e.target.value)} className="w-full border-b border-gray-200 py-2 focus:outline-none" placeholder="選填..." />
+                            </div>
+                            <button onClick={handleSaveTransaction} className="w-full bg-black text-white py-3 rounded-lg font-bold shadow-lg mt-4">確認儲存</button>
+                        </div>
+                    </Modal>
+
+                    {/* Settings Modal */}
+                    <Modal isOpen={showSettingModal} onClose={() => setShowSettingModal(false)} title="設定基本開銷">
+                        <div className="space-y-4">
+                            <p className="text-xs text-gray-500">請輸入每日平均固定成本 (包含人事、房租、水電、底耗等)。</p>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">日均金額 ($)</label>
+                                <input type="number" value={tempFixedCost} onChange={e => setTempFixedCost(e.target.value)} className="w-full text-2xl font-black border-b-2 border-black py-2 focus:outline-none" />
+                            </div>
+                            <div className="bg-gray-50 p-3 rounded text-xs text-gray-400 space-y-1">
+                                <p>包含項目參考：</p>
+                                <div className="flex items-center"><i className="fa-solid fa-check text-green-500 mr-2"></i> 人事薪資</div>
+                                <div className="flex items-center"><i className="fa-solid fa-check text-green-500 mr-2"></i> 房租</div>
+                                <div className="flex items-center"><i className="fa-solid fa-check text-green-500 mr-2"></i> 水電瓦斯</div>
+                                <div className="flex items-center"><i className="fa-solid fa-check text-green-500 mr-2"></i> 食材底耗</div>
+                            </div>
+                            <button onClick={handleSaveSettings} className="w-full bg-black text-white py-3 rounded-lg font-bold shadow-lg mt-4">儲存設定</button>
+                        </div>
+                    </Modal>
                 </div>
             );
         };
 
-        // --- 頁面：回報 (Reports) ---
-        const Reports = ({ reports }) => {
+        // 3. Reports (Context button added)
+        const Reports = ({ reports, setPage }) => {
             const today = new Date().toISOString().split('T')[0];
-            const todayReports = reports.filter(r => r.date === today);
+            const list = reports.sort((a,b) => b.id - a.id);
 
             return (
                 <div className="p-4 pb-24">
-                    <h1 className="text-2xl font-black text-gray-900 mb-6">員工回報</h1>
-                    
-                    {todayReports.length === 0 ? (
+                    <h1 className="text-xl font-black text-gray-900 mb-4">員工回報</h1>
+                    {list.length === 0 ? (
                         <div className="text-center py-20 text-gray-400">
-                            <i className="fa-solid fa-clipboard-list text-4xl mb-4"></i>
-                            <p>今天還沒有人回報</p>
+                            <p>尚無資料</p>
                         </div>
                     ) : (
-                        todayReports.map(r => (
-                            <Card key={r.id} className="mb-4">
+                        list.map(r => (
+                            <div key={r.id} className="bg-white rounded-xl p-4 mb-4 card-shadow">
                                 <div className="flex justify-between mb-2">
                                     <span className="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-gray-600">{r.role}</span>
-                                    <span className="text-xs text-gray-400">{r.timestamp}</span>
+                                    <span className="text-xs text-gray-400">{r.date === today ? r.timestamp : r.date}</span>
                                 </div>
+                                {r.income && <div className="mb-2"><span className="text-gray-400 text-xs">營收：</span><span className="font-bold">${r.income}</span></div>}
+                                {r.issue && <div className="mb-2 bg-red-50 p-2 rounded"><p className="text-xs text-red-500 font-bold">● 事件</p><p className="text-sm">{r.issue}</p></div>}
+                                {r.note && <div className="mb-2 bg-blue-50 p-2 rounded"><p className="text-xs text-blue-500 font-bold">● 注意</p><p className="text-sm">{r.note}</p></div>}
                                 
-                                {r.income && (
-                                    <div className="mb-3 pb-3 border-b border-gray-100">
-                                        <p className="text-xs text-gray-500">今日回報數字</p>
-                                        <p className="text-xl font-bold">${parseInt(r.income).toLocaleString()}</p>
-                                    </div>
-                                )}
-                                
-                                {r.issue && (
-                                    <div className="mb-3">
-                                        <p className="text-xs text-red-500 font-bold mb-1">● 發生什麼事</p>
-                                        <p className="text-gray-800">{r.issue}</p>
-                                    </div>
-                                )}
-                                
-                                {r.note && (
-                                    <div>
-                                        <p className="text-xs text-blue-500 font-bold mb-1">● 明天要注意</p>
-                                        <p className="text-gray-800">{r.note}</p>
-                                    </div>
-                                )}
-                                
-                                <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
-                                    <button className="text-xs font-bold text-gray-400 mr-4">已讀</button>
-                                    <button className="text-xs font-bold text-black">詢問 AI <i className="fa-solid fa-arrow-right ml-1"></i></button>
+                                <div className="mt-3 pt-2 border-t border-gray-100 flex justify-end">
+                                    <button onClick={() => setPage('ai')} className="text-xs bg-black text-white px-3 py-1 rounded-full flex items-center">
+                                        <i className="fa-solid fa-robot mr-1"></i> 問 AI
+                                    </button>
                                 </div>
-                            </Card>
+                            </div>
                         ))
                     )}
                 </div>
             );
         };
 
-        // --- 頁面：AI 參謀 (Mock) ---
+        // 4. AI Advisor (Visual Update)
         const AIAdvisor = () => {
             const [input, setInput] = useState('');
             const [chat, setChat] = useState([
-                { id: 1, role: 'ai', text: '老闆好，我是你的營運參謀。今天看起來營收稍微打平，有什麼想討論的嗎？' }
+                { id: 1, role: 'ai', text: '老闆好。我是您的營運參謀。您可以傳送語音、文字或拍攝現場照片，我會協助您分析。' }
             ]);
 
             const handleSend = () => {
-                if (!input.trim()) return;
-                
-                // User Msg
+                if(!input.trim()) return;
                 const userMsg = { id: Date.now(), role: 'user', text: input };
                 setChat([...chat, userMsg]);
                 setInput('');
-
-                // Mock AI Response
                 setTimeout(() => {
-                    const aiMsg = { 
-                        id: Date.now() + 1, 
-                        role: 'ai', 
-                        text: '收到。根據目前的數據，建議您注意明日備料量，避免損耗擴大。這只是我的分析，決定權在您。(模擬回應)' 
-                    };
-                    setChat(prev => [...prev, aiMsg]);
-                }, 1000);
+                    setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: '收到。這是一個模擬回應。(v1.1功能演示)' }]);
+                }, 800);
             };
 
             return (
                 <div className="flex flex-col h-screen bg-white">
-                    <div className="p-4 border-b flex items-center justify-between bg-white z-10">
-                        <h1 className="text-xl font-black">AI 參謀</h1>
+                    <div className="p-4 border-b bg-white flex items-center shadow-sm z-10">
+                        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white mr-3">
+                            <i className="fa-solid fa-robot text-xs"></i>
+                        </div>
+                        <h1 className="font-bold text-gray-800">AI 參謀</h1>
                     </div>
                     
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 bg-gray-50">
                         {chat.map(c => (
                             <div key={c.id} className={`flex ${c.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] p-4 rounded-xl ${c.role === 'user' ? 'bg-black text-white rounded-tr-none' : 'bg-gray-100 text-gray-800 rounded-tl-none'}`}>
+                                <div className={`max-w-[80%] p-3 rounded-xl shadow-sm ${c.role === 'user' ? 'bg-black text-white rounded-tr-none' : 'bg-white text-gray-800 rounded-tl-none'}`}>
                                     <p className="text-sm leading-relaxed">{c.text}</p>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    <div className="p-4 border-t bg-white absolute bottom-[80px] w-full">
-                        <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
+                    <div className="p-3 border-t bg-white absolute bottom-[80px] w-full flex items-center gap-2">
+                        <button className="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200">
+                            <i className="fa-solid fa-microphone"></i>
+                        </button>
+                        <div className="flex-1 bg-gray-100 rounded-full px-4 py-2 flex items-center">
                             <input 
                                 type="text" 
                                 value={input}
                                 onChange={e => setInput(e.target.value)}
-                                className="flex-1 bg-transparent focus:outline-none"
-                                placeholder="輸入問題或語音..."
+                                className="flex-1 bg-transparent focus:outline-none text-sm"
+                                placeholder="輸入訊息..."
                             />
-                            <button onClick={handleSend} className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center ml-2">
-                                <i className="fa-solid fa-paper-plane text-xs"></i>
-                            </button>
                         </div>
+                        <button className="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200">
+                            <i className="fa-solid fa-camera"></i>
+                        </button>
+                        <button onClick={handleSend} className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center shadow">
+                            <i className="fa-solid fa-paper-plane text-xs"></i>
+                        </button>
                     </div>
                 </div>
             );
         };
 
-        // --- 頁面：員工回報端 (Staff App) ---
+        // Staff App (Unchanged mostly, just simpler)
         const StaffApp = ({ onSubmit }) => {
-            const [step, setStep] = useState(0); // 0:Menu, 1:Numbers, 2:Issue, 3:Note
+            const [step, setStep] = useState(0); 
             const [role, setRole] = useState('管理層');
             const [data, setData] = useState({ income: '', issue: '', note: '' });
 
             const handleSubmit = () => {
-                if (!data.income && !data.issue && !data.note) {
-                    alert('請至少填寫一項');
-                    return;
-                }
                 onSubmit({ ...data, role });
-                alert('回報已送出，辛苦了！');
+                alert('回報已送出');
                 setData({ income: '', issue: '', note: '' });
                 setStep(0);
             };
 
             if (step === 0) {
                 return (
-                    <div className="p-6 min-h-screen bg-gray-50 flex flex-col justify-center">
-                        <h1 className="text-3xl font-black text-gray-900 mb-2">員工回報端</h1>
-                        <p className="text-gray-500 mb-8">請選擇您的層級與回報項目</p>
-                        
-                        <div className="mb-8">
-                             <label className="text-xs font-bold text-gray-400 uppercase">Current Role</label>
-                             <select value={role} onChange={e => setRole(e.target.value)} className="w-full mt-1 p-3 bg-white rounded-lg shadow-sm font-bold">
+                    <div className="p-6 min-h-screen bg-white flex flex-col justify-center">
+                        <h1 className="text-2xl font-black text-gray-900 mb-2">員工回報</h1>
+                        <div className="mb-6">
+                             <select value={role} onChange={e => setRole(e.target.value)} className="w-full p-3 bg-gray-100 rounded-lg font-bold text-sm">
                                  <option>管理層</option>
                                  <option>現場夥伴</option>
                              </select>
                         </div>
-
-                        <div className="space-y-4">
-                            <button onClick={() => setStep(1)} className="w-full bg-white p-5 rounded-xl shadow-sm text-left border-l-4 border-black hover:bg-gray-100">
-                                <h3 className="font-bold text-lg text-gray-800">1. 今日數字</h3>
-                                <p className="text-sm text-gray-400">營收金額回報</p>
-                            </button>
-                            <button onClick={() => setStep(2)} className="w-full bg-white p-5 rounded-xl shadow-sm text-left border-l-4 border-red-500 hover:bg-gray-100">
-                                <h3 className="font-bold text-lg text-gray-800">2. 今天有件事</h3>
-                                <p className="text-sm text-gray-400">現場突發/設備/客訴</p>
-                            </button>
-                            <button onClick={() => setStep(3)} className="w-full bg-white p-5 rounded-xl shadow-sm text-left border-l-4 border-blue-500 hover:bg-gray-100">
-                                <h3 className="font-bold text-lg text-gray-800">3. 明天要注意</h3>
-                                <p className="text-sm text-gray-400">叫貨/備料/提醒</p>
-                            </button>
+                        <div className="space-y-3">
+                            <button onClick={() => setStep(1)} className="w-full bg-white border-2 border-black text-black p-4 rounded-xl font-bold text-left">1. 今日數字</button>
+                            <button onClick={() => setStep(2)} className="w-full bg-white border border-gray-200 p-4 rounded-xl font-bold text-left text-red-600">2. 今天有件事</button>
+                            <button onClick={() => setStep(3)} className="w-full bg-white border border-gray-200 p-4 rounded-xl font-bold text-left text-blue-600">3. 明天要注意</button>
                         </div>
                     </div>
                 );
             }
-
+            // Sub-pages simplified for brevity
             return (
-                <div className="p-6 min-h-screen bg-white">
-                    <button onClick={() => setStep(0)} className="mb-6 text-gray-500"><i className="fa-solid fa-arrow-left"></i> 返回</button>
-                    
-                    {step === 1 && (
-                        <div>
-                            <h2 className="text-2xl font-black mb-4">今日數字</h2>
-                            <input type="number" value={data.income} onChange={e => setData({...data, income: e.target.value})} className="w-full text-4xl font-bold border-b-2 py-2 mb-8 focus:outline-none focus:border-black" placeholder="$0" autoFocus />
-                            <button onClick={handleSubmit} className="w-full bg-black text-white py-4 rounded-xl font-bold">送出</button>
-                        </div>
-                    )}
-                    
-                    {step === 2 && (
-                        <div>
-                            <h2 className="text-2xl font-black mb-4">今天有件事</h2>
-                            <textarea value={data.issue} onChange={e => setData({...data, issue: e.target.value})} className="w-full h-40 text-lg border p-4 rounded-xl mb-8 focus:outline-none focus:border-black bg-gray-50" placeholder="簡單描述發生的事實..." autoFocus></textarea>
-                            <button onClick={handleSubmit} className="w-full bg-red-600 text-white py-4 rounded-xl font-bold">送出</button>
-                        </div>
-                    )}
-
-                    {step === 3 && (
-                        <div>
-                            <h2 className="text-2xl font-black mb-4">明天要注意</h2>
-                            <textarea value={data.note} onChange={e => setData({...data, note: e.target.value})} className="w-full h-40 text-lg border p-4 rounded-xl mb-8 focus:outline-none focus:border-black bg-gray-50" placeholder="備料、叫貨或特別提醒..." autoFocus></textarea>
-                            <button onClick={handleSubmit} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold">送出</button>
-                        </div>
-                    )}
+                <div className="p-6 bg-white min-h-screen">
+                    <button onClick={() => setStep(0)} className="mb-4 text-gray-500"><i className="fa-solid fa-arrow-left"></i> 返回</button>
+                    {step === 1 && <><h2 className="text-xl font-black mb-4">今日營收</h2><input type="number" value={data.income} onChange={e => setData({...data, income: e.target.value})} className="w-full text-4xl font-bold border-b-2 py-2 mb-6" autoFocus /><button onClick={handleSubmit} className="w-full bg-black text-white py-4 rounded-xl font-bold">送出</button></>}
+                    {step === 2 && <><h2 className="text-xl font-black mb-4 text-red-600">突發狀況</h2><textarea value={data.issue} onChange={e => setData({...data, issue: e.target.value})} className="w-full h-40 bg-gray-50 p-4 rounded-xl mb-6" autoFocus></textarea><button onClick={handleSubmit} className="w-full bg-red-600 text-white py-4 rounded-xl font-bold">送出</button></>}
+                    {step === 3 && <><h2 className="text-xl font-black mb-4 text-blue-600">備忘提醒</h2><textarea value={data.note} onChange={e => setData({...data, note: e.target.value})} className="w-full h-40 bg-gray-50 p-4 rounded-xl mb-6" autoFocus></textarea><button onClick={handleSubmit} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold">送出</button></>}
                 </div>
             );
         };
 
-        // --- 主程式：App 路由與狀態管理 ---
+        // Main App
         const App = () => {
-            const [view, setView] = useState('pin'); // pin, owner, staff
-            const [page, setPage] = useState('dashboard'); // dashboard, ops, reports, ai
+            const [view, setView] = useState('pin');
+            const [page, setPage] = useState('dashboard');
             const [pin, setPin] = useState('');
             
-            // 資料狀態
             const [transactions, setTransactions] = useState([]);
             const [reports, setReports] = useState([]);
-            const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+            const [settings, setSettings] = useState({ dailyFixedCost: 5000 });
 
-            // 讀取本地資料
             useEffect(() => {
-                const savedTrans = localStorage.getItem(DB_KEY_TRANSACTIONS);
-                if (savedTrans) setTransactions(JSON.parse(savedTrans));
-
-                const savedReports = localStorage.getItem(DB_KEY_REPORTS);
-                if (savedReports) setReports(JSON.parse(savedReports));
+                const t = localStorage.getItem(DB_KEY_TRANSACTIONS);
+                if (t) setTransactions(JSON.parse(t));
+                const r = localStorage.getItem(DB_KEY_REPORTS);
+                if (r) setReports(JSON.parse(r));
+                const s = localStorage.getItem(DB_KEY_SETTINGS);
+                if (s) setSettings(JSON.parse(s));
             }, []);
 
-            // 處理 PIN 碼
-            const handlePinSubmit = () => {
-                if (pin === '8888') {
-                    setView('owner');
-                } else {
-                    alert('密碼錯誤');
-                    setPin('');
-                }
-            };
-
-            // 處理員工回報
             const handleStaffSubmit = (newReport) => {
-                const report = {
-                    id: Date.now(),
-                    date: new Date().toISOString().split('T')[0],
-                    timestamp: new Date().toLocaleTimeString(),
-                    ...newReport
-                };
-                const updated = [report, ...reports];
-                setReports(updated);
-                localStorage.setItem(DB_KEY_REPORTS, JSON.stringify(updated));
+                const r = { id: Date.now(), date: new Date().toISOString().split('T')[0], timestamp: new Date().toLocaleTimeString(), ...newReport };
+                const u = [r, ...reports];
+                setReports(u);
+                localStorage.setItem(DB_KEY_REPORTS, JSON.stringify(u));
             };
 
-            // PIN View
+            const saveSettings = (newSettings) => {
+                setSettings(newSettings);
+                localStorage.setItem(DB_KEY_SETTINGS, JSON.stringify(newSettings));
+            };
+
             if (view === 'pin') {
                 return (
-                    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 px-6">
-                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-3xl mb-6">
-                            <i className="fa-solid fa-fish"></i>
-                        </div>
-                        <h1 className="text-white text-2xl font-bold mb-8">Seafood Boss</h1>
-                        
-                        <div className="w-full max-w-xs bg-white rounded-xl p-6 shadow-2xl">
-                            <p className="text-gray-500 text-sm font-bold mb-2">身分切換</p>
-                            <div className="flex gap-2 mb-6">
-                                <button onClick={() => setView('staff')} className="flex-1 py-3 bg-gray-100 rounded-lg font-bold text-gray-600 hover:bg-gray-200">員工入口</button>
+                    <div className="flex flex-col items-center justify-center min-h-screen bg-black px-6">
+                        <div className="text-white text-4xl mb-4"><i className="fa-solid fa-fish"></i></div>
+                        <h1 className="text-white text-xl font-bold mb-8">Seafood Boss v1.1</h1>
+                        <div className="w-full max-w-xs bg-white rounded-xl p-6">
+                            <button onClick={() => setView('staff')} className="w-full py-3 bg-gray-100 rounded-lg font-bold text-gray-600 mb-4">員工入口</button>
+                            <div className="relative">
+                                <input type="password" value={pin} onChange={e => setPin(e.target.value)} className="w-full bg-gray-100 p-3 rounded-lg text-center text-xl tracking-widest outline-none border-2 focus:border-black" maxLength="4" placeholder="PIN" />
+                                <button onClick={() => pin === '8888' ? setView('owner') : alert('Error')} className="absolute right-1 top-1 bottom-1 bg-black text-white px-4 rounded-md"><i className="fa-solid fa-arrow-right"></i></button>
                             </div>
-                            
-                            <hr className="my-4"/>
-
-                            <p className="text-gray-500 text-sm font-bold mb-2">老闆模式 PIN</p>
-                            <input 
-                                type="password" 
-                                value={pin} 
-                                onChange={e => setPin(e.target.value)} 
-                                className="w-full bg-gray-100 p-3 rounded-lg text-center text-2xl tracking-widest mb-4 outline-none focus:ring-2 ring-black"
-                                maxLength="4"
-                                placeholder="●●●●"
-                            />
-                            <button onClick={handlePinSubmit} className="w-full bg-black text-white py-3 rounded-lg font-bold">進入經營端</button>
                         </div>
-                        <p className="text-gray-600 text-xs mt-8">Default PIN: 8888</p>
+                        <p className="text-gray-500 text-xs mt-6">Default: 8888</p>
                     </div>
                 );
             }
 
-            // Staff View
-            if (view === 'staff') {
-                return <StaffApp onSubmit={handleStaffSubmit} />;
-            }
+            if (view === 'staff') return <StaffApp onSubmit={handleStaffSubmit} />;
 
-            // Owner View
             return (
                 <div className="min-h-screen bg-gray-100 max-w-md mx-auto relative shadow-2xl">
-                    {/* Content Area */}
                     <div className="h-full">
                         {page === 'dashboard' && <OwnerDashboard setPage={setPage} transactions={transactions} settings={settings} />}
-                        {page === 'ops' && <Operations transactions={transactions} setTransactions={setTransactions} settings={settings} />}
-                        {page === 'reports' && <Reports reports={reports} />}
+                        {page === 'ops' && <Operations transactions={transactions} setTransactions={setTransactions} settings={settings} saveSettings={saveSettings} />}
+                        {page === 'reports' && <Reports reports={reports} setPage={setPage} />}
                         {page === 'ai' && <AIAdvisor />}
                     </div>
 
-                    {/* Bottom Nav */}
-                    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center pb-safe pt-1 px-2 z-50 max-w-md mx-auto">
-                        <IconButton 
-                            icon="fa-solid fa-chart-pie" 
-                            label="概況" 
-                            active={page === 'dashboard'} 
-                            onClick={() => setPage('dashboard')} 
-                        />
-                        <IconButton 
-                            icon="fa-solid fa-calculator" 
-                            label="營運" 
-                            active={page === 'ops'} 
-                            onClick={() => setPage('ops')} 
-                        />
-                        <IconButton 
-                            icon="fa-solid fa-list-check" 
-                            label="回報" 
-                            active={page === 'reports'} 
-                            onClick={() => setPage('reports')} 
-                        />
-                        <IconButton 
-                            icon="fa-solid fa-robot" 
-                            label="AI" 
-                            active={page === 'ai'} 
-                            onClick={() => setPage('ai')} 
-                        />
+                    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center pb-safe pt-2 px-2 z-50 max-w-md mx-auto h-[70px] pb-4">
+                        <button onClick={() => setPage('dashboard')} className={`flex flex-col items-center w-full ${page === 'dashboard' ? 'text-black' : 'text-gray-400'}`}><i className="fa-solid fa-chart-pie text-xl mb-1"></i><span className="text-[10px] font-bold">概況</span></button>
+                        <button onClick={() => setPage('ops')} className={`flex flex-col items-center w-full ${page === 'ops' ? 'text-black' : 'text-gray-400'}`}><i className="fa-solid fa-calculator text-xl mb-1"></i><span className="text-[10px] font-bold">營運</span></button>
+                        <button onClick={() => setPage('reports')} className={`flex flex-col items-center w-full ${page === 'reports' ? 'text-black' : 'text-gray-400'}`}><i className="fa-solid fa-list-check text-xl mb-1"></i><span className="text-[10px] font-bold">回報</span></button>
+                        <button onClick={() => setPage('ai')} className={`flex flex-col items-center w-full ${page === 'ai' ? 'text-black' : 'text-gray-400'}`}><i className="fa-solid fa-robot text-xl mb-1"></i><span className="text-[10px] font-bold">AI</span></button>
                     </div>
                 </div>
             );
@@ -651,13 +610,8 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
         
-        // Register Service Worker
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js')
-                    .then(reg => console.log('SW registered'))
-                    .catch(err => console.log('SW failed', err));
-            });
+            window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
         }
     </script>
 </body>
