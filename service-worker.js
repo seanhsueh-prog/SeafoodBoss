@@ -1,4 +1,4 @@
-const CACHE_NAME = 'seafood-boss-v1.4';
+const CACHE_NAME = 'seafood-boss-v1.5';
 const urlsToCache = [
   './index.html',
   './manifest.json',
