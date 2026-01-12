@@ -1,10 +1,10 @@
-<!-- 檔名：index.html (v1.6) -->
+<!-- 檔名：SeafoodBossApp_v2.0.html -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Seafood Boss App</title>
+    <title>Seafood Boss (Solo)</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0C4A6E">
@@ -28,9 +28,18 @@
                             100: '#E0F2FE',
                             500: '#0EA5E9',
                             800: '#075985',
-                            900: '#0C4A6E',
+                            900: '#0C4A6E', // 主色調
                         },
                         darkgray: '#374151',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
                     }
                 }
             }
@@ -73,21 +82,22 @@
         }
         .content-padding {
             padding-bottom: 90px; 
+            padding-top: 60px; /* Space for Sticky Env Bar */
         }
-        .sticky-header {
-            position: sticky;
+        .sticky-env-bar {
+            position: fixed;
             top: 0;
-            z-index: 40;
-            background-color: rgba(248, 250, 252, 0.98);
-            border-bottom: 1px solid #F1F5F9;
-        }
-        .sticky-sub-header {
-            position: sticky;
-            top: 0;
-            z-index: 30;
-            background-color: #F8FAFC;
-            padding-top: 1rem;
-            padding-bottom: 0.5rem;
+            left: 0;
+            right: 0;
+            z-index: 60;
+            background-color: #0C4A6E; /* Navy 900 */
+            color: white;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
         }
     </style>
 </head>
@@ -97,12 +107,16 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        const DB_KEY_TRANSACTIONS = 'sf_transactions';
-        const DB_KEY_REPORTS = 'sf_reports';
-        const DB_KEY_SETTINGS = 'sf_settings';
-        const DB_KEY_MEMOS = 'sf_memos';
+        // DB Keys
+        const DB_KEY_TRANSACTIONS = 'sf_transactions'; // 記帳
+        const DB_KEY_LOGS = 'sf_logs';                 // 營運筆記 (原備忘錄/回報)
+        const DB_KEY_SETTINGS = 'sf_settings';         // 固定開銷 & API Key
+        const DB_KEY_ENV = 'sf_daily_env';             // 天氣與客流紀錄
 
         // --- Helpers ---
+        const getTodayStr = () => new Date().toISOString().split('T')[0];
+        const formatTime = () => new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute:'2-digit' });
+        
         const getCalendarDays = (year, month) => {
             const firstDay = new Date(year, month - 1, 1);
             const lastDay = new Date(year, month, 0);
@@ -111,7 +125,6 @@
             let days = [];
             for(let i=0; i<startDay; i++) days.push(null);
             for(let i=1; i<=daysInMonth; i++) {
-                const d = new Date(year, month-1, i);
                 const m = String(month).padStart(2, '0');
                 const dayStr = String(i).padStart(2, '0');
                 days.push({ day: i, dateStr: `${year}-${m}-${dayStr}` });
@@ -120,12 +133,46 @@
         };
 
         // --- Components ---
+
+        // 1. Environment Bar (Sticky Top)
+        const EnvironmentBar = ({ envData, setEnvData }) => {
+            const today = getTodayStr();
+            const currentEnv = envData[today] || { weather: 'sunny', traffic: 'normal' };
+
+            const updateEnv = (key, value) => {
+                const newEnv = { ...envData, [today]: { ...currentEnv, [key]: value } };
+                setEnvData(newEnv);
+                localStorage.setItem(DB_KEY_ENV, JSON.stringify(newEnv));
+            };
+
+            return (
+                <div className="sticky-env-bar">
+                    <div className="font-black text-lg tracking-wider">SF.BOSS</div>
+                    <div className="flex space-x-2">
+                        {/* Weather Toggle */}
+                        <div className="bg-navy-800 rounded-lg p-1 flex">
+                            <button onClick={() => updateEnv('weather', 'sunny')} className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${currentEnv.weather === 'sunny' ? 'bg-yellow-400 text-navy-900' : 'text-gray-400'}`}><i className="fa-solid fa-sun"></i></button>
+                            <button onClick={() => updateEnv('weather', 'cloudy')} className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${currentEnv.weather === 'cloudy' ? 'bg-gray-300 text-navy-900' : 'text-gray-400'}`}><i className="fa-solid fa-cloud"></i></button>
+                            <button onClick={() => updateEnv('weather', 'rainy')} className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${currentEnv.weather === 'rainy' ? 'bg-blue-400 text-navy-900' : 'text-gray-400'}`}><i className="fa-solid fa-cloud-showers-heavy"></i></button>
+                        </div>
+                        {/* Traffic Toggle */}
+                        <div className="bg-navy-800 rounded-lg p-1 flex">
+                            <button onClick={() => updateEnv('traffic', 'slow')} className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${currentEnv.traffic === 'slow' ? 'bg-green-500 text-white' : 'text-gray-400'}`}><i className="fa-solid fa-turtle"></i></button>
+                            <button onClick={() => updateEnv('traffic', 'normal')} className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${currentEnv.traffic === 'normal' ? 'bg-yellow-500 text-white' : 'text-gray-400'}`}><i className="fa-solid fa-person-walking"></i></button>
+                            <button onClick={() => updateEnv('traffic', 'busy')} className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${currentEnv.traffic === 'busy' ? 'bg-red-500 text-white animate-pulse' : 'text-gray-400'}`}><i className="fa-solid fa-fire"></i></button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 2. Transition Timer
         const TimerButton = ({ minutes, activeTimer, startTimer, stopTimer }) => {
             const isActive = activeTimer && activeTimer.minutes === minutes;
             return (
                 <button 
                     onClick={() => isActive ? stopTimer() : startTimer(minutes)}
-                    className="relative h-12 bg-white rounded-lg card-shadow overflow-hidden cursor-pointer active:scale-95 transition-transform flex items-center justify-center border border-navy-50 w-full"
+                    className="relative h-10 bg-white rounded-lg card-shadow overflow-hidden cursor-pointer active:scale-95 transition-transform flex items-center justify-center border border-navy-50 w-full"
                 >
                     {isActive && (
                         <div 
@@ -133,60 +180,54 @@
                             style={{ animationDuration: `${minutes * 60}s`, width: '100%' }}
                         ></div>
                     )}
-                    <span className={`relative z-10 font-bold text-sm ${isActive ? 'text-navy-900' : 'text-gray-400'}`}>
-                        {minutes} 分
+                    <span className={`relative z-10 font-bold text-xs ${isActive ? 'text-navy-900' : 'text-gray-400'}`}>
+                        {minutes}分
                     </span>
                 </button>
             );
         };
 
-        const OwnerMemo = () => {
-            const [memos, setMemos] = useState([]);
+        // 3. Owner Log Component (Replaces Memo)
+        const OwnerLog = ({ logs, setLogs }) => {
             const [input, setInput] = useState('');
             const [isListening, setIsListening] = useState(false);
 
-            useEffect(() => {
-                const saved = localStorage.getItem(DB_KEY_MEMOS);
-                if(saved) {
-                    // Filter out old memos (>7 days)
-                    const parsed = JSON.parse(saved);
-                    const now = Date.now();
-                    const valid = parsed.filter(m => (now - m.id) < (7 * 24 * 60 * 60 * 1000));
-                    setMemos(valid);
-                }
-            }, []);
-
-            const saveMemos = (newMemos) => {
-                setMemos(newMemos);
-                localStorage.setItem(DB_KEY_MEMOS, JSON.stringify(newMemos));
-            };
-
-            const addMemo = () => {
+            const addLog = () => {
                 if(!input.trim()) return;
-                const newMemo = { id: Date.now(), text: input };
-                saveMemos([newMemo, ...memos]);
+                const newLog = { id: Date.now(), date: getTodayStr(), timestamp: formatTime(), text: input };
+                const updated = [newLog, ...logs];
+                setLogs(updated);
+                localStorage.setItem(DB_KEY_LOGS, JSON.stringify(updated));
                 setInput('');
             };
 
-            const deleteMemo = (id) => {
-                saveMemos(memos.filter(m => m.id !== id));
+            const deleteLog = (id) => {
+                const updated = logs.filter(l => l.id !== id);
+                setLogs(updated);
+                localStorage.setItem(DB_KEY_LOGS, JSON.stringify(updated));
             };
 
             const mockVoice = () => {
                 setIsListening(true);
                 setTimeout(() => {
                     setIsListening(false);
-                    setInput(prev => prev + " (語音記事測試)");
-                }, 1500);
+                    setInput(prev => prev + " (語音記錄：今日客流異常集中...)");
+                }, 1000);
             };
 
+            // Only show logs from today and yesterday for relevance in dashboard
+            const recentLogs = logs.filter(l => {
+                const diff = (Date.now() - l.id) / (1000 * 60 * 60 * 24);
+                return diff < 3; 
+            }).slice(0, 5);
+
             return (
-                <div className="bg-white rounded-xl card-shadow p-4 border border-navy-50 mb-6 relative overflow-hidden">
+                <div className="bg-white rounded-xl card-shadow p-4 border border-navy-50 mb-4">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="font-bold text-navy-900 text-sm flex items-center">
-                            <i className="fa-solid fa-pen-to-square mr-2"></i>老闆備忘錄
+                            <i className="fa-solid fa-pen-nib mr-2"></i>營運筆記
                         </h3>
-                        <span className="text-[10px] text-gray-400">保留7天</span>
+                        <span className="text-[10px] text-gray-400">Owner Log</span>
                     </div>
                     
                     <div className="flex gap-2 mb-3">
@@ -194,27 +235,33 @@
                             type="text" 
                             value={input} 
                             onChange={e => setInput(e.target.value)} 
-                            className="flex-1 bg-navy-50 rounded-lg px-3 py-2 text-sm focus:outline-none text-navy-900" 
-                            placeholder="臨時記事..." 
+                            className="flex-1 bg-navy-50 rounded-lg px-3 py-2 text-sm focus:outline-none text-navy-900 placeholder-gray-400" 
+                            placeholder="記錄現場狀況..." 
                         />
-                        <button onClick={mockVoice} className={`w-10 h-10 rounded-lg flex items-center justify-center ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-navy-100 text-navy-800'}`}>
+                        <button onClick={mockVoice} className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-navy-100 text-navy-800'}`}>
                             <i className="fa-solid fa-microphone"></i>
                         </button>
-                        <button onClick={addMemo} className="w-10 h-10 bg-navy-900 text-white rounded-lg flex items-center justify-center">
-                            <i className="fa-solid fa-plus"></i>
+                        <button onClick={addLog} className="w-10 h-10 bg-navy-900 text-white rounded-lg flex items-center justify-center shrink-0 shadow-lg">
+                            <i className="fa-solid fa-paper-plane text-xs"></i>
                         </button>
                     </div>
 
-                    <div className="space-y-2 max-h-40 overflow-y-auto no-scrollbar">
-                        {memos.length === 0 ? (
-                            <p className="text-center text-xs text-gray-300 py-2">目前沒有記事</p>
+                    <div className="space-y-3 pl-2 border-l-2 border-navy-50">
+                        {recentLogs.length === 0 ? (
+                            <p className="text-xs text-gray-300 py-1 pl-2">今日尚未記錄</p>
                         ) : (
-                            memos.map(m => (
-                                <div key={m.id} className="flex justify-between items-start text-sm bg-gray-50 p-2 rounded border border-gray-100">
-                                    <span className="text-darkgray flex-1 break-words mr-2">{m.text}</span>
-                                    <button onClick={() => deleteMemo(m.id)} className="text-gray-400 hover:text-red-500 pt-0.5">
-                                        <i className="fa-solid fa-trash-can text-xs"></i>
-                                    </button>
+                            recentLogs.map(l => (
+                                <div key={l.id} className="relative pl-4 animate-fade-in">
+                                    <div className="absolute left-[-13px] top-1.5 w-2 h-2 rounded-full bg-navy-200"></div>
+                                    <div className="flex justify-between items-start group">
+                                        <div>
+                                            <span className="text-[10px] font-bold text-navy-500 mr-2">{l.date === getTodayStr() ? l.timestamp : l.date}</span>
+                                            <p className="text-sm text-darkgray break-all inline">{l.text}</p>
+                                        </div>
+                                        <button onClick={() => deleteLog(l.id)} className="text-gray-300 hover:text-red-500 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <i className="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             ))
                         )}
@@ -225,128 +272,129 @@
 
         // --- Pages ---
 
-        // 1. Owner Dashboard (Balanced Layout)
-        const OwnerDashboard = ({ setPage, transactions, settings, activeTimer, startTimer, stopTimer }) => {
-            const today = new Date().toISOString().split('T')[0];
-            const todayStatus = useMemo(() => {
+        // A. Owner Dashboard
+        const Dashboard = ({ setPage, transactions, logs, setLogs, activeTimer, startTimer, stopTimer, settings }) => {
+            const today = getTodayStr();
+            const todayStats = useMemo(() => {
                 const todayTrans = transactions.filter(t => t.date === today);
                 const income = todayTrans.filter(t => t.type === 'income').reduce((acc, c) => acc + c.amount, 0);
                 const expense = todayTrans.filter(t => t.type === 'expense').reduce((acc, c) => acc + c.amount, 0);
                 const net = income - expense - (settings.dailyFixedCost || 0);
-                let status = "觀察中"; let color = "text-gray-400";
-                if (net > 1000) { status = "營收穩健"; color = "text-green-600"; }
-                else if (net >= -1000) { status = "收支平衡"; color = "text-yellow-600"; }
-                else { status = "審慎留意"; color = "text-red-600"; }
-                return { status, color, net };
+                let status = "觀察中"; let color = "bg-gray-400";
+                if (net > 1000) { status = "營收穩健"; color = "bg-green-500"; }
+                else if (net >= -1000) { status = "收支平衡"; color = "bg-yellow-500"; }
+                else { status = "審慎留意"; color = "bg-red-500"; }
+                return { net, status, color };
             }, [transactions, settings, today]);
 
             return (
-                <div className="content-padding min-h-screen">
-                    {/* Sticky AI Bar */}
-                    <div className="sticky-header p-4 pb-2 shadow-sm">
-                        <div onClick={() => setPage('ai')} className="bg-white rounded-full p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border border-navy-50">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-navy-900 rounded-full flex items-center justify-center text-white"><i className="fa-solid fa-robot text-xs"></i></div>
-                                <span className="text-gray-400 text-xs font-medium">今天想分析什麼...</span>
-                            </div>
-                            <div className="flex space-x-1">
-                                <div className="w-8 h-8 bg-navy-50 rounded-full flex items-center justify-center text-navy-600"><i className="fa-solid fa-microphone text-xs"></i></div>
-                                <div className="w-8 h-8 bg-navy-50 rounded-full flex items-center justify-center text-navy-600"><i className="fa-solid fa-camera text-xs"></i></div>
-                            </div>
+                <div className="px-4 pt-4 animate-fade-in">
+                    {/* AI Advisor Entry Card */}
+                    <div onClick={() => setPage('ai')} className="bg-gradient-to-r from-navy-900 to-navy-800 rounded-xl p-4 mb-4 shadow-lg text-white flex justify-between items-center cursor-pointer active:scale-95 transition-transform">
+                        <div>
+                            <h2 className="font-bold text-base mb-1"><i className="fa-solid fa-robot mr-2"></i>AI 參謀</h2>
+                            <p className="text-xs text-navy-100 opacity-80">分析今日營收與天氣關聯...</p>
+                        </div>
+                        <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
+                            <i className="fa-solid fa-chevron-right text-xs"></i>
                         </div>
                     </div>
 
-                    <div className="px-4 pt-4">
-                        {/* Main Functions (Top) */}
-                        <div className="grid grid-cols-2 gap-3 mb-6">
-                            <div onClick={() => setPage('ops')} className="bg-white rounded-xl card-shadow p-4 flex flex-col justify-center items-start active:scale-95 transition-transform border border-navy-50 h-24">
-                                <div className="flex items-center mb-2">
-                                    <div className="w-8 h-8 bg-navy-900 rounded-lg flex items-center justify-center text-white mr-3"><i className="fa-solid fa-calculator text-xs"></i></div>
-                                    <h3 className="font-bold text-navy-900 text-sm">內部營運</h3>
-                                </div>
-                                <p className="text-[10px] text-gray-400 pl-1">記帳與明細</p>
+                    {/* Owner Ops Entry */}
+                    <div onClick={() => setPage('ops')} className="bg-white rounded-xl card-shadow p-5 mb-4 border border-navy-50 flex items-center justify-between active:scale-95 transition-transform cursor-pointer">
+                        <div className="flex items-center">
+                            <div className="w-12 h-12 bg-navy-50 rounded-full flex items-center justify-center text-navy-900 text-xl mr-4">
+                                <i className="fa-solid fa-calculator"></i>
                             </div>
-
-                            <div onClick={() => setPage('reports')} className="bg-white rounded-xl card-shadow p-4 flex flex-col justify-center items-start active:scale-95 transition-transform border border-navy-50 h-24">
-                                <div className="flex items-center mb-2">
-                                    <div className="w-8 h-8 bg-white border border-navy-100 rounded-lg flex items-center justify-center text-navy-900 mr-3"><i className="fa-solid fa-list-check text-xs"></i></div>
-                                    <h3 className="font-bold text-navy-900 text-sm">員工回報</h3>
-                                </div>
-                                <p className="text-[10px] text-gray-400 pl-1">查看現場</p>
+                            <div>
+                                <h3 className="font-black text-navy-900 text-lg">內部營運</h3>
+                                <p className="text-xs text-gray-500">快速記帳與報表</p>
                             </div>
                         </div>
-
-                        {/* Owner Memo (Middle) */}
-                        <OwnerMemo />
-
-                        {/* Transition Timer (Bottom) */}
-                        <div className="mb-8">
-                            <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider">轉場提示</p>
-                            <div className="grid grid-cols-3 gap-2">
-                                <TimerButton minutes={10} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
-                                <TimerButton minutes={15} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
-                                <TimerButton minutes={20} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
-                            </div>
+                        <div className="text-right">
+                             <span className={`text-sm font-bold ${todayStats.net >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                {todayStats.net > 0 ? '+' : ''}{todayStats.net.toLocaleString()}
+                             </span>
+                             <p className="text-[10px] text-gray-400">今日淨利(預估)</p>
                         </div>
+                    </div>
 
-                        {/* Status Footer */}
-                        <div className="bg-white rounded-xl p-3 card-shadow flex justify-between items-center border border-navy-50 mt-auto">
-                            <span className="text-[10px] font-bold text-gray-400">今日淨額狀態</span>
-                            <div className="flex items-center gap-2">
-                                <span className={`text-sm font-bold ${todayStatus.color}`}>{todayStatus.status}</span>
-                                <div className={`w-2 h-2 rounded-full ${todayStatus.color === 'text-green-600' ? 'bg-green-500' : todayStatus.color === 'text-red-600' ? 'bg-red-500' : 'bg-yellow-500'}`}></div>
-                            </div>
+                    {/* Owner Log */}
+                    <OwnerLog logs={logs} setLogs={setLogs} />
+
+                    {/* Transition Timer */}
+                    <div className="mb-20">
+                        <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider uppercase">Transition Timer</p>
+                        <div className="grid grid-cols-3 gap-2">
+                            <TimerButton minutes={10} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
+                            <TimerButton minutes={15} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
+                            <TimerButton minutes={20} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
+                        </div>
+                    </div>
+
+                    {/* Sticky Bottom Status */}
+                    <div className="fixed bottom-[60px] left-0 right-0 bg-white border-t border-navy-50 p-2 flex items-center justify-between px-4 z-40">
+                        <span className="text-xs font-bold text-gray-500">今日狀態</span>
+                        <div className="flex items-center space-x-2">
+                            <span className="text-xs font-bold text-navy-900">{todayStats.status}</span>
+                            <div className={`h-2 w-16 rounded-full ${todayStats.color}`}></div>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        // 2. Operations (Sticky Headers)
+        // B. Operations (Ops)
         const Operations = ({ transactions, setTransactions, settings, saveSettings }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
             const [showSettingModal, setShowSettingModal] = useState(false);
             
-            const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+            const [selectedDate, setSelectedDate] = useState(getTodayStr());
             const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
             
-            const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+            // Input States
+            const [date, setDate] = useState(getTodayStr());
             const [type, setType] = useState('income');
             const [amount, setAmount] = useState('');
             const [cat, setCat] = useState('現金');
             const [note, setNote] = useState('');
             const [tempFixedCost, setTempFixedCost] = useState(settings.dailyFixedCost);
 
-            const stats = useMemo(() => { /* Same logic as v1.5 */
+            const stats = useMemo(() => {
                 const now = new Date();
                 const yearStr = now.getFullYear().toString();
                 const monthStr = `${yearStr}-${String(currentMonth).padStart(2, '0')}`;
                 let filtered = [], fixedCostTotal = 0, listData = [], net = 0, income = 0, expense = 0;
-                const dailyStats = {};
+                const dailyStats = {}; // Map date -> {income, expense}
+
                 transactions.forEach(t => {
                     if(!dailyStats[t.date]) dailyStats[t.date] = { income: 0, expense: 0 };
                     if(t.type === 'income') dailyStats[t.date].income += t.amount;
                     else dailyStats[t.date].expense += t.amount;
                 });
+
                 if (period === 'day') {
-                    filtered = transactions.filter(t => t.date === date);
+                    filtered = transactions.filter(t => t.date === selectedDate); // Fix: Use selectedDate
                     fixedCostTotal = parseInt(settings.dailyFixedCost || 0);
                     listData = filtered;
                     income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
                     expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
                 } else if (period === 'month') {
                     filtered = transactions.filter(t => t.date.startsWith(monthStr));
-                    const daysPassed = (currentMonth === (now.getMonth()+1)) ? now.getDate() : new Date(now.getFullYear(), currentMonth, 0).getDate();
+                    const daysInM = new Date(now.getFullYear(), currentMonth, 0).getDate();
+                    // Simple logic: Fixed cost * days passed in that month (or full month if past)
+                    const daysPassed = (currentMonth === (now.getMonth()+1)) ? now.getDate() : daysInM;
                     fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * daysPassed;
                     income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
                     expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
-                    listData = transactions.filter(t => t.date === selectedDate);
-                } else {
+                    listData = transactions.filter(t => t.date === selectedDate); // List shows selected date details
+                } else { // Year
                     filtered = transactions.filter(t => t.date.startsWith(yearStr));
-                    fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * 365;
+                    fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * 365; // Approx
                     income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
                     expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
+                    // Group by month
                     const grouped = {};
                     filtered.forEach(t => {
                          const m = t.date.slice(0, 7);
@@ -358,127 +406,156 @@
                 }
                 net = income - expense - fixedCostTotal;
                 return { income, expense, fixedCostTotal, net, listData, dailyStats };
-            }, [transactions, settings, period, date, currentMonth, selectedDate]);
+            }, [transactions, settings, period, selectedDate, currentMonth]);
 
-            const handleSaveTransaction = () => {
+            const handleSave = () => {
                 if (!amount) return;
-                const newTrans = { id: Date.now(), date: date, amount: parseInt(amount), type, category: cat, note, timestamp: new Date().toLocaleTimeString() };
-                const updated = [newTrans, ...transactions];
-                updated.sort((a, b) => new Date(b.date) - new Date(a.date));
+                const newTrans = { id: Date.now(), date: date, amount: parseInt(amount), type, category: cat, note, timestamp: formatTime() };
+                const updated = [newTrans, ...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
                 setTransactions(updated);
                 localStorage.setItem(DB_KEY_TRANSACTIONS, JSON.stringify(updated));
                 setAmount(''); setNote(''); setShowAddModal(false);
             };
 
-            const calendarDays = useMemo(() => {
-                if(period !== 'month') return [];
-                return getCalendarDays(new Date().getFullYear(), currentMonth);
-            }, [currentMonth, period]);
+            const calendarDays = useMemo(() => getCalendarDays(new Date().getFullYear(), currentMonth), [currentMonth]);
 
             return (
-                <div className="content-padding min-h-screen">
-                    <div className="flex justify-between items-center p-4 bg-white sticky top-0 z-40 border-b border-navy-50">
-                        <h1 className="text-xl font-black text-navy-900">內部營運</h1>
-                        <button onClick={() => setShowSettingModal(true)} className="text-xs bg-white border border-navy-100 px-3 py-1 rounded-full font-bold text-navy-600">設定日均</button>
-                    </div>
-
-                    {/* Scrollable Container with Sticky Filter */}
-                    <div className="sticky-sub-header px-4">
-                        <div className="bg-white p-1 rounded-lg flex mb-4 border border-navy-50 shadow-sm">
+                <div className="pt-4 pb-20 px-4 animate-fade-in">
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="bg-white p-1 rounded-lg border border-navy-50 shadow-sm inline-flex">
                             {['day', 'month', 'year'].map(p => (
-                                <button key={p} onClick={() => setPeriod(p)} className={`flex-1 py-2 rounded-md text-sm font-bold ${period === p ? 'bg-navy-900 text-white shadow' : 'text-gray-500'}`}>
-                                    {p === 'day' ? '今日' : p === 'month' ? '本月' : '今年'}
+                                <button key={p} onClick={() => setPeriod(p)} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${period === p ? 'bg-navy-900 text-white shadow' : 'text-gray-500'}`}>
+                                    {p === 'day' ? '日' : p === 'month' ? '月' : '年'}
                                 </button>
                             ))}
                         </div>
-                        {period === 'day' && <div className="mb-4 flex justify-center"><input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-white px-4 py-2 rounded-full shadow-sm font-bold text-navy-900 text-sm border border-navy-50" /></div>}
+                        <button onClick={() => setShowSettingModal(true)} className="w-8 h-8 rounded-full bg-white border border-navy-100 text-navy-600 flex items-center justify-center shadow-sm"><i className="fa-solid fa-gear"></i></button>
                     </div>
 
-                    <div className="px-4 pb-4">
-                        <div className="bg-white rounded-xl p-5 mb-6 card-shadow border-l-4 border-navy-900">
-                            <div className="flex justify-between items-center mb-2"><span className="text-gray-500 font-bold text-xs">進帳總額</span><span className="text-lg font-bold text-navy-900">+ {stats.income.toLocaleString()}</span></div>
-                            <div className="flex justify-between items-center mb-2"><span className="text-gray-500 font-bold text-xs">臨時出帳</span><span className="text-lg font-bold text-red-500">- {stats.expense.toLocaleString()}</span></div>
-                            <div className="flex justify-between items-center mb-3 pb-3 border-b border-dashed border-gray-200"><span className="text-gray-400 font-bold text-[10px]">固定日均攤提</span><span className="text-base font-bold text-gray-400">- {stats.fixedCostTotal.toLocaleString()}</span></div>
-                            <div className="flex justify-between items-end"><span className="text-gray-800 font-black text-base">淨利</span><span className={`text-2xl font-black ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</span></div>
-                        </div>
+                    {/* Stats Card */}
+                    <div className="bg-white rounded-xl p-5 mb-6 card-shadow border-l-4 border-navy-900 relative overflow-hidden">
+                        <div className="absolute right-0 top-0 p-3 opacity-5"><i className="fa-solid fa-chart-line text-6xl"></i></div>
+                        <div className="flex justify-between items-center mb-2"><span className="text-gray-500 font-bold text-xs">營收總額</span><span className="text-lg font-bold text-navy-900">+ {stats.income.toLocaleString()}</span></div>
+                        <div className="flex justify-between items-center mb-2"><span className="text-gray-500 font-bold text-xs">臨時支出</span><span className="text-lg font-bold text-red-500">- {stats.expense.toLocaleString()}</span></div>
+                        <div className="flex justify-between items-center mb-3 pb-3 border-b border-dashed border-gray-200"><span className="text-gray-400 font-bold text-[10px]">日均攤提 (固定)</span><span className="text-sm font-bold text-gray-400">- {stats.fixedCostTotal.toLocaleString()}</span></div>
+                        <div className="flex justify-between items-end"><span className="text-navy-900 font-black text-sm">淨利結餘</span><span className={`text-2xl font-black ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</span></div>
+                    </div>
 
-                        {period === 'month' && (
-                            <div className="mb-6 bg-white rounded-xl p-4 card-shadow">
-                                <div className="grid grid-cols-7 gap-1 mb-2 text-center">{['日','一','二','三','四','五','六'].map(d => <span key={d} className="text-[10px] text-gray-400 font-bold">{d}</span>)}</div>
-                                <div className="grid grid-cols-7 gap-1">
-                                    {calendarDays.map((d, i) => {
-                                        if(!d) return <div key={i}></div>;
-                                        const s = stats.dailyStats[d.dateStr];
-                                        const net = s ? (s.income - s.expense - (settings.dailyFixedCost||0)) : -(settings.dailyFixedCost||0);
-                                        const hasData = s && (s.income > 0 || s.expense > 0);
-                                        const isSelected = selectedDate === d.dateStr;
-                                        return (
-                                            <div key={i} onClick={() => setSelectedDate(d.dateStr)} className={`aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer border ${isSelected ? 'bg-navy-900 border-navy-900' : 'border-transparent'}`}>
-                                                <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-500'}`}>{d.day}</span>
-                                                <div className={`w-1.5 h-1.5 rounded-full mt-1 ${net > 0 ? 'bg-green-500' : 'bg-red-500'} ${!hasData ? 'opacity-0' : ''}`}></div>
-                                            </div>
-                                        );
-                                    })}
+                    {/* Calendar (Month View Only) */}
+                    {period === 'month' && (
+                        <div className="mb-6 bg-white rounded-xl p-4 card-shadow">
+                            <div className="flex justify-between items-center mb-3">
+                                <span className="font-bold text-navy-900">{currentMonth}月</span>
+                                <div className="space-x-2">
+                                    <button onClick={() => setCurrentMonth(p => p===1?12:p-1)} className="text-gray-400 px-2"><i className="fa-solid fa-chevron-left"></i></button>
+                                    <button onClick={() => setCurrentMonth(p => p===12?1:p+1)} className="text-gray-400 px-2"><i className="fa-solid fa-chevron-right"></i></button>
                                 </div>
-                                <p className="text-center text-[10px] text-gray-400 mt-2">點擊日期查看明細</p>
                             </div>
-                        )}
-
-                        <div className="grid grid-cols-2 gap-3 mb-6">
-                            <button onClick={() => {setType('income'); setCat('現金'); setShowAddModal(true);}} className="bg-navy-900 text-white py-3 rounded-xl font-bold shadow-lg flex items-center justify-center text-sm"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
-                            <button onClick={() => {setType('expense'); setCat('進貨'); setShowAddModal(true);}} className="bg-white text-darkgray border border-gray-200 py-3 rounded-xl font-bold shadow flex items-center justify-center text-sm"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
+                            <div className="grid grid-cols-7 gap-1 mb-2 text-center">{['日','一','二','三','四','五','六'].map(d => <span key={d} className="text-[10px] text-gray-400 font-bold">{d}</span>)}</div>
+                            <div className="grid grid-cols-7 gap-1">
+                                {calendarDays.map((d, i) => {
+                                    if(!d) return <div key={i}></div>;
+                                    const s = stats.dailyStats[d.dateStr];
+                                    const net = s ? (s.income - s.expense - (settings.dailyFixedCost||0)) : -(settings.dailyFixedCost||0);
+                                    const hasData = s && (s.income > 0 || s.expense > 0);
+                                    const isSelected = selectedDate === d.dateStr;
+                                    return (
+                                        <div key={i} onClick={() => setSelectedDate(d.dateStr)} className={`aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer border transition-colors ${isSelected ? 'bg-navy-900 border-navy-900' : 'border-transparent hover:bg-gray-50'}`}>
+                                            <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-500'}`}>{d.day}</span>
+                                            <div className={`w-1.5 h-1.5 rounded-full mt-1 ${net > 0 ? 'bg-green-500' : 'bg-red-500'} ${!hasData ? 'opacity-0' : ''}`}></div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
+                    )}
 
-                        <h3 className="font-bold text-gray-800 mb-3 text-xs">{period === 'day' ? '今日流水' : period === 'month' ? `明細 (${selectedDate})` : '每月匯總'}</h3>
-                        <div className="space-y-2">
-                            {stats.listData.length === 0 ? <p className="text-gray-400 text-center py-4 text-xs">無紀錄</p> : 
-                                stats.listData.map((item, idx) => (
-                                    <div key={idx} className="bg-white p-3 rounded-lg flex justify-between items-center shadow-sm border-l-2 border-navy-50">
-                                        {period === 'year' ? (
-                                            <><div className="flex flex-col"><span className="font-bold text-gray-800 text-sm">{item.date}</span></div><span className={`font-bold text-sm ${(item.income - item.expense) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{(item.income - item.expense).toLocaleString()}</span></>
-                                        ) : (
-                                            <><div className="flex items-center"><span className={`w-1.5 h-1.5 rounded-full mr-2 ${item.type === 'income' ? 'bg-green-500' : 'bg-red-500'}`}></span><span className="font-bold text-darkgray text-sm">{item.category}</span><span className="text-[10px] text-gray-400 ml-2">{item.note}</span></div><span className={`font-bold text-sm ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{item.type === 'income' ? '+' : '-'}{item.amount.toLocaleString()}</span></>
-                                        )}
-                                    </div>
-                                ))
-                            }
-                        </div>
+                    {/* Actions */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); setShowAddModal(true);}} className="bg-navy-900 text-white py-4 rounded-xl font-bold shadow-lg flex items-center justify-center text-base active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
+                        <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); setShowAddModal(true);}} className="bg-white text-darkgray border border-gray-200 py-4 rounded-xl font-bold shadow flex items-center justify-center text-base active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
                     </div>
-                     {showAddModal && (<div className="fixed inset-0 bg-navy-900 bg-opacity-30 z-50 flex items-center justify-center p-4"><div className="bg-white rounded-xl w-full max-w-sm p-5 shadow-2xl"><h3 className="font-bold text-lg mb-4 text-navy-900">記一筆{type === 'income' ? '進帳' : '出帳'}</h3><div className="space-y-4"><input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-navy-50 p-2 rounded" /><input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="w-full text-3xl font-black border-b-2 border-navy-900 py-2 focus:outline-none text-navy-900" placeholder="0" autoFocus /><div className="flex flex-wrap gap-2">{type === 'income' ? ['現金', '刷卡', '轉帳'].map(c => <button key={c} onClick={() => setCat(c)} className={`px-3 py-1 rounded-full text-xs font-bold border ${cat === c ? 'bg-navy-900 text-white' : 'bg-white text-gray-500'}`}>{c}</button>) : ['進貨', '人事', '雜支', '修繕'].map(c => <button key={c} onClick={() => setCat(c)} className={`px-3 py-1 rounded-full text-xs font-bold border ${cat === c ? 'bg-navy-900 text-white' : 'bg-white text-gray-500'}`}>{c}</button>)}</div><input type="text" value={note} onChange={e => setNote(e.target.value)} className="w-full border-b border-gray-200 py-2 focus:outline-none" placeholder="備註..." /><div className="flex gap-2 mt-4"><button onClick={() => setShowAddModal(false)} className="flex-1 py-3 text-gray-500 font-bold">取消</button><button onClick={handleSaveTransaction} className="flex-1 py-3 bg-navy-900 text-white rounded-lg font-bold">確認</button></div></div></div></div>)}
-                     {showSettingModal && (<div className="fixed inset-0 bg-navy-900 bg-opacity-30 z-50 flex items-center justify-center p-4"><div className="bg-white rounded-xl w-full max-w-sm p-5 shadow-2xl"><h3 className="font-bold text-lg mb-4 text-navy-900">設定日均開銷</h3><input type="number" value={tempFixedCost} onChange={e => setTempFixedCost(e.target.value)} className="w-full text-2xl font-black border-b-2 border-navy-900 py-2 mb-4 focus:outline-none text-navy-900" /><div className="flex gap-2"><button onClick={() => setShowSettingModal(false)} className="flex-1 py-3 text-gray-500 font-bold">取消</button><button onClick={() => { saveSettings({...settings, dailyFixedCost: parseInt(tempFixedCost)}); setShowSettingModal(false); }} className="flex-1 py-3 bg-navy-900 text-white rounded-lg font-bold">儲存</button></div></div></div>)}
-                </div>
-            );
-        };
 
-        const Reports = ({ reports, setPage }) => {
-            const list = reports.sort((a,b) => b.id - a.id);
-            return (
-                <div className="content-padding min-h-screen">
-                    <div className="p-4 bg-white sticky top-0 z-10 border-b border-navy-50"><h1 className="text-xl font-black text-navy-900">員工回報</h1></div>
-                    <div className="p-4">
-                        {list.length === 0 ? <p className="text-gray-400 text-center py-20 text-xs">無資料</p> : 
-                            list.map(r => (
-                                <div key={r.id} className="bg-white rounded-xl p-4 mb-4 card-shadow border border-navy-50">
-                                    <div className="flex justify-between mb-2">
-                                        <span className="bg-navy-50 px-2 py-1 rounded text-xs font-bold text-navy-600">{r.role}</span>
-                                        <span className="text-xs text-gray-400">{r.timestamp}</span>
-                                    </div>
-                                    {r.income && <div className="mb-2"><span className="text-gray-400 text-xs">營收：</span><span className="font-bold text-navy-900">${r.income}</span></div>}
-                                    {r.issue && <div className="mb-2 bg-red-50 p-2 rounded"><p className="text-xs text-red-500 font-bold">營運紀錄</p><p className="text-sm text-darkgray">{r.issue}</p></div>}
-                                    {r.note && <div className="mb-2 bg-blue-50 p-2 rounded"><p className="text-xs text-blue-500 font-bold">重點提醒</p><p className="text-sm text-darkgray">{r.note}</p></div>}
-                                    <div className="mt-2 text-right"><button onClick={() => setPage('ai')} className="text-xs font-bold text-navy-900"><i className="fa-solid fa-robot mr-1"></i>問 AI</button></div>
+                    {/* Transaction List */}
+                    <h3 className="font-bold text-gray-800 mb-3 text-xs border-l-4 border-navy-500 pl-2">
+                        {period === 'day' ? `流水帳 (${selectedDate})` : period === 'month' ? `明細 (${selectedDate})` : '月度匯總'}
+                    </h3>
+                    <div className="space-y-3">
+                        {stats.listData.length === 0 ? <p className="text-gray-400 text-center py-8 text-xs">尚無資料</p> : 
+                            stats.listData.map((item, idx) => (
+                                <div key={idx} className="bg-white p-3 rounded-lg flex justify-between items-center shadow-sm border-l-2 border-navy-50">
+                                    {period === 'year' ? (
+                                        <><div className="flex flex-col"><span className="font-bold text-gray-800 text-sm">{item.date}</span></div><span className={`font-bold text-sm ${(item.income - item.expense) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{(item.income - item.expense).toLocaleString()}</span></>
+                                    ) : (
+                                        <>
+                                            <div className="flex items-center">
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${item.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                    <i className={`fa-solid ${item.type === 'income' ? 'fa-arrow-down' : 'fa-arrow-up'} text-xs`}></i>
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-darkgray text-sm">{item.category}</span>
+                                                        <span className="text-[10px] text-gray-400 bg-gray-100 px-1 rounded">{item.timestamp?.slice(0,5)}</span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-400">{item.note}</p>
+                                                </div>
+                                            </div>
+                                            <span className={`font-bold text-base ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{item.type === 'income' ? '+' : '-'}{item.amount.toLocaleString()}</span>
+                                        </>
+                                    )}
                                 </div>
                             ))
                         }
                     </div>
+
+                    {/* Modals */}
+                    {showAddModal && (
+                        <div className="fixed inset-0 bg-navy-900 bg-opacity-40 z-[70] flex items-end sm:items-center justify-center sm:p-4">
+                            <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
+                                <h3 className="font-black text-xl mb-6 text-navy-900">記一筆{type === 'income' ? '進帳' : '出帳'}</h3>
+                                <div className="space-y-5">
+                                    <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-navy-50 p-3 rounded-lg font-bold text-navy-800" />
+                                    <div className="relative">
+                                        <span className="absolute left-0 top-2 text-2xl font-bold text-navy-900">$</span>
+                                        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="w-full pl-6 text-4xl font-black border-b-2 border-navy-900 py-2 focus:outline-none text-navy-900 placeholder-gray-200" placeholder="0" autoFocus />
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {type === 'income' 
+                                            ? ['現金', '刷卡', '外送平台', '其他'].map(c => <button key={c} onClick={() => setCat(c)} className={`px-4 py-2 rounded-full text-xs font-bold border transition-colors ${cat === c ? 'bg-navy-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>{c}</button>) 
+                                            : ['進貨', '人事', '雜支', '修繕', '房租'].map(c => <button key={c} onClick={() => setCat(c)} className={`px-4 py-2 rounded-full text-xs font-bold border transition-colors ${cat === c ? 'bg-navy-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>{c}</button>)}
+                                    </div>
+                                    <input type="text" value={note} onChange={e => setNote(e.target.value)} className="w-full bg-gray-50 rounded-lg p-3 text-sm focus:outline-none" placeholder="備註 (選填)..." />
+                                    <div className="flex gap-3 mt-4">
+                                        <button onClick={() => setShowAddModal(false)} className="flex-1 py-4 text-gray-500 font-bold bg-gray-100 rounded-xl">取消</button>
+                                        <button onClick={handleSave} className="flex-1 py-4 bg-navy-900 text-white rounded-xl font-bold shadow-lg">確認</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {showSettingModal && (
+                        <div className="fixed inset-0 bg-navy-900 bg-opacity-40 z-[70] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
+                                <h3 className="font-bold text-lg mb-4 text-navy-900">日均營運成本 (固定)</h3>
+                                <p className="text-xs text-gray-400 mb-4">房租、水電、基本薪資攤提至每日的金額。</p>
+                                <input type="number" value={tempFixedCost} onChange={e => setTempFixedCost(e.target.value)} className="w-full text-3xl font-black border-b-2 border-navy-900 py-2 mb-6 focus:outline-none text-navy-900" />
+                                <div className="flex gap-3">
+                                    <button onClick={() => setShowSettingModal(false)} className="flex-1 py-3 text-gray-500 font-bold bg-gray-100 rounded-lg">取消</button>
+                                    <button onClick={() => { saveSettings({...settings, dailyFixedCost: parseInt(tempFixedCost)}); setShowSettingModal(false); }} className="flex-1 py-3 bg-navy-900 text-white rounded-lg font-bold">儲存</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
 
-        const AIAdvisor = () => { /* Interactive Mock */
+        // C. AI Advisor (Phase 1)
+        const AIAdvisor = ({ settings, saveSettings }) => {
              const [input, setInput] = useState('');
-             const [chat, setChat] = useState([{ id: 1, role: 'ai', text: '老闆好，我是您的營運參謀。' }]);
-             const [isMicActive, setIsMicActive] = useState(false);
+             const [chat, setChat] = useState([{ id: 1, role: 'ai', text: '老闆好，我是您的AI營運參謀。目前尚未連接真實大腦 (Gemini)，請先至右上角設定 API Key。' }]);
+             const [showSettings, setShowSettings] = useState(false);
+             const [apiKey, setApiKey] = useState(settings.apiKey || '');
              const messagesEndRef = useRef(null);
 
              const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
@@ -488,119 +565,106 @@
                  if(!input.trim()) return;
                  setChat(prev => [...prev, { id: Date.now(), role: 'user', text: input }]);
                  setInput('');
-                 setTimeout(() => setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: '收到，這是一個模擬回應。(v1.6)' }]), 800);
-             };
-             const mockVoice = () => {
-                 setIsMicActive(true);
-                 setTimeout(() => { setIsMicActive(false); setInput(prev => prev + " (語音測試)"); }, 1000);
+                 // Mock Response
+                 setTimeout(() => {
+                    const response = settings.apiKey 
+                        ? "收到，但我目前還是 V2.0 介面版，尚未實作 fetch 邏輯。" 
+                        : "請先設定 API Key 才能啟動我的大腦。";
+                    setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: response }]);
+                 }, 800);
              };
 
              return (
-                <div className="content-padding min-h-screen flex flex-col bg-white">
-                    <div className="p-4 border-b flex items-center bg-white sticky top-0 z-10 border-navy-50"><div className="w-8 h-8 bg-navy-900 rounded-full flex items-center justify-center text-white mr-3"><i className="fa-solid fa-robot text-xs"></i></div><h1 className="font-bold text-navy-900">AI 參謀</h1></div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-navy-50">
-                        {chat.map(c => <div key={c.id} className={`flex ${c.role === 'user' ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[80%] p-3 rounded-xl shadow-sm ${c.role === 'user' ? 'bg-navy-900 text-white' : 'bg-white text-darkgray'}`}>{c.text}</div></div>)}
+                <div className="pt-4 pb-20 px-4 h-full flex flex-col min-h-screen">
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center">
+                            <div className="w-10 h-10 bg-navy-900 rounded-full flex items-center justify-center text-white mr-3 shadow">
+                                <i className="fa-solid fa-robot text-sm"></i>
+                            </div>
+                            <div>
+                                <h1 className="font-bold text-navy-900">AI 參謀</h1>
+                                <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full">Phase 1</span>
+                            </div>
+                        </div>
+                        <button onClick={() => setShowSettings(true)} className="text-navy-600 bg-white p-2 rounded-full border border-navy-100 shadow-sm"><i className="fa-solid fa-key"></i></button>
+                    </div>
+
+                    {/* Chat Area */}
+                    <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1">
+                        {chat.map(c => (
+                            <div key={c.id} className={`flex ${c.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[85%] p-3 rounded-2xl shadow-sm text-sm ${c.role === 'user' ? 'bg-navy-900 text-white rounded-br-none' : 'bg-white text-darkgray border border-navy-50 rounded-bl-none'}`}>
+                                    {c.text}
+                                </div>
+                            </div>
+                        ))}
                         <div ref={messagesEndRef} />
                     </div>
-                    <div className="p-3 border-t bg-white flex gap-2 fixed bottom-[60px] left-0 right-0 z-40 bg-white border-navy-50">
-                        <button onClick={mockVoice} className={`w-12 h-12 rounded-full flex items-center justify-center ${isMicActive ? 'bg-red-500 text-white animate-pulse' : 'bg-navy-50 text-navy-600'}`}><i className="fa-solid fa-microphone"></i></button>
-                        <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} className="flex-1 bg-navy-50 rounded-full px-4 text-base text-darkgray focus:outline-none" placeholder="輸入..." />
-                        <button onClick={handleSend} className="w-12 h-12 rounded-full bg-navy-900 text-white flex items-center justify-center"><i className="fa-solid fa-paper-plane text-xs"></i></button>
+
+                    {/* Input Area */}
+                    <div className="fixed bottom-[60px] left-0 right-0 p-3 bg-white border-t border-navy-50 flex gap-2 z-40">
+                        <input 
+                            type="text" 
+                            value={input} 
+                            onChange={e => setInput(e.target.value)} 
+                            onKeyDown={e => e.key === 'Enter' && handleSend()}
+                            className="flex-1 bg-navy-50 rounded-full px-4 py-3 text-sm text-darkgray focus:outline-none focus:ring-2 focus:ring-navy-100" 
+                            placeholder="問問今天的狀況..." 
+                        />
+                        <button onClick={handleSend} className="w-11 h-11 rounded-full bg-navy-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+                            <i className="fa-solid fa-paper-plane text-xs"></i>
+                        </button>
                     </div>
+
+                    {/* Settings Modal */}
+                    {showSettings && (
+                        <div className="fixed inset-0 bg-navy-900 bg-opacity-50 z-[80] flex items-center justify-center p-6">
+                            <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
+                                <h3 className="font-bold text-navy-900 mb-2">設定 AI 大腦</h3>
+                                <p className="text-xs text-gray-500 mb-4">請輸入 Google Gemini API Key 以啟用分析功能。</p>
+                                <input 
+                                    type="password" 
+                                    value={apiKey} 
+                                    onChange={e => setApiKey(e.target.value)}
+                                    className="w-full bg-navy-50 border border-navy-100 rounded-lg p-3 text-sm mb-6 focus:outline-none focus:border-navy-500"
+                                    placeholder="AIzaSy..."
+                                />
+                                <div className="flex gap-3">
+                                    <button onClick={() => setShowSettings(false)} className="flex-1 py-3 text-gray-500 font-bold bg-gray-100 rounded-lg">取消</button>
+                                    <button onClick={() => { saveSettings({...settings, apiKey}); setShowSettings(false); }} className="flex-1 py-3 bg-navy-900 text-white rounded-lg font-bold">儲存</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
              );
         };
 
-        // Staff App (v1.6: Darker Record Bg)
-        const StaffApp = ({ onSubmit, reports }) => {
-            const [tab, setTab] = useState('income'); 
-            const [role, setRole] = useState('現場管理A');
-            const [data, setData] = useState({ income: '', issue: '', note: '' });
-
-            const today = new Date().toISOString().split('T')[0];
-            const myRecords = reports.filter(r => r.date === today && r.role === role);
-
-            const handleSubmit = () => {
-                const payload = { role };
-                if(tab === 'income' && data.income) payload.income = data.income;
-                else if(tab === 'issue' && data.issue) payload.issue = data.issue;
-                else if(tab === 'note' && data.note) payload.note = data.note;
-                else return;
-                onSubmit(payload); alert('回報已送出'); setData({ income: '', issue: '', note: '' });
-            };
-
-            return (
-                <div className="content-padding min-h-screen bg-white">
-                    <div className="p-6 sticky top-0 bg-white z-10 border-b border-navy-50">
-                        <h1 className="text-xl font-black mb-4 text-navy-900">員工回報端</h1>
-                        <select value={role} onChange={e => setRole(e.target.value)} className="w-full p-3 bg-navy-50 rounded-lg font-bold text-sm mb-4 text-navy-900">
-                            <option>現場管理A</option><option>現場管理B</option>
-                        </select>
-                        <div className="flex bg-navy-50 p-1 rounded-lg">
-                            <button onClick={() => setTab('income')} className={`flex-1 py-2 rounded text-xs font-bold ${tab === 'income' ? 'bg-navy-900 text-white' : 'text-gray-500'}`}>營收回報</button>
-                            <button onClick={() => setTab('issue')} className={`flex-1 py-2 rounded text-xs font-bold ${tab === 'issue' ? 'bg-navy-900 text-white' : 'text-gray-500'}`}>營運紀錄</button>
-                            <button onClick={() => setTab('note')} className={`flex-1 py-2 rounded text-xs font-bold ${tab === 'note' ? 'bg-navy-900 text-white' : 'text-gray-500'}`}>明日提醒</button>
-                        </div>
-                    </div>
-
-                    <div className="p-6">
-                        {tab === 'income' && (
-                            <div className="animate-fade-in">
-                                <h2 className="text-lg font-black mb-4 text-navy-900">今日營收回報</h2>
-                                <input type="number" value={data.income} onChange={e => setData({...data, income: e.target.value})} className="w-full text-4xl font-bold border-b-2 py-2 mb-6 focus:outline-none focus:border-navy-900 text-navy-900" placeholder="$0" autoFocus />
-                                <button onClick={handleSubmit} className="w-full bg-navy-900 text-white py-4 rounded-xl font-bold mb-8">送出回報</button>
-                            </div>
-                        )}
-                        {tab === 'issue' && (
-                            <div className="animate-fade-in">
-                                <h2 className="text-lg font-black mb-4 text-red-600">現場營運紀錄</h2>
-                                <textarea value={data.issue} onChange={e => setData({...data, issue: e.target.value})} className="w-full h-32 bg-navy-50 p-4 rounded-xl mb-6 focus:outline-none text-darkgray" placeholder="發生了什麼事..." autoFocus></textarea>
-                                <button onClick={handleSubmit} className="w-full bg-red-600 text-white py-4 rounded-xl font-bold mb-8">送出紀錄</button>
-                            </div>
-                        )}
-                        {tab === 'note' && (
-                            <div className="animate-fade-in">
-                                <h2 className="text-lg font-black mb-4 text-blue-600">明日重點提醒</h2>
-                                <textarea value={data.note} onChange={e => setData({...data, note: e.target.value})} className="w-full h-32 bg-navy-50 p-4 rounded-xl mb-6 focus:outline-none text-darkgray" placeholder="備料、叫貨提醒..." autoFocus></textarea>
-                                <button onClick={handleSubmit} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold mb-8">送出提醒</button>
-                            </div>
-                        )}
-
-                        <div className="border-t border-navy-50 pt-6">
-                            <p className="text-xs font-bold text-gray-500 mb-3">今日已回報紀錄 ({role})</p>
-                            {myRecords.length === 0 ? <p className="text-xs text-gray-300">尚無紀錄</p> : 
-                                <div className="space-y-2">
-                                    {myRecords.map(r => (
-                                        <div key={r.id} className="text-xs bg-navy-100 p-3 rounded flex justify-between border border-navy-200">
-                                            <span className="text-navy-600">{r.timestamp}</span>
-                                            <span className="font-bold text-navy-900">
-                                                {r.income ? `營收 $${r.income}` : r.issue ? '營運紀錄' : '重點提醒'}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
+        // --- Main App ---
         const App = () => {
-            const [view, setView] = useState('pin');
-            const [page, setPage] = useState('dashboard');
-            const [pin, setPin] = useState('');
+            const [page, setPage] = useState('dashboard'); // dashboard, ops, ai
             const [transactions, setTransactions] = useState([]);
-            const [reports, setReports] = useState([]);
-            const [settings, setSettings] = useState({ dailyFixedCost: 5000 });
+            const [logs, setLogs] = useState([]);
+            const [settings, setSettings] = useState({ dailyFixedCost: 5000, apiKey: '' });
+            const [envData, setEnvData] = useState({}); // { '2023-01-01': { weather, traffic } }
             const [activeTimer, setActiveTimer] = useState(null);
             
+            // Init Load
             useEffect(() => {
                 const t = localStorage.getItem(DB_KEY_TRANSACTIONS); if(t) setTransactions(JSON.parse(t));
-                const r = localStorage.getItem(DB_KEY_REPORTS); if(r) setReports(JSON.parse(r));
+                const l = localStorage.getItem(DB_KEY_LOGS); if(l) setLogs(JSON.parse(l));
                 const s = localStorage.getItem(DB_KEY_SETTINGS); if(s) setSettings(JSON.parse(s));
+                const e = localStorage.getItem(DB_KEY_ENV); if(e) setEnvData(JSON.parse(e));
             }, []);
 
+            // Helper to save settings globally
+            const saveSettings = (newSettings) => {
+                setSettings(newSettings);
+                localStorage.setItem(DB_KEY_SETTINGS, JSON.stringify(newSettings));
+            };
+
+            // Timer Logic
             const startTimer = (m) => { setActiveTimer({ minutes: m, startTime: Date.now() }); };
             const stopTimer = () => { setActiveTimer(null); };
             useEffect(() => {
@@ -610,45 +674,38 @@
                         const elapsed = (Date.now() - activeTimer.startTime) / 1000;
                         if (elapsed >= activeTimer.minutes * 60) {
                             if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                            alert('轉場時間到'); setActiveTimer(null);
+                            alert('轉場時間到！'); setActiveTimer(null);
                         }
                     }, 1000);
                 } return () => clearInterval(interval);
             }, [activeTimer]);
 
-            const handleStaffSubmit = (newReport) => {
-                const u = [{ id: Date.now(), date: new Date().toISOString().split('T')[0], timestamp: new Date().toLocaleTimeString(), ...newReport }, ...reports];
-                setReports(u); localStorage.setItem(DB_KEY_REPORTS, JSON.stringify(u));
-            };
-            const saveSettings = (s) => { setSettings(s); localStorage.setItem(DB_KEY_SETTINGS, JSON.stringify(s)); };
-
-            if (view === 'pin') return (
-                <div className="flex flex-col items-center justify-center min-h-screen bg-navy-100 px-6">
-                    <div className="text-navy-900 text-5xl mb-4"><i className="fa-solid fa-fish"></i></div>
-                    <h1 className="text-navy-900 text-2xl font-black mb-8">Seafood Boss</h1>
-                    <div className="w-full max-w-xs bg-white rounded-xl p-6 shadow-xl">
-                        <button onClick={() => setView('staff')} className="w-full py-3 bg-navy-50 rounded-lg font-bold text-navy-800 mb-4 text-sm">員工入口</button>
-                        <div className="relative"><input type="password" value={pin} onChange={e => setPin(e.target.value)} className="w-full bg-navy-50 p-3 rounded-lg text-center text-xl tracking-widest outline-none border-2 focus:border-navy-900 text-navy-900" maxLength="4" placeholder="PIN" /><button onClick={() => pin === '8888' ? setView('owner') : alert('Error')} className="absolute right-1 top-1 bottom-1 bg-navy-900 text-white px-4 rounded-md"><i className="fa-solid fa-arrow-right"></i></button></div>
-                    </div>
-                </div>
-            );
-
-            if (view === 'staff') return <StaffApp onSubmit={handleStaffSubmit} reports={reports} />;
-
             return (
-                <div className="bg-white max-w-md mx-auto relative shadow-2xl min-h-screen">
-                    <div className="pb-[70px]"> 
-                        {page === 'dashboard' && <OwnerDashboard setPage={setPage} transactions={transactions} settings={settings} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />}
+                <div className="bg-white max-w-md mx-auto relative shadow-2xl min-h-screen pb-[60px]">
+                    {/* Top Bar */}
+                    <EnvironmentBar envData={envData} setEnvData={setEnvData} />
+
+                    {/* Content Area */}
+                    <div className="content-padding min-h-screen bg-gray-50"> 
+                        {page === 'dashboard' && <Dashboard setPage={setPage} transactions={transactions} logs={logs} setLogs={setLogs} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} settings={settings} />}
                         {page === 'ops' && <Operations transactions={transactions} setTransactions={setTransactions} settings={settings} saveSettings={saveSettings} />}
-                        {page === 'reports' && <Reports reports={reports} setPage={setPage} />}
-                        {page === 'ai' && <AIAdvisor />}
+                        {page === 'ai' && <AIAdvisor settings={settings} saveSettings={saveSettings} />}
                     </div>
+
                     {/* Fixed Bottom Nav */}
                     <div className="bottom-nav-fix flex justify-around items-center h-[60px] border-t border-navy-50">
-                        <button onClick={() => setPage('dashboard')} className={`flex flex-col items-center w-full ${page === 'dashboard' ? 'text-navy-900' : 'text-gray-400'}`}><i className="fa-solid fa-chart-pie text-lg mb-0.5"></i><span className="text-[10px] font-bold">概況</span></button>
-                        <button onClick={() => setPage('ops')} className={`flex flex-col items-center w-full ${page === 'ops' ? 'text-navy-900' : 'text-gray-400'}`}><i className="fa-solid fa-calculator text-lg mb-0.5"></i><span className="text-[10px] font-bold">營運</span></button>
-                        <button onClick={() => setPage('reports')} className={`flex flex-col items-center w-full ${page === 'reports' ? 'text-navy-900' : 'text-gray-400'}`}><i className="fa-solid fa-list-check text-lg mb-0.5"></i><span className="text-[10px] font-bold">回報</span></button>
-                        <button onClick={() => setPage('ai')} className={`flex flex-col items-center w-full ${page === 'ai' ? 'text-navy-900' : 'text-gray-400'}`}><i className="fa-solid fa-robot text-lg mb-0.5"></i><span className="text-[10px] font-bold">AI</span></button>
+                        <button onClick={() => setPage('dashboard')} className={`flex flex-col items-center w-full py-2 transition-colors ${page === 'dashboard' ? 'text-navy-900' : 'text-gray-300'}`}>
+                            <i className="fa-solid fa-chart-pie text-lg mb-0.5"></i>
+                            <span className="text-[10px] font-bold">總覽</span>
+                        </button>
+                        <button onClick={() => setPage('ops')} className={`flex flex-col items-center w-full py-2 transition-colors ${page === 'ops' ? 'text-navy-900' : 'text-gray-300'}`}>
+                            <i className="fa-solid fa-calculator text-lg mb-0.5"></i>
+                            <span className="text-[10px] font-bold">營運</span>
+                        </button>
+                        <button onClick={() => setPage('ai')} className={`flex flex-col items-center w-full py-2 transition-colors ${page === 'ai' ? 'text-navy-900' : 'text-gray-300'}`}>
+                            <i className="fa-solid fa-robot text-lg mb-0.5"></i>
+                            <span className="text-[10px] font-bold">AI</span>
+                        </button>
                     </div>
                 </div>
             );
