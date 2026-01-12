@@ -1,9 +1,9 @@
-<!-- 檔名：index.html (v1.3) -->
+<!-- 檔名：index.html (v1.4) -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Seafood Boss App</title>
     
     <link rel="manifest" href="./manifest.json">
@@ -19,21 +19,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        /* 修復 iOS 滾動與安全區域 */
         body {
             overscroll-behavior-y: none;
             -webkit-tap-highlight-color: transparent;
             background-color: #F9FAFB;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            height: 100vh;
-            overflow: hidden; /* 全局鎖定，由內部容器滾動 */
+            /* 改回自然流動，解決高度亂跳 */
+            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
         }
         .card-shadow { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
-        
-        /* 隱藏滾動條 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* 進度條動畫 */
         @keyframes shrinkWidth {
             from { width: 100%; }
             to { width: 0%; }
@@ -42,6 +41,22 @@
             animation-name: shrinkWidth;
             animation-timing-function: linear;
             animation-fill-mode: forwards;
+        }
+        
+        /* 底部導航固定修正 */
+        .bottom-nav-fix {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding-bottom: env(safe-area-inset-bottom);
+            background-color: white;
+            z-index: 50;
+            border-top: 1px solid #E5E7EB;
+        }
+        /* 內容區塊避開底部導航 */
+        .content-padding {
+            padding-bottom: 90px; 
         }
     </style>
 </head>
@@ -55,34 +70,26 @@
         const DB_KEY_REPORTS = 'sf_reports';
         const DB_KEY_SETTINGS = 'sf_settings';
 
-        // --- Helper: Calendar Generator ---
+        // --- Helper: Calendar ---
         const getCalendarDays = (year, month) => {
             const firstDay = new Date(year, month - 1, 1);
             const lastDay = new Date(year, month, 0);
             const daysInMonth = lastDay.getDate();
-            const startDay = firstDay.getDay(); // 0 is Sunday
-            
+            const startDay = firstDay.getDay(); 
             let days = [];
-            // Empty slots for previous month
             for(let i=0; i<startDay; i++) days.push(null);
-            // Days
             for(let i=1; i<=daysInMonth; i++) {
                 const d = new Date(year, month-1, i);
-                days.push({ day: i, dateStr: d.toISOString().split('T')[0] });
+                const m = String(month).padStart(2, '0');
+                const dayStr = String(i).padStart(2, '0');
+                days.push({ day: i, dateStr: `${year}-${m}-${dayStr}` });
             }
             return days;
         };
 
-        // --- Component: Timer Button (Updated v1.3) ---
-        // 接收全局計時狀態，實現跨頁同步
+        // --- Component: Timer Button ---
         const TimerButton = ({ minutes, activeTimer, startTimer, stopTimer }) => {
-            // 檢查自己是否正在運行
             const isActive = activeTimer && activeTimer.minutes === minutes;
-            
-            // 計算剩餘時間比例 (為了動畫) - 簡化版：若正在跑，就顯示滿的條並縮減
-            // 實際上若要跨頁精準動畫，需要更複雜的計算，這裡 v1.3 先做「狀態保持」
-            // 當 isActive 為真，顯示動畫條
-            
             return (
                 <button 
                     onClick={() => isActive ? stopTimer() : startTimer(minutes)}
@@ -90,14 +97,11 @@
                 >
                     {isActive && (
                         <div 
-                            className="absolute left-0 top-0 bottom-0 bg-blue-100 z-0 animate-progress"
-                            style={{ 
-                                animationDuration: `${minutes * 60}s`,
-                                width: '100%' 
-                            }}
+                            className="absolute left-0 top-0 bottom-0 bg-cyan-100 z-0 animate-progress"
+                            style={{ animationDuration: `${minutes * 60}s`, width: '100%' }}
                         ></div>
                     )}
-                    <span className={`relative z-10 font-bold text-xs ${isActive ? 'text-blue-800' : 'text-gray-500'}`}>
+                    <span className={`relative z-10 font-bold text-xs ${isActive ? 'text-cyan-800' : 'text-gray-500'}`}>
                         {minutes} 分
                     </span>
                 </button>
@@ -106,78 +110,57 @@
 
         // --- Pages ---
 
-        // 1. Owner Dashboard
+        // 1. Owner Dashboard (Layout Fix & Balance)
         const OwnerDashboard = ({ setPage, transactions, settings, activeTimer, startTimer, stopTimer }) => {
             const today = new Date().toISOString().split('T')[0];
-            
             const todayStatus = useMemo(() => {
                 const todayTrans = transactions.filter(t => t.date === today);
                 const income = todayTrans.filter(t => t.type === 'income').reduce((acc, c) => acc + c.amount, 0);
                 const expense = todayTrans.filter(t => t.type === 'expense').reduce((acc, c) => acc + c.amount, 0);
                 const net = income - expense - (settings.dailyFixedCost || 0);
-
-                let status = "觀察中";
-                let color = "text-gray-400";
+                let status = "觀察中"; let color = "text-gray-400";
                 if (net > 1000) { status = "營收穩健"; color = "text-green-600"; }
                 else if (net >= -1000) { status = "收支平衡"; color = "text-yellow-600"; }
                 else { status = "審慎留意"; color = "text-red-600"; }
-
                 return { status, color, net };
             }, [transactions, settings, today]);
 
             return (
-                <div className="flex flex-col h-full bg-gray-50 overflow-hidden">
-                    {/* Fixed Header */}
-                    <div className="flex-none px-4 pt-4 pb-2 bg-gray-50 z-10">
+                <div className="content-padding min-h-screen">
+                    <div className="p-4">
                         {/* AI Bar */}
-                        <div 
-                            onClick={() => setPage('ai')}
-                            className="bg-white rounded-full p-2 pl-4 pr-2 mb-4 card-shadow flex items-center justify-between cursor-pointer border border-gray-100"
-                        >
+                        <div onClick={() => setPage('ai')} className="bg-white rounded-full p-2 pl-4 pr-2 mb-6 card-shadow flex items-center justify-between cursor-pointer border border-gray-100">
                             <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white">
-                                    <i className="fa-solid fa-robot text-xs"></i>
-                                </div>
+                                <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white"><i className="fa-solid fa-robot text-xs"></i></div>
                                 <span className="text-gray-400 text-xs font-medium">今天想分析什麼...</span>
                             </div>
                             <div className="flex space-x-1">
-                                <div className="w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center text-gray-400">
-                                    <i className="fa-solid fa-microphone text-xs"></i>
-                                </div>
-                                <div className="w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center text-gray-400">
-                                    <i className="fa-solid fa-camera text-xs"></i>
-                                </div>
+                                <div className="w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center text-gray-400"><i className="fa-solid fa-microphone text-xs"></i></div>
+                                <div className="w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center text-gray-400"><i className="fa-solid fa-camera text-xs"></i></div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto px-4 pb-24 no-scrollbar">
-                        {/* Main Functions */}
-                        <div className="grid grid-cols-2 gap-3 mb-6">
-                            <div onClick={() => setPage('ops')} className="bg-white aspect-square rounded-2xl card-shadow p-4 flex flex-col justify-between active:scale-95 transition-transform border border-gray-100">
-                                <div className="w-9 h-9 bg-gray-900 rounded-lg flex items-center justify-center text-white">
-                                    <i className="fa-solid fa-calculator text-sm"></i>
+                        {/* Main Functions (Resized Height) */}
+                        <div className="grid grid-cols-2 gap-3 mb-8">
+                            <div onClick={() => setPage('ops')} className="bg-white rounded-xl card-shadow p-4 flex flex-col justify-center items-start active:scale-95 transition-transform border border-gray-100 h-24">
+                                <div className="flex items-center mb-2">
+                                    <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center text-white mr-3"><i className="fa-solid fa-calculator text-xs"></i></div>
+                                    <h3 className="font-bold text-gray-800 text-sm">內部營運</h3>
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-800 text-base">內部營運</h3>
-                                    <p className="text-[10px] text-gray-400 mt-1">記帳與明細</p>
-                                </div>
+                                <p className="text-[10px] text-gray-400 pl-1">記帳與明細</p>
                             </div>
 
-                            <div onClick={() => setPage('reports')} className="bg-white aspect-square rounded-2xl card-shadow p-4 flex flex-col justify-between active:scale-95 transition-transform border border-gray-100">
-                                <div className="w-9 h-9 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-gray-800">
-                                    <i className="fa-solid fa-list-check text-sm"></i>
+                            <div onClick={() => setPage('reports')} className="bg-white rounded-xl card-shadow p-4 flex flex-col justify-center items-start active:scale-95 transition-transform border border-gray-100 h-24">
+                                <div className="flex items-center mb-2">
+                                    <div className="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-gray-800 mr-3"><i className="fa-solid fa-list-check text-xs"></i></div>
+                                    <h3 className="font-bold text-gray-800 text-sm">員工回報</h3>
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-800 text-base">員工回報</h3>
-                                    <p className="text-[10px] text-gray-400 mt-1">查看現場</p>
-                                </div>
+                                <p className="text-[10px] text-gray-400 pl-1">查看現場</p>
                             </div>
                         </div>
 
                         {/* Transition Timer */}
-                        <div className="mb-6">
+                        <div className="mb-8">
                             <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider">轉場提示</p>
                             <div className="grid grid-cols-3 gap-2">
                                 <TimerButton minutes={10} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
@@ -186,8 +169,8 @@
                             </div>
                         </div>
 
-                        {/* Status Footer (Moved inside scroll area but at bottom) */}
-                        <div className="bg-white rounded-xl p-3 card-shadow flex justify-between items-center border border-gray-100">
+                        {/* Status Footer */}
+                        <div className="bg-white rounded-xl p-3 card-shadow flex justify-between items-center border border-gray-100 mt-auto">
                             <span className="text-[10px] font-bold text-gray-400">今日淨額狀態</span>
                             <div className="flex items-center gap-2">
                                 <span className={`text-sm font-bold ${todayStatus.color}`}>{todayStatus.status}</span>
@@ -199,38 +182,30 @@
             );
         };
 
-        // 2. Operations (v1.3: Calendar View)
+        // 2. Operations (v1.4: Calendar Fix)
         const Operations = ({ transactions, setTransactions, settings, saveSettings }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
             const [showSettingModal, setShowSettingModal] = useState(false);
             
-            // Calendar State
-            const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // For Month view selection
+            const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
             const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
             
-            const [date, setDate] = useState(new Date().toISOString().split('T')[0]); // For Input
+            const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
             const [type, setType] = useState('income');
             const [amount, setAmount] = useState('');
             const [cat, setCat] = useState('現金');
             const [note, setNote] = useState('');
             const [tempFixedCost, setTempFixedCost] = useState(settings.dailyFixedCost);
 
-            // Stats Calculation
             const stats = useMemo(() => {
                 const now = new Date();
                 const yearStr = now.getFullYear().toString();
                 const monthStr = `${yearStr}-${String(currentMonth).padStart(2, '0')}`;
 
-                let filtered = [];
-                let fixedCostTotal = 0;
-                let listData = [];
-                let net = 0;
-                let income = 0;
-                let expense = 0;
-
-                // Pre-calculate daily net for calendar dots
+                let filtered = [], fixedCostTotal = 0, listData = [], net = 0, income = 0, expense = 0;
                 const dailyStats = {};
+
                 transactions.forEach(t => {
                     if(!dailyStats[t.date]) dailyStats[t.date] = { income: 0, expense: 0 };
                     if(t.type === 'income') dailyStats[t.date].income += t.amount;
@@ -238,37 +213,24 @@
                 });
 
                 if (period === 'day') {
-                    // Day: Show specific date (using `date` state as filter)
                     filtered = transactions.filter(t => t.date === date);
                     fixedCostTotal = parseInt(settings.dailyFixedCost || 0);
                     listData = filtered;
                     income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
                     expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
-
                 } else if (period === 'month') {
-                    // Month: Calendar View Logic
-                    // Main stats show WHOLE MONTH
                     filtered = transactions.filter(t => t.date.startsWith(monthStr));
-                    const daysInMonth = new Date(now.getFullYear(), currentMonth, 0).getDate();
-                    // If current month, use passed days, else full month
-                    const daysPassed = (currentMonth === (now.getMonth()+1)) ? now.getDate() : daysInMonth;
-                    
+                    const daysPassed = (currentMonth === (now.getMonth()+1)) ? now.getDate() : new Date(now.getFullYear(), currentMonth, 0).getDate();
                     fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * daysPassed;
                     income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
                     expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
-
-                    // List Data: Show SELECTED DATE details
+                    // 修正：列表顯示 "被選中日期" 的資料
                     listData = transactions.filter(t => t.date === selectedDate);
-                    
                 } else {
-                    // Year view (simplified for v1.3)
                     filtered = transactions.filter(t => t.date.startsWith(yearStr));
+                    fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * 365;
                     income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
                     expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
-                    // Fixed cost simplified est
-                    fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * 365; 
-                    
-                    // Group by month
                     const grouped = {};
                     filtered.forEach(t => {
                          const m = t.date.slice(0, 7);
@@ -278,7 +240,6 @@
                     });
                     listData = Object.values(grouped).sort((a,b) => b.date.localeCompare(a.date));
                 }
-
                 net = income - expense - fixedCostTotal;
                 return { income, expense, fixedCostTotal, net, listData, dailyStats };
             }, [transactions, settings, period, date, currentMonth, selectedDate]);
@@ -299,19 +260,13 @@
             }, [currentMonth, period]);
 
             return (
-                <div className="flex flex-col h-full bg-gray-50 overflow-hidden">
-                    {/* Header */}
-                    <div className="flex-none p-4 bg-gray-50 flex justify-between items-center z-10">
+                <div className="content-padding min-h-screen">
+                    <div className="flex justify-between items-center p-4 bg-white sticky top-0 z-10 border-b border-gray-100">
                         <h1 className="text-xl font-black text-gray-900">內部營運</h1>
-                        <button onClick={() => setShowSettingModal(true)} className="text-xs bg-white border border-gray-200 px-3 py-1 rounded-full font-bold text-gray-600">
-                            設定日均
-                        </button>
+                        <button onClick={() => setShowSettingModal(true)} className="text-xs bg-white border border-gray-200 px-3 py-1 rounded-full font-bold text-gray-600">設定日均</button>
                     </div>
 
-                    {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto px-4 pb-24 no-scrollbar">
-                        
-                        {/* Tab Switcher */}
+                    <div className="p-4">
                         <div className="bg-white p-1 rounded-lg flex mb-4 border border-gray-200">
                             {['day', 'month', 'year'].map(p => (
                                 <button key={p} onClick={() => setPeriod(p)} className={`flex-1 py-2 rounded-md text-sm font-bold ${period === p ? 'bg-black text-white shadow' : 'text-gray-500'}`}>
@@ -320,59 +275,29 @@
                             ))}
                         </div>
 
-                        {/* Date Picker (Day Mode) */}
-                        {period === 'day' && (
-                            <div className="mb-4 flex justify-center">
-                                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-transparent font-bold text-gray-600 text-sm" />
-                            </div>
-                        )}
+                        {period === 'day' && <div className="mb-4 flex justify-center"><input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-transparent font-bold text-gray-600 text-sm" /></div>}
 
-                        {/* Financial Card */}
                         <div className="bg-white rounded-xl p-5 mb-6 card-shadow border-l-4 border-black">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-gray-500 font-bold text-xs">進帳總額</span>
-                                <span className="text-lg font-bold text-gray-900">+ {stats.income.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-gray-500 font-bold text-xs">臨時出帳</span>
-                                <span className="text-lg font-bold text-red-500">- {stats.expense.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center mb-3 pb-3 border-b border-dashed border-gray-200">
-                                <span className="text-gray-400 font-bold text-[10px]">固定日均攤提</span>
-                                <span className="text-base font-bold text-gray-400">- {stats.fixedCostTotal.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between items-end">
-                                <span className="text-gray-800 font-black text-base">淨利</span>
-                                <span className={`text-2xl font-black ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}
-                                </span>
-                            </div>
+                            <div className="flex justify-between items-center mb-2"><span className="text-gray-500 font-bold text-xs">進帳總額</span><span className="text-lg font-bold text-gray-900">+ {stats.income.toLocaleString()}</span></div>
+                            <div className="flex justify-between items-center mb-2"><span className="text-gray-500 font-bold text-xs">臨時出帳</span><span className="text-lg font-bold text-red-500">- {stats.expense.toLocaleString()}</span></div>
+                            <div className="flex justify-between items-center mb-3 pb-3 border-b border-dashed border-gray-200"><span className="text-gray-400 font-bold text-[10px]">固定日均攤提</span><span className="text-base font-bold text-gray-400">- {stats.fixedCostTotal.toLocaleString()}</span></div>
+                            <div className="flex justify-between items-end"><span className="text-gray-800 font-black text-base">淨利</span><span className={`text-2xl font-black ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</span></div>
                         </div>
 
-                        {/* Calendar View (Month Mode Only) */}
                         {period === 'month' && (
                             <div className="mb-6 bg-white rounded-xl p-4 card-shadow">
-                                <div className="grid grid-cols-7 gap-1 mb-2 text-center">
-                                    {['日','一','二','三','四','五','六'].map(d => <span key={d} className="text-[10px] text-gray-400 font-bold">{d}</span>)}
-                                </div>
+                                <div className="grid grid-cols-7 gap-1 mb-2 text-center">{['日','一','二','三','四','五','六'].map(d => <span key={d} className="text-[10px] text-gray-400 font-bold">{d}</span>)}</div>
                                 <div className="grid grid-cols-7 gap-1">
                                     {calendarDays.map((d, i) => {
                                         if(!d) return <div key={i}></div>;
-                                        // Check status
                                         const s = stats.dailyStats[d.dateStr];
                                         const net = s ? (s.income - s.expense - (settings.dailyFixedCost||0)) : -(settings.dailyFixedCost||0);
                                         const hasData = s && (s.income > 0 || s.expense > 0);
                                         const isSelected = selectedDate === d.dateStr;
-
                                         return (
-                                            <div 
-                                                key={i} 
-                                                onClick={() => setSelectedDate(d.dateStr)}
-                                                className={`aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer border ${isSelected ? 'border-black bg-gray-50' : 'border-transparent'}`}
-                                            >
-                                                <span className={`text-xs font-bold ${isSelected ? 'text-black' : 'text-gray-500'}`}>{d.day}</span>
-                                                {/* Dot Status */}
-                                                <div className={`w-1.5 h-1.5 rounded-full mt-1 ${net > 0 ? 'bg-green-500' : 'bg-red-500'} ${!hasData && net < 0 ? 'opacity-20' : ''}`}></div>
+                                            <div key={i} onClick={() => setSelectedDate(d.dateStr)} className={`aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer border ${isSelected ? 'bg-gray-900 border-gray-900' : 'border-transparent'}`}>
+                                                <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-500'}`}>{d.day}</span>
+                                                <div className={`w-1.5 h-1.5 rounded-full mt-1 ${net > 0 ? 'bg-green-500' : 'bg-red-500'} ${!hasData ? 'opacity-0' : ''}`}></div>
                                             </div>
                                         );
                                     })}
@@ -381,86 +306,29 @@
                             </div>
                         )}
 
-                        {/* Action Buttons */}
                         <div className="grid grid-cols-2 gap-3 mb-6">
-                            <button onClick={() => {setType('income'); setCat('現金'); setShowAddModal(true);}} className="bg-black text-white py-3 rounded-xl font-bold shadow-lg flex items-center justify-center text-sm">
-                                <i className="fa-solid fa-plus mr-2"></i> 記進帳
-                            </button>
-                            <button onClick={() => {setType('expense'); setCat('進貨'); setShowAddModal(true);}} className="bg-white text-black border border-gray-200 py-3 rounded-xl font-bold shadow flex items-center justify-center text-sm">
-                                <i className="fa-solid fa-minus mr-2"></i> 記出帳
-                            </button>
+                            <button onClick={() => {setType('income'); setCat('現金'); setShowAddModal(true);}} className="bg-black text-white py-3 rounded-xl font-bold shadow-lg flex items-center justify-center text-sm"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
+                            <button onClick={() => {setType('expense'); setCat('進貨'); setShowAddModal(true);}} className="bg-white text-black border border-gray-200 py-3 rounded-xl font-bold shadow flex items-center justify-center text-sm"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
                         </div>
 
-                        {/* List */}
-                        <h3 className="font-bold text-gray-800 mb-3 text-xs">
-                            {period === 'day' ? '今日流水' : period === 'month' ? `明細 (${selectedDate})` : '每月匯總'}
-                        </h3>
+                        <h3 className="font-bold text-gray-800 mb-3 text-xs">{period === 'day' ? '今日流水' : period === 'month' ? `明細 (${selectedDate})` : '每月匯總'}</h3>
                         <div className="space-y-2">
                             {stats.listData.length === 0 ? <p className="text-gray-400 text-center py-4 text-xs">無紀錄</p> : 
                                 stats.listData.map((item, idx) => (
                                     <div key={idx} className="bg-white p-3 rounded-lg flex justify-between items-center shadow-sm border-l-2 border-gray-100">
                                         {period === 'year' ? (
-                                            <>
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-gray-800 text-sm">{item.date}</span>
-                                                    <span className="text-[10px] text-gray-400">進 ${item.income.toLocaleString()} / 出 ${item.expense.toLocaleString()}</span>
-                                                </div>
-                                                <span className={`font-bold text-sm ${(item.income - item.expense) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {(item.income - item.expense) > 0 ? '+' : ''}{(item.income - item.expense).toLocaleString()}
-                                                </span>
-                                            </>
+                                            <><div className="flex flex-col"><span className="font-bold text-gray-800 text-sm">{item.date}</span></div><span className={`font-bold text-sm ${(item.income - item.expense) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{(item.income - item.expense).toLocaleString()}</span></>
                                         ) : (
-                                            <>
-                                                <div className="flex items-center">
-                                                    <span className={`w-1.5 h-1.5 rounded-full mr-2 ${item.type === 'income' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                                    <span className="font-bold text-gray-700 text-sm">{item.category}</span>
-                                                    <span className="text-[10px] text-gray-400 ml-2">{item.note}</span>
-                                                </div>
-                                                <span className={`font-bold text-sm ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {item.type === 'income' ? '+' : '-'}{item.amount.toLocaleString()}
-                                                </span>
-                                            </>
+                                            <><div className="flex items-center"><span className={`w-1.5 h-1.5 rounded-full mr-2 ${item.type === 'income' ? 'bg-green-500' : 'bg-red-500'}`}></span><span className="font-bold text-gray-700 text-sm">{item.category}</span><span className="text-[10px] text-gray-400 ml-2">{item.note}</span></div><span className={`font-bold text-sm ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{item.type === 'income' ? '+' : '-'}{item.amount.toLocaleString()}</span></>
                                         )}
                                     </div>
                                 ))
                             }
                         </div>
                     </div>
-
-                    {/* Modals (Simplified for v1.3 code length) */}
-                    {showAddModal && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-xl w-full max-w-sm p-5 shadow-2xl">
-                                <h3 className="font-bold text-lg mb-4">記一筆{type === 'income' ? '進帳' : '出帳'}</h3>
-                                <div className="space-y-4">
-                                    <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-gray-100 p-2 rounded" />
-                                    <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="w-full text-3xl font-black border-b-2 border-black py-2 focus:outline-none" placeholder="0" autoFocus />
-                                    <div className="flex flex-wrap gap-2">
-                                        {type === 'income' ? ['現金', '刷卡', '轉帳'].map(c => <button key={c} onClick={() => setCat(c)} className={`px-3 py-1 rounded-full text-xs font-bold border ${cat === c ? 'bg-black text-white' : 'bg-white text-gray-500'}`}>{c}</button>)
-                                        : ['進貨', '人事', '雜支', '修繕'].map(c => <button key={c} onClick={() => setCat(c)} className={`px-3 py-1 rounded-full text-xs font-bold border ${cat === c ? 'bg-black text-white' : 'bg-white text-gray-500'}`}>{c}</button>)}
-                                    </div>
-                                    <input type="text" value={note} onChange={e => setNote(e.target.value)} className="w-full border-b border-gray-200 py-2 focus:outline-none" placeholder="備註..." />
-                                    <div className="flex gap-2 mt-4">
-                                        <button onClick={() => setShowAddModal(false)} className="flex-1 py-3 text-gray-500 font-bold">取消</button>
-                                        <button onClick={handleSaveTransaction} className="flex-1 py-3 bg-black text-white rounded-lg font-bold">確認</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {showSettingModal && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-xl w-full max-w-sm p-5 shadow-2xl">
-                                <h3 className="font-bold text-lg mb-4">設定日均開銷</h3>
-                                <input type="number" value={tempFixedCost} onChange={e => setTempFixedCost(e.target.value)} className="w-full text-2xl font-black border-b-2 border-black py-2 mb-4 focus:outline-none" />
-                                <div className="flex gap-2">
-                                    <button onClick={() => setShowSettingModal(false)} className="flex-1 py-3 text-gray-500 font-bold">取消</button>
-                                    <button onClick={() => { saveSettings({...settings, dailyFixedCost: parseInt(tempFixedCost)}); setShowSettingModal(false); }} className="flex-1 py-3 bg-black text-white rounded-lg font-bold">儲存</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    {/* Modals hidden for brevity (same as v1.3) */}
+                     {showAddModal && (<div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"><div className="bg-white rounded-xl w-full max-w-sm p-5 shadow-2xl"><h3 className="font-bold text-lg mb-4">記一筆{type === 'income' ? '進帳' : '出帳'}</h3><div className="space-y-4"><input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-gray-100 p-2 rounded" /><input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="w-full text-3xl font-black border-b-2 border-black py-2 focus:outline-none" placeholder="0" autoFocus /><div className="flex flex-wrap gap-2">{type === 'income' ? ['現金', '刷卡', '轉帳'].map(c => <button key={c} onClick={() => setCat(c)} className={`px-3 py-1 rounded-full text-xs font-bold border ${cat === c ? 'bg-black text-white' : 'bg-white text-gray-500'}`}>{c}</button>) : ['進貨', '人事', '雜支', '修繕'].map(c => <button key={c} onClick={() => setCat(c)} className={`px-3 py-1 rounded-full text-xs font-bold border ${cat === c ? 'bg-black text-white' : 'bg-white text-gray-500'}`}>{c}</button>)}</div><input type="text" value={note} onChange={e => setNote(e.target.value)} className="w-full border-b border-gray-200 py-2 focus:outline-none" placeholder="備註..." /><div className="flex gap-2 mt-4"><button onClick={() => setShowAddModal(false)} className="flex-1 py-3 text-gray-500 font-bold">取消</button><button onClick={handleSaveTransaction} className="flex-1 py-3 bg-black text-white rounded-lg font-bold">確認</button></div></div></div></div>)}
+                     {showSettingModal && (<div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"><div className="bg-white rounded-xl w-full max-w-sm p-5 shadow-2xl"><h3 className="font-bold text-lg mb-4">設定日均開銷</h3><input type="number" value={tempFixedCost} onChange={e => setTempFixedCost(e.target.value)} className="w-full text-2xl font-black border-b-2 border-black py-2 mb-4 focus:outline-none" /><div className="flex gap-2"><button onClick={() => setShowSettingModal(false)} className="flex-1 py-3 text-gray-500 font-bold">取消</button><button onClick={() => { saveSettings({...settings, dailyFixedCost: parseInt(tempFixedCost)}); setShowSettingModal(false); }} className="flex-1 py-3 bg-black text-white rounded-lg font-bold">儲存</button></div></div></div>)}
                 </div>
             );
         };
@@ -468,9 +336,9 @@
         const Reports = ({ reports, setPage }) => {
             const list = reports.sort((a,b) => b.id - a.id);
             return (
-                <div className="flex flex-col h-full bg-gray-50 overflow-hidden">
-                    <div className="flex-none p-4 bg-gray-50"><h1 className="text-xl font-black text-gray-900">員工回報</h1></div>
-                    <div className="flex-1 overflow-y-auto px-4 pb-24 no-scrollbar">
+                <div className="content-padding min-h-screen">
+                    <div className="p-4 bg-white sticky top-0 z-10 border-b border-gray-100"><h1 className="text-xl font-black text-gray-900">員工回報</h1></div>
+                    <div className="p-4">
                         {list.length === 0 ? <p className="text-gray-400 text-center py-20 text-xs">無資料</p> : 
                             list.map(r => (
                                 <div key={r.id} className="bg-white rounded-xl p-4 mb-4 card-shadow border border-gray-100">
@@ -490,50 +358,93 @@
             );
         };
 
-        const AIAdvisor = () => { /* Simplified AI UI - same as v1.2 */
+        const AIAdvisor = () => { /* Simplified */
              const [input, setInput] = useState('');
              const [chat, setChat] = useState([{ id: 1, role: 'ai', text: '老闆好，我是您的營運參謀。' }]);
              return (
-                <div className="flex flex-col h-full bg-white">
-                    <div className="p-4 border-b flex items-center bg-white z-10">
-                         <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white mr-3"><i className="fa-solid fa-robot text-xs"></i></div>
-                         <h1 className="font-bold text-gray-800">AI 參謀</h1>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24 bg-gray-50">
-                        {chat.map(c => <div key={c.id} className={`flex ${c.role === 'user' ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[80%] p-3 rounded-xl shadow-sm ${c.role === 'user' ? 'bg-black text-white' : 'bg-white'}`}>{c.text}</div></div>)}
-                    </div>
-                    <div className="p-3 border-t bg-white absolute bottom-[70px] w-full flex gap-2">
-                        <input type="text" value={input} onChange={e => setInput(e.target.value)} className="flex-1 bg-gray-100 rounded-full px-4 text-sm" placeholder="輸入..." />
-                    </div>
+                <div className="content-padding min-h-screen flex flex-col bg-white">
+                    <div className="p-4 border-b flex items-center bg-white sticky top-0 z-10"><div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white mr-3"><i className="fa-solid fa-robot text-xs"></i></div><h1 className="font-bold text-gray-800">AI 參謀</h1></div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">{chat.map(c => <div key={c.id} className={`flex ${c.role === 'user' ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[80%] p-3 rounded-xl shadow-sm ${c.role === 'user' ? 'bg-black text-white' : 'bg-white'}`}>{c.text}</div></div>)}</div>
+                    <div className="p-3 border-t bg-white flex gap-2 fixed bottom-[60px] left-0 right-0 z-40 bg-white"><input type="text" value={input} onChange={e => setInput(e.target.value)} className="flex-1 bg-gray-100 rounded-full px-4 text-sm" placeholder="輸入..." /></div>
                 </div>
              );
         };
 
-        const StaffApp = ({ onSubmit }) => {
-            const [step, setStep] = useState(0); 
+        // Staff App (v1.4: Professional & Record Check)
+        const StaffApp = ({ onSubmit, reports }) => {
+            const [tab, setTab] = useState('income'); // income, issue, note
             const [role, setRole] = useState('現場管理A');
             const [data, setData] = useState({ income: '', issue: '', note: '' });
-            const handleSubmit = () => { onSubmit({ ...data, role }); alert('已送出'); setData({ income: '', issue: '', note: '' }); setStep(0); };
 
-            if (step === 0) return (
-                <div className="p-6 min-h-screen bg-white flex flex-col justify-center">
-                    <h1 className="text-2xl font-black mb-6">員工回報</h1>
-                    <select value={role} onChange={e => setRole(e.target.value)} className="w-full p-3 bg-gray-100 rounded-lg font-bold mb-4 text-sm">
-                        <option>現場管理A</option><option>現場管理B</option><option>現場夥伴</option>
-                    </select>
-                    <div className="space-y-3">
-                        <button onClick={() => setStep(1)} className="w-full bg-white border-2 border-black text-black p-4 rounded-xl font-bold text-left text-sm">1. 今日營收回報</button>
-                        <button onClick={() => setStep(2)} className="w-full bg-white border border-gray-200 p-4 rounded-xl font-bold text-left text-red-600 text-sm">2. 現場營運紀錄</button>
-                        <button onClick={() => setStep(3)} className="w-full bg-white border border-gray-200 p-4 rounded-xl font-bold text-left text-blue-600 text-sm">3. 明日重點提醒</button>
+            // 員工端只顯示「自己今天」的回報紀錄
+            const today = new Date().toISOString().split('T')[0];
+            const myRecords = reports.filter(r => r.date === today && r.role === role);
+
+            const handleSubmit = () => {
+                const payload = { role };
+                if(tab === 'income' && data.income) payload.income = data.income;
+                else if(tab === 'issue' && data.issue) payload.issue = data.issue;
+                else if(tab === 'note' && data.note) payload.note = data.note;
+                else return;
+
+                onSubmit(payload);
+                alert('回報已送出');
+                setData({ income: '', issue: '', note: '' });
+            };
+
+            return (
+                <div className="content-padding min-h-screen bg-white">
+                    <div className="p-6 sticky top-0 bg-white z-10 border-b border-gray-100">
+                        <h1 className="text-xl font-black mb-4">員工回報端</h1>
+                        <select value={role} onChange={e => setRole(e.target.value)} className="w-full p-2 bg-gray-100 rounded-lg font-bold text-sm mb-4">
+                            <option>現場管理A</option><option>現場管理B</option><option>現場夥伴</option>
+                        </select>
+                        <div className="flex bg-gray-100 p-1 rounded-lg">
+                            <button onClick={() => setTab('income')} className={`flex-1 py-2 rounded text-xs font-bold ${tab === 'income' ? 'bg-black text-white' : 'text-gray-500'}`}>營收</button>
+                            <button onClick={() => setTab('issue')} className={`flex-1 py-2 rounded text-xs font-bold ${tab === 'issue' ? 'bg-black text-white' : 'text-gray-500'}`}>紀錄</button>
+                            <button onClick={() => setTab('note')} className={`flex-1 py-2 rounded text-xs font-bold ${tab === 'note' ? 'bg-black text-white' : 'text-gray-500'}`}>提醒</button>
+                        </div>
                     </div>
-                </div>
-            );
-            return ( /* Simplified Sub-pages */ 
-                <div className="p-6 bg-white min-h-screen">
-                    <button onClick={() => setStep(0)} className="mb-4 text-gray-500 text-sm"><i className="fa-solid fa-arrow-left"></i> 返回</button>
-                    {step === 1 && <><h2 className="text-lg font-black mb-4">今日營收回報</h2><input type="number" value={data.income} onChange={e => setData({...data, income: e.target.value})} className="w-full text-4xl font-bold border-b-2 py-2 mb-6" autoFocus /><button onClick={handleSubmit} className="w-full bg-black text-white py-4 rounded-xl font-bold">送出</button></>}
-                    {step === 2 && <><h2 className="text-lg font-black mb-4 text-red-600">現場營運紀錄</h2><textarea value={data.issue} onChange={e => setData({...data, issue: e.target.value})} className="w-full h-40 bg-gray-50 p-4 rounded-xl mb-6" autoFocus></textarea><button onClick={handleSubmit} className="w-full bg-red-600 text-white py-4 rounded-xl font-bold">送出</button></>}
-                    {step === 3 && <><h2 className="text-lg font-black mb-4 text-blue-600">明日重點提醒</h2><textarea value={data.note} onChange={e => setData({...data, note: e.target.value})} className="w-full h-40 bg-gray-50 p-4 rounded-xl mb-6" autoFocus></textarea><button onClick={handleSubmit} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold">送出</button></>}
+
+                    <div className="p-6">
+                        {tab === 'income' && (
+                            <div className="animate-fade-in">
+                                <h2 className="text-lg font-black mb-4">今日營收回報</h2>
+                                <input type="number" value={data.income} onChange={e => setData({...data, income: e.target.value})} className="w-full text-4xl font-bold border-b-2 py-2 mb-6 focus:outline-none focus:border-black" placeholder="$0" autoFocus />
+                                <button onClick={handleSubmit} className="w-full bg-black text-white py-4 rounded-xl font-bold mb-8">送出回報</button>
+                            </div>
+                        )}
+                        {tab === 'issue' && (
+                            <div className="animate-fade-in">
+                                <h2 className="text-lg font-black mb-4 text-red-600">現場營運紀錄</h2>
+                                <textarea value={data.issue} onChange={e => setData({...data, issue: e.target.value})} className="w-full h-32 bg-gray-50 p-4 rounded-xl mb-6 focus:outline-none" placeholder="發生了什麼事..." autoFocus></textarea>
+                                <button onClick={handleSubmit} className="w-full bg-red-600 text-white py-4 rounded-xl font-bold mb-8">送出紀錄</button>
+                            </div>
+                        )}
+                        {tab === 'note' && (
+                            <div className="animate-fade-in">
+                                <h2 className="text-lg font-black mb-4 text-blue-600">明日重點提醒</h2>
+                                <textarea value={data.note} onChange={e => setData({...data, note: e.target.value})} className="w-full h-32 bg-gray-50 p-4 rounded-xl mb-6 focus:outline-none" placeholder="備料、叫貨提醒..." autoFocus></textarea>
+                                <button onClick={handleSubmit} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold mb-8">送出提醒</button>
+                            </div>
+                        )}
+
+                        <div className="border-t pt-6">
+                            <p className="text-xs font-bold text-gray-400 mb-3">今日已回報紀錄 ({role})</p>
+                            {myRecords.length === 0 ? <p className="text-xs text-gray-300">尚無紀錄</p> : 
+                                <div className="space-y-2">
+                                    {myRecords.map(r => (
+                                        <div key={r.id} className="text-xs bg-gray-50 p-2 rounded flex justify-between">
+                                            <span className="text-gray-500">{r.timestamp}</span>
+                                            <span className="font-bold text-gray-800">
+                                                {r.income ? `營收 $${r.income}` : r.issue ? '營運紀錄' : '重點提醒'}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            }
+                        </div>
+                    </div>
                 </div>
             );
         };
@@ -545,9 +456,7 @@
             const [transactions, setTransactions] = useState([]);
             const [reports, setReports] = useState([]);
             const [settings, setSettings] = useState({ dailyFixedCost: 5000 });
-
-            // Global Timer State
-            const [activeTimer, setActiveTimer] = useState(null); // { minutes: 10, startTime: timestamp }
+            const [activeTimer, setActiveTimer] = useState(null);
             
             useEffect(() => {
                 const t = localStorage.getItem(DB_KEY_TRANSACTIONS); if(t) setTransactions(JSON.parse(t));
@@ -557,22 +466,17 @@
 
             const startTimer = (m) => { setActiveTimer({ minutes: m, startTime: Date.now() }); };
             const stopTimer = () => { setActiveTimer(null); };
-
-            // Timer Tick Check (Global)
             useEffect(() => {
                 let interval;
                 if (activeTimer) {
                     interval = setInterval(() => {
-                        const elapsed = (Date.now() - activeTimer.startTime) / 1000; // sec
-                        const total = activeTimer.minutes * 60;
-                        if (elapsed >= total) {
+                        const elapsed = (Date.now() - activeTimer.startTime) / 1000;
+                        if (elapsed >= activeTimer.minutes * 60) {
                             if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                            alert('轉場時間到');
-                            setActiveTimer(null);
+                            alert('轉場時間到'); setActiveTimer(null);
                         }
                     }, 1000);
-                }
-                return () => clearInterval(interval);
+                } return () => clearInterval(interval);
             }, [activeTimer]);
 
             const handleStaffSubmit = (newReport) => {
@@ -584,7 +488,7 @@
             if (view === 'pin') return (
                 <div className="flex flex-col items-center justify-center min-h-screen bg-black px-6">
                     <div className="text-white text-4xl mb-4"><i className="fa-solid fa-fish"></i></div>
-                    <h1 className="text-white text-xl font-bold mb-8">Seafood Boss v1.3</h1>
+                    <h1 className="text-white text-xl font-bold mb-8">Seafood Boss v1.4</h1>
                     <div className="w-full max-w-xs bg-white rounded-xl p-6">
                         <button onClick={() => setView('staff')} className="w-full py-3 bg-gray-100 rounded-lg font-bold text-gray-600 mb-4 text-sm">員工入口</button>
                         <div className="relative"><input type="password" value={pin} onChange={e => setPin(e.target.value)} className="w-full bg-gray-100 p-3 rounded-lg text-center text-xl tracking-widest outline-none border-2 focus:border-black" maxLength="4" placeholder="PIN" /><button onClick={() => pin === '8888' ? setView('owner') : alert('Error')} className="absolute right-1 top-1 bottom-1 bg-black text-white px-4 rounded-md"><i className="fa-solid fa-arrow-right"></i></button></div>
@@ -592,18 +496,18 @@
                 </div>
             );
 
-            if (view === 'staff') return <StaffApp onSubmit={handleStaffSubmit} />;
+            if (view === 'staff') return <StaffApp onSubmit={handleStaffSubmit} reports={reports} />;
 
             return (
-                <div className="h-full max-w-md mx-auto relative shadow-2xl bg-white flex flex-col">
-                    <div className="flex-1 overflow-hidden">
+                <div className="bg-white max-w-md mx-auto relative shadow-2xl min-h-screen">
+                    <div className="pb-[70px]"> {/* Spacer for bottom nav */}
                         {page === 'dashboard' && <OwnerDashboard setPage={setPage} transactions={transactions} settings={settings} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />}
                         {page === 'ops' && <Operations transactions={transactions} setTransactions={setTransactions} settings={settings} saveSettings={saveSettings} />}
                         {page === 'reports' && <Reports reports={reports} setPage={setPage} />}
                         {page === 'ai' && <AIAdvisor />}
                     </div>
                     {/* Fixed Bottom Nav */}
-                    <div className="flex-none bg-white border-t border-gray-200 flex justify-around items-center h-[60px] pb-safe z-50">
+                    <div className="bottom-nav-fix flex justify-around items-center h-[60px]">
                         <button onClick={() => setPage('dashboard')} className={`flex flex-col items-center w-full ${page === 'dashboard' ? 'text-black' : 'text-gray-400'}`}><i className="fa-solid fa-chart-pie text-lg mb-0.5"></i><span className="text-[10px] font-bold">概況</span></button>
                         <button onClick={() => setPage('ops')} className={`flex flex-col items-center w-full ${page === 'ops' ? 'text-black' : 'text-gray-400'}`}><i className="fa-solid fa-calculator text-lg mb-0.5"></i><span className="text-[10px] font-bold">營運</span></button>
                         <button onClick={() => setPage('reports')} className={`flex flex-col items-center w-full ${page === 'reports' ? 'text-black' : 'text-gray-400'}`}><i className="fa-solid fa-list-check text-lg mb-0.5"></i><span className="text-[10px] font-bold">回報</span></button>
