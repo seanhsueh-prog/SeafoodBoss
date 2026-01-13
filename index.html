@@ -1,4 +1,4 @@
-<!-- 檔名：SeafoodBossApp_Spec_new.v2.2.html -->
+<!-- 檔名：index.html (v2.2 強制更新版) -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -31,7 +31,7 @@
                             900: '#0C4A6E',
                         },
                         ocean: {
-                            600: '#0284c7', // Sky 600 - Lighter Blue for Header
+                            600: '#0284c7', // Sky 600
                             800: '#075985', // Sky 800
                         },
                         darkgray: '#374151',
@@ -157,7 +157,7 @@
                 localStorage.setItem(DB_KEY_ENV, JSON.stringify(newEnv));
             };
 
-            const IconBtn = ({ active, onClick, icon, activeClass, defaultClass }) => (
+            const IconBtn = ({ active, onClick, icon, activeClass }) => (
                 <button 
                     onClick={onClick} 
                     className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${active ? activeClass + ' shadow-md ring-2 ring-white/30 scale-105' : 'bg-white/20 text-white/70 hover:bg-white/30'}`}
@@ -349,7 +349,7 @@
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
             const [showSettingModal, setShowSettingModal] = useState(false);
-            const [isCalExpanded, setIsCalExpanded] = useState(true); // New state for collapsing calendar
+            const [isCalExpanded, setIsCalExpanded] = useState(true); 
             
             const [selectedDate, setSelectedDate] = useState(getTodayStr());
             const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
@@ -426,7 +426,7 @@
 
             return (
                 <div className="pb-20 animate-fade-in min-h-screen">
-                    {/* Sticky Headers (Same as v2.1) */}
+                    {/* Sticky Headers */}
                     <div className="sticky-sub-header bg-white px-4 border-b border-navy-50 flex justify-between items-center shadow-sm">
                         <h2 className="font-black text-navy-900 text-lg">營運報表</h2>
                         <button onClick={() => setShowSettingModal(true)} className="w-8 h-8 rounded-full bg-navy-50 text-navy-600 flex items-center justify-center"><i className="fa-solid fa-gear"></i></button>
@@ -528,7 +528,7 @@
                         </div>
                     </div>
 
-                    {/* Modals (Hidden for brevity, same as v2.1) */}
+                    {/* Modals */}
                     {showAddModal && (
                         <div className="fixed inset-0 bg-navy-900 bg-opacity-40 z-[70] flex items-end sm:items-center justify-center sm:p-4">
                             <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
@@ -698,16 +698,15 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
 
-        // --- NEW SW LOGIC (Auto Update) ---
+        // --- 註冊 SW (指向新檔名 sw-v2.2.js 以強制更新) ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js').then(registration => {
+                navigator.serviceWorker.register('./sw-v2.2.js').then(registration => {
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
                         installingWorker.onstatechange = () => {
                             if (installingWorker.state === 'installed') {
                                 if (navigator.serviceWorker.controller) {
-                                    // New content available, force reload
                                     window.location.reload();
                                 }
                             }
