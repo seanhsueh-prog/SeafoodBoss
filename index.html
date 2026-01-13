@@ -1,13 +1,13 @@
-<!-- 檔名：SeafoodBossApp_Spec_new.v2.1.html -->
+<!-- 檔名：SeafoodBossApp_Spec_new.v2.2.html -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Seafood Boss (v2.1)</title>
+    <title>Seafood Boss (v2.2)</title>
     
     <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#0C4A6E">
+    <meta name="theme-color" content="#0284c7"> 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="./icons/icon-192.png">
@@ -28,7 +28,11 @@
                             100: '#E0F2FE',
                             500: '#0EA5E9',
                             800: '#075985',
-                            900: '#0C4A6E', // Main Brand Color
+                            900: '#0C4A6E',
+                        },
+                        ocean: {
+                            600: '#0284c7', // Sky 600 - Lighter Blue for Header
+                            800: '#075985', // Sky 800
                         },
                         darkgray: '#374151',
                     },
@@ -91,7 +95,7 @@
             left: 0;
             right: 0;
             z-index: 60;
-            background-color: #0C4A6E;
+            background: linear-gradient(to right, #0284c7, #0369a1); /* Lighter Ocean Gradient */
             height: 60px;
             display: flex;
             align-items: center;
@@ -101,7 +105,7 @@
         }
         .sticky-sub-header {
             position: sticky;
-            top: 60px; /* Below Env Bar */
+            top: 60px; 
             z-index: 40;
             background-color: #F8FAFC;
             padding-top: 0.5rem;
@@ -142,7 +146,7 @@
 
         // --- Components ---
 
-        // 1. Environment Bar (Sticky Top - Navy Theme)
+        // 1. Environment Bar (Updated Visuals v2.2)
         const EnvironmentBar = ({ envData, setEnvData }) => {
             const today = getTodayStr();
             const currentEnv = envData[today] || { weather: 'sunny', traffic: 'normal' };
@@ -153,29 +157,38 @@
                 localStorage.setItem(DB_KEY_ENV, JSON.stringify(newEnv));
             };
 
+            const IconBtn = ({ active, onClick, icon, activeClass, defaultClass }) => (
+                <button 
+                    onClick={onClick} 
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${active ? activeClass + ' shadow-md ring-2 ring-white/30 scale-105' : 'bg-white/20 text-white/70 hover:bg-white/30'}`}
+                >
+                    <i className={icon}></i>
+                </button>
+            );
+
             return (
                 <div className="sticky-env-bar">
                     <div className="flex items-center text-white">
-                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center mr-2">
+                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-2 backdrop-blur-sm">
                             <i className="fa-solid fa-fish text-sm"></i>
                         </div>
                         <div className="leading-tight">
                             <div className="font-black text-sm tracking-wider">SF.BOSS</div>
-                            <div className="text-[10px] opacity-70 font-mono">v2.1</div>
+                            <div className="text-[10px] opacity-80 font-mono">v2.2</div>
                         </div>
                     </div>
                     <div className="flex space-x-3">
-                        {/* Traffic Toggle */}
-                        <div className="bg-navy-800/50 rounded-lg p-0.5 flex border border-navy-500/30">
-                            <button onClick={() => updateEnv('traffic', 'slow')} className={`w-8 h-8 rounded flex items-center justify-center transition-all ${currentEnv.traffic === 'slow' ? 'bg-green-500 text-white shadow-lg scale-105' : 'text-navy-200 opacity-50'}`}><i className="fa-solid fa-turtle"></i></button>
-                            <button onClick={() => updateEnv('traffic', 'normal')} className={`w-8 h-8 rounded flex items-center justify-center transition-all ${currentEnv.traffic === 'normal' ? 'bg-yellow-500 text-white shadow-lg scale-105' : 'text-navy-200 opacity-50'}`}><i className="fa-solid fa-person-walking"></i></button>
-                            <button onClick={() => updateEnv('traffic', 'busy')} className={`w-8 h-8 rounded flex items-center justify-center transition-all ${currentEnv.traffic === 'busy' ? 'bg-red-600 text-white shadow-lg scale-105 animate-pulse' : 'text-navy-200 opacity-50'}`}><i className="fa-solid fa-fire"></i></button>
+                        {/* Traffic Group */}
+                        <div className="flex space-x-1 bg-black/10 p-1 rounded-xl backdrop-blur-sm">
+                            <IconBtn active={currentEnv.traffic === 'slow'} onClick={() => updateEnv('traffic', 'slow')} icon="fa-solid fa-turtle" activeClass="bg-green-500 text-white" />
+                            <IconBtn active={currentEnv.traffic === 'normal'} onClick={() => updateEnv('traffic', 'normal')} icon="fa-solid fa-person-walking" activeClass="bg-yellow-500 text-white" />
+                            <IconBtn active={currentEnv.traffic === 'busy'} onClick={() => updateEnv('traffic', 'busy')} icon="fa-solid fa-fire" activeClass="bg-red-600 text-white" />
                         </div>
-                        {/* Weather Toggle */}
-                        <div className="bg-navy-800/50 rounded-lg p-0.5 flex border border-navy-500/30">
-                            <button onClick={() => updateEnv('weather', 'sunny')} className={`w-8 h-8 rounded flex items-center justify-center transition-all ${currentEnv.weather === 'sunny' ? 'bg-orange-400 text-white shadow-lg scale-105' : 'text-navy-200 opacity-50'}`}><i className="fa-solid fa-sun"></i></button>
-                            <button onClick={() => updateEnv('weather', 'cloudy')} className={`w-8 h-8 rounded flex items-center justify-center transition-all ${currentEnv.weather === 'cloudy' ? 'bg-gray-400 text-white shadow-lg scale-105' : 'text-navy-200 opacity-50'}`}><i className="fa-solid fa-cloud"></i></button>
-                            <button onClick={() => updateEnv('weather', 'rainy')} className={`w-8 h-8 rounded flex items-center justify-center transition-all ${currentEnv.weather === 'rainy' ? 'bg-blue-500 text-white shadow-lg scale-105' : 'text-navy-200 opacity-50'}`}><i className="fa-solid fa-cloud-showers-heavy"></i></button>
+                        {/* Weather Group */}
+                        <div className="flex space-x-1 bg-black/10 p-1 rounded-xl backdrop-blur-sm">
+                            <IconBtn active={currentEnv.weather === 'sunny'} onClick={() => updateEnv('weather', 'sunny')} icon="fa-solid fa-sun" activeClass="bg-orange-500 text-white" />
+                            <IconBtn active={currentEnv.weather === 'cloudy'} onClick={() => updateEnv('weather', 'cloudy')} icon="fa-solid fa-cloud" activeClass="bg-gray-500 text-white" />
+                            <IconBtn active={currentEnv.weather === 'rainy'} onClick={() => updateEnv('weather', 'rainy')} icon="fa-solid fa-cloud-showers-heavy" activeClass="bg-blue-600 text-white" />
                         </div>
                     </div>
                 </div>
@@ -192,18 +205,18 @@
                 >
                     {isActive && (
                         <div 
-                            className="absolute left-0 top-0 bottom-0 bg-navy-100 z-0 animate-progress"
+                            className="absolute left-0 top-0 bottom-0 bg-ocean-600/10 z-0 animate-progress"
                             style={{ animationDuration: `${minutes * 60}s`, width: '100%' }}
                         ></div>
                     )}
-                    <span className={`relative z-10 font-bold text-xs ${isActive ? 'text-navy-900' : 'text-gray-400'}`}>
+                    <span className={`relative z-10 font-bold text-xs ${isActive ? 'text-ocean-800' : 'text-gray-400'}`}>
                         {minutes}分
                     </span>
                 </button>
             );
         };
 
-        // 3. Owner Log (Expanded)
+        // 3. Owner Log
         const OwnerLog = ({ logs, setLogs }) => {
             const [input, setInput] = useState('');
             const addLog = () => {
@@ -253,7 +266,7 @@
 
         // --- Pages ---
 
-        // A. Owner Dashboard (v2.1 Layout Update)
+        // A. Owner Dashboard
         const Dashboard = ({ setPage, transactions, logs, setLogs, activeTimer, startTimer, stopTimer, settings }) => {
             const today = getTodayStr();
             const todayStats = useMemo(() => {
@@ -274,7 +287,7 @@
                     <div className="sticky-sub-header px-4 z-50 bg-[#F8FAFC]">
                         <div onClick={() => setPage('ai')} className="bg-white rounded-full p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border border-navy-50 shadow-sm active:scale-95 transition-transform">
                             <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-navy-900 rounded-full flex items-center justify-center text-white"><i className="fa-solid fa-robot text-xs"></i></div>
+                                <div className="w-8 h-8 bg-ocean-600 rounded-full flex items-center justify-center text-white"><i className="fa-solid fa-robot text-xs"></i></div>
                                 <span className="text-gray-400 text-xs font-medium">今天想分析什麼...</span>
                             </div>
                             <div className="flex space-x-1">
@@ -286,10 +299,8 @@
                     </div>
 
                     <div className="px-4 pb-20 pt-2 animate-fade-in flex flex-col h-full">
-                        {/* 1. Owner Log (Middle) */}
                         <OwnerLog logs={logs} setLogs={setLogs} />
 
-                        {/* 2. Transition Timer */}
                         <div className="mb-6">
                             <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider uppercase">Transition Timer</p>
                             <div className="grid grid-cols-3 gap-2">
@@ -299,7 +310,6 @@
                             </div>
                         </div>
 
-                        {/* 3. Owner Ops Card (Moved to Bottom for Privacy) */}
                         <div className="mt-auto">
                             <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider uppercase">Financials (Private)</p>
                             <div onClick={() => setPage('ops')} className="bg-gradient-to-br from-white to-gray-50 rounded-xl card-shadow p-5 border border-navy-50 flex items-center justify-between active:scale-95 transition-transform cursor-pointer">
@@ -322,7 +332,7 @@
                         </div>
                     </div>
 
-                    {/* 4. Sticky Bottom Status */}
+                    {/* Fixed Bottom Status */}
                     <div className="fixed bottom-[60px] left-0 right-0 bg-white border-t border-navy-50 p-2 flex items-center justify-between px-4 z-40">
                         <span className="text-xs font-bold text-gray-500">今日狀態</span>
                         <div className="flex items-center space-x-2">
@@ -334,16 +344,16 @@
             );
         };
 
-        // B. Operations (Sticky Headers + Fixed Logic)
+        // B. Operations (Optimized v2.2)
         const Operations = ({ transactions, setTransactions, settings, saveSettings }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
             const [showSettingModal, setShowSettingModal] = useState(false);
+            const [isCalExpanded, setIsCalExpanded] = useState(true); // New state for collapsing calendar
             
             const [selectedDate, setSelectedDate] = useState(getTodayStr());
             const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
             
-            // Input States
             const [date, setDate] = useState(getTodayStr());
             const [type, setType] = useState('income');
             const [amount, setAmount] = useState('');
@@ -373,7 +383,6 @@
                 } else if (period === 'month') {
                     filtered = transactions.filter(t => t.date.startsWith(monthStr));
                     const daysInM = new Date(now.getFullYear(), currentMonth, 0).getDate();
-                    // Fix: Dynamic Pro-rated
                     let daysPassed = daysInM;
                     if(now.getFullYear() === parseInt(yearStr) && (now.getMonth() + 1) === currentMonth) {
                         daysPassed = now.getDate();
@@ -384,10 +393,9 @@
                     listData = transactions.filter(t => t.date === selectedDate);
                 } else { // Year
                     filtered = transactions.filter(t => t.date.startsWith(yearStr));
-                    // Fix: Dynamic Pro-rated for Year (Crucial Update)
                     const startOfYear = new Date(now.getFullYear(), 0, 1);
                     const diffTime = Math.abs(now - startOfYear);
-                    const daysPassedYear = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include today
+                    const daysPassedYear = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
                     fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * daysPassedYear;
 
                     income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
@@ -418,13 +426,11 @@
 
             return (
                 <div className="pb-20 animate-fade-in min-h-screen">
-                    {/* Sticky Header 1: Title & Settings */}
+                    {/* Sticky Headers (Same as v2.1) */}
                     <div className="sticky-sub-header bg-white px-4 border-b border-navy-50 flex justify-between items-center shadow-sm">
                         <h2 className="font-black text-navy-900 text-lg">營運報表</h2>
                         <button onClick={() => setShowSettingModal(true)} className="w-8 h-8 rounded-full bg-navy-50 text-navy-600 flex items-center justify-center"><i className="fa-solid fa-gear"></i></button>
                     </div>
-
-                    {/* Sticky Header 2: Filters & Date */}
                     <div className="sticky top-[108px] z-30 bg-gray-50 px-4 py-2 border-b border-gray-100 shadow-sm flex justify-between items-center">
                         <div className="bg-white p-0.5 rounded-lg border border-navy-50 shadow-sm inline-flex">
                             {['day', 'month', 'year'].map(p => (
@@ -449,29 +455,37 @@
                             <div className="absolute right-0 top-0 p-3 opacity-5"><i className="fa-solid fa-chart-line text-6xl"></i></div>
                             <div className="flex justify-between items-center mb-2"><span className="text-gray-500 font-bold text-xs">營收總額</span><span className="text-lg font-bold text-navy-900">+ {stats.income.toLocaleString()}</span></div>
                             <div className="flex justify-between items-center mb-2"><span className="text-gray-500 font-bold text-xs">臨時支出</span><span className="text-lg font-bold text-red-500">- {stats.expense.toLocaleString()}</span></div>
-                            <div className="flex justify-between items-center mb-3 pb-3 border-b border-dashed border-gray-200"><span className="text-gray-400 font-bold text-[10px]">固定攤提 (已過天數)</span><span className="text-sm font-bold text-gray-400">- {stats.fixedCostTotal.toLocaleString()}</span></div>
+                            <div className="flex justify-between items-center mb-3 pb-3 border-b border-dashed border-gray-200"><span className="text-gray-400 font-bold text-[10px]">固定攤提 (動態)</span><span className="text-sm font-bold text-gray-400">- {stats.fixedCostTotal.toLocaleString()}</span></div>
                             <div className="flex justify-between items-end"><span className="text-navy-900 font-black text-sm">淨利結餘</span><span className={`text-2xl font-black ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</span></div>
                         </div>
 
-                        {/* Calendar (Month View Only) */}
+                        {/* Calendar (Collapsible v2.2) */}
                         {period === 'month' && (
                             <div className="mb-6 bg-white rounded-xl p-4 card-shadow">
-                                <div className="grid grid-cols-7 gap-1 mb-2 text-center">{['日','一','二','三','四','五','六'].map(d => <span key={d} className="text-[10px] text-gray-400 font-bold">{d}</span>)}</div>
-                                <div className="grid grid-cols-7 gap-1">
-                                    {calendarDays.map((d, i) => {
-                                        if(!d) return <div key={i}></div>;
-                                        const s = stats.dailyStats[d.dateStr];
-                                        const net = s ? (s.income - s.expense - (settings.dailyFixedCost||0)) : -(settings.dailyFixedCost||0);
-                                        const hasData = s && (s.income > 0 || s.expense > 0);
-                                        const isSelected = selectedDate === d.dateStr;
-                                        return (
-                                            <div key={i} onClick={() => setSelectedDate(d.dateStr)} className={`aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer border transition-colors ${isSelected ? 'bg-navy-900 border-navy-900' : 'border-transparent hover:bg-gray-50'}`}>
-                                                <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-500'}`}>{d.day}</span>
-                                                <div className={`w-1.5 h-1.5 rounded-full mt-1 ${net > 0 ? 'bg-green-500' : 'bg-red-500'} ${!hasData ? 'opacity-0' : ''}`}></div>
-                                            </div>
-                                        );
-                                    })}
+                                <div className="flex justify-between items-center mb-2 cursor-pointer" onClick={() => setIsCalExpanded(!isCalExpanded)}>
+                                    <span className="text-xs font-bold text-gray-400">日曆視圖</span>
+                                    <i className={`fa-solid fa-chevron-${isCalExpanded ? 'up' : 'down'} text-gray-400 text-xs`}></i>
                                 </div>
+                                {isCalExpanded && (
+                                    <div className="animate-fade-in">
+                                        <div className="grid grid-cols-7 gap-1 mb-2 text-center">{['日','一','二','三','四','五','六'].map(d => <span key={d} className="text-[10px] text-gray-400 font-bold">{d}</span>)}</div>
+                                        <div className="grid grid-cols-7 gap-1">
+                                            {calendarDays.map((d, i) => {
+                                                if(!d) return <div key={i}></div>;
+                                                const s = stats.dailyStats[d.dateStr];
+                                                const net = s ? (s.income - s.expense - (settings.dailyFixedCost||0)) : -(settings.dailyFixedCost||0);
+                                                const hasData = s && (s.income > 0 || s.expense > 0);
+                                                const isSelected = selectedDate === d.dateStr;
+                                                return (
+                                                    <div key={i} onClick={() => setSelectedDate(d.dateStr)} className={`aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer border transition-colors ${isSelected ? 'bg-navy-900 border-navy-900' : 'border-transparent hover:bg-gray-50'}`}>
+                                                        <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-500'}`}>{d.day}</span>
+                                                        <div className={`w-1.5 h-1.5 rounded-full mt-1 ${net > 0 ? 'bg-green-500' : 'bg-red-500'} ${!hasData ? 'opacity-0' : ''}`}></div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -514,7 +528,7 @@
                         </div>
                     </div>
 
-                    {/* Modals */}
+                    {/* Modals (Hidden for brevity, same as v2.1) */}
                     {showAddModal && (
                         <div className="fixed inset-0 bg-navy-900 bg-opacity-40 z-[70] flex items-end sm:items-center justify-center sm:p-4">
                             <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
@@ -542,8 +556,7 @@
                     {showSettingModal && (
                         <div className="fixed inset-0 bg-navy-900 bg-opacity-40 z-[70] flex items-center justify-center p-4">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
-                                <h3 className="font-bold text-lg mb-4 text-navy-900">日均營運成本 (固定)</h3>
-                                <p className="text-xs text-gray-400 mb-4">房租、水電、基本薪資等。<br/>系統會自動按已過天數進行攤提。</p>
+                                <h3 className="font-bold text-lg mb-4 text-navy-900">日均營運成本</h3>
                                 <input type="number" value={tempFixedCost} onChange={e => setTempFixedCost(e.target.value)} className="w-full text-3xl font-black border-b-2 border-navy-900 py-2 mb-6 focus:outline-none text-navy-900" />
                                 <div className="flex gap-3">
                                     <button onClick={() => setShowSettingModal(false)} className="flex-1 py-3 text-gray-500 font-bold bg-gray-100 rounded-lg">取消</button>
@@ -559,7 +572,7 @@
         // C. AI Advisor
         const AIAdvisor = ({ settings, saveSettings }) => {
              const [input, setInput] = useState('');
-             const [chat, setChat] = useState([{ id: 1, role: 'ai', text: '老闆好，我是 v2.1 版 AI 參謀。您可以點擊下方的麥克風(語音)或相機(拍照)按鈕來提供更多資訊。' }]);
+             const [chat, setChat] = useState([{ id: 1, role: 'ai', text: '老闆好，我是 v2.2 版 AI 參謀。' }]);
              const [showSettings, setShowSettings] = useState(false);
              const [apiKey, setApiKey] = useState(settings.apiKey || '');
              const messagesEndRef = useRef(null);
@@ -570,14 +583,12 @@
                  setChat(prev => [...prev, { id: Date.now(), role: 'user', text: input }]);
                  setInput('');
                  setTimeout(() => {
-                    const response = settings.apiKey ? "收到指令。目前仍為模擬模式，尚未連接 Gemini API。" : "請先設定 API Key 以啟用分析。";
-                    setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: response }]);
+                    setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: "收到 (Phase 1 Mock)" }]);
                  }, 800);
              };
 
              return (
                 <div className="pt-4 pb-20 px-4 h-full flex flex-col min-h-screen">
-                    {/* Header */}
                     <div className="flex justify-between items-center mb-4 sticky top-[60px] bg-gray-50 z-20 py-2">
                         <div className="flex items-center">
                             <div className="w-10 h-10 bg-navy-900 rounded-full flex items-center justify-center text-white mr-3 shadow">
@@ -590,8 +601,6 @@
                         </div>
                         <button onClick={() => setShowSettings(true)} className="text-navy-600 bg-white p-2 rounded-full border border-navy-100 shadow-sm"><i className="fa-solid fa-key"></i></button>
                     </div>
-
-                    {/* Chat Area */}
                     <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1">
                         {chat.map(c => (
                             <div key={c.id} className={`flex ${c.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -602,16 +611,12 @@
                         ))}
                         <div ref={messagesEndRef} />
                     </div>
-
-                    {/* Input Area */}
                     <div className="fixed bottom-[60px] left-0 right-0 p-3 bg-white border-t border-navy-50 flex gap-2 z-40 items-center">
                         <button className="w-10 h-10 rounded-full bg-navy-50 text-navy-600 flex items-center justify-center"><i className="fa-solid fa-microphone"></i></button>
                         <button className="w-10 h-10 rounded-full bg-navy-50 text-navy-600 flex items-center justify-center"><i className="fa-solid fa-camera"></i></button>
                         <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} className="flex-1 bg-navy-50 rounded-full px-4 py-3 text-sm text-darkgray focus:outline-none" placeholder="輸入..." />
                         <button onClick={handleSend} className="w-11 h-11 rounded-full bg-navy-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform"><i className="fa-solid fa-paper-plane text-xs"></i></button>
                     </div>
-                    
-                    {/* Settings Modal (Same as before) */}
                     {showSettings && (
                         <div className="fixed inset-0 bg-navy-900 bg-opacity-50 z-[80] flex items-center justify-center p-6">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
@@ -692,7 +697,25 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-        if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js')); }
+
+        // --- NEW SW LOGIC (Auto Update) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js').then(registration => {
+                    registration.onupdatefound = () => {
+                        const installingWorker = registration.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    // New content available, force reload
+                                    window.location.reload();
+                                }
+                            }
+                        };
+                    };
+                });
+            });
+        }
     </script>
 </body>
 </html>
