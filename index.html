@@ -1,10 +1,10 @@
-<!-- 檔名：index.html (v2.2 強制更新版) -->
+<!-- 檔名：index.html (v2.3 AI Live) -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Seafood Boss (v2.2)</title>
+    <title>Seafood Boss (v2.3)</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0284c7"> 
@@ -38,6 +38,7 @@
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.3s ease-out',
+                        'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     },
                     keyframes: {
                         fadeIn: {
@@ -95,7 +96,7 @@
             left: 0;
             right: 0;
             z-index: 60;
-            background: linear-gradient(to right, #0284c7, #0369a1); /* Lighter Ocean Gradient */
+            background: linear-gradient(to right, #0284c7, #0369a1);
             height: 60px;
             display: flex;
             align-items: center;
@@ -146,7 +147,7 @@
 
         // --- Components ---
 
-        // 1. Environment Bar (Updated Visuals v2.2)
+        // 1. Environment Bar
         const EnvironmentBar = ({ envData, setEnvData }) => {
             const today = getTodayStr();
             const currentEnv = envData[today] || { weather: 'sunny', traffic: 'normal' };
@@ -174,17 +175,15 @@
                         </div>
                         <div className="leading-tight">
                             <div className="font-black text-sm tracking-wider">SF.BOSS</div>
-                            <div className="text-[10px] opacity-80 font-mono">v2.2</div>
+                            <div className="text-[10px] opacity-80 font-mono">v2.3</div>
                         </div>
                     </div>
                     <div className="flex space-x-3">
-                        {/* Traffic Group */}
                         <div className="flex space-x-1 bg-black/10 p-1 rounded-xl backdrop-blur-sm">
                             <IconBtn active={currentEnv.traffic === 'slow'} onClick={() => updateEnv('traffic', 'slow')} icon="fa-solid fa-turtle" activeClass="bg-green-500 text-white" />
                             <IconBtn active={currentEnv.traffic === 'normal'} onClick={() => updateEnv('traffic', 'normal')} icon="fa-solid fa-person-walking" activeClass="bg-yellow-500 text-white" />
                             <IconBtn active={currentEnv.traffic === 'busy'} onClick={() => updateEnv('traffic', 'busy')} icon="fa-solid fa-fire" activeClass="bg-red-600 text-white" />
                         </div>
-                        {/* Weather Group */}
                         <div className="flex space-x-1 bg-black/10 p-1 rounded-xl backdrop-blur-sm">
                             <IconBtn active={currentEnv.weather === 'sunny'} onClick={() => updateEnv('weather', 'sunny')} icon="fa-solid fa-sun" activeClass="bg-orange-500 text-white" />
                             <IconBtn active={currentEnv.weather === 'cloudy'} onClick={() => updateEnv('weather', 'cloudy')} icon="fa-solid fa-cloud" activeClass="bg-gray-500 text-white" />
@@ -288,12 +287,11 @@
                         <div onClick={() => setPage('ai')} className="bg-white rounded-full p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border border-navy-50 shadow-sm active:scale-95 transition-transform">
                             <div className="flex items-center space-x-3">
                                 <div className="w-8 h-8 bg-ocean-600 rounded-full flex items-center justify-center text-white"><i className="fa-solid fa-robot text-xs"></i></div>
-                                <span className="text-gray-400 text-xs font-medium">今天想分析什麼...</span>
+                                <span className="text-gray-400 text-xs font-medium">問問 AI 參謀...</span>
                             </div>
                             <div className="flex space-x-1">
                                 <div className="w-8 h-8 bg-navy-50 rounded-full flex items-center justify-center text-navy-600"><i className="fa-solid fa-microphone text-xs"></i></div>
                                 <div className="w-8 h-8 bg-navy-50 rounded-full flex items-center justify-center text-navy-600"><i className="fa-solid fa-camera text-xs"></i></div>
-                                <div className="w-8 h-8 bg-navy-50 rounded-full flex items-center justify-center text-navy-600"><i className="fa-solid fa-cloud-arrow-up text-xs"></i></div>
                             </div>
                         </div>
                     </div>
@@ -344,7 +342,7 @@
             );
         };
 
-        // B. Operations (Optimized v2.2)
+        // B. Operations (v2.2 Logic)
         const Operations = ({ transactions, setTransactions, settings, saveSettings }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
@@ -459,7 +457,7 @@
                             <div className="flex justify-between items-end"><span className="text-navy-900 font-black text-sm">淨利結餘</span><span className={`text-2xl font-black ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</span></div>
                         </div>
 
-                        {/* Calendar (Collapsible v2.2) */}
+                        {/* Calendar (Collapsible) */}
                         {period === 'month' && (
                             <div className="mb-6 bg-white rounded-xl p-4 card-shadow">
                                 <div className="flex justify-between items-center mb-2 cursor-pointer" onClick={() => setIsCalExpanded(!isCalExpanded)}>
@@ -569,22 +567,83 @@
             );
         };
 
-        // C. AI Advisor
-        const AIAdvisor = ({ settings, saveSettings }) => {
+        // C. AI Advisor (v2.3 REAL API)
+        const AIAdvisor = ({ settings, saveSettings, transactions, envData, logs }) => {
              const [input, setInput] = useState('');
-             const [chat, setChat] = useState([{ id: 1, role: 'ai', text: '老闆好，我是 v2.2 版 AI 參謀。' }]);
+             const [chat, setChat] = useState([{ id: 1, role: 'ai', text: '老闆好，我是 AI 參謀。今天狀況如何？' }]);
              const [showSettings, setShowSettings] = useState(false);
              const [apiKey, setApiKey] = useState(settings.apiKey || '');
+             const [isTyping, setIsTyping] = useState(false);
              const messagesEndRef = useRef(null);
+
              const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
              useEffect(scrollToBottom, [chat]);
-             const handleSend = () => {
+
+             // --- Helper to Calculate Context Data ---
+             const getContextData = () => {
+                 const today = getTodayStr();
+                 const todayTrans = transactions.filter(t => t.date === today);
+                 const income = todayTrans.filter(t => t.type === 'income').reduce((acc, c) => acc + c.amount, 0);
+                 const expense = todayTrans.filter(t => t.type === 'expense').reduce((acc, c) => acc + c.amount, 0);
+                 const net = income - expense - (settings.dailyFixedCost || 0);
+                 
+                 const env = envData[today] || { weather: '未記錄', traffic: '未記錄' };
+                 const recentLogs = logs.slice(0, 3).map(l => `[${l.timestamp}] ${l.text}`).join('; ');
+
+                 return `
+                    環境數據：日期=${today}, 天氣=${env.weather}, 客流=${env.traffic}
+                    財務數據：今日營收=${income}, 今日支出=${expense}, 今日淨利(扣除成本)=${net}
+                    最近筆記：${recentLogs || '無'}
+                 `;
+             };
+
+             const handleSend = async () => {
                  if(!input.trim()) return;
-                 setChat(prev => [...prev, { id: Date.now(), role: 'user', text: input }]);
+                 if(isTyping) return;
+
+                 // 1. Add User Message
+                 const userMsg = input;
+                 setChat(prev => [...prev, { id: Date.now(), role: 'user', text: userMsg }]);
                  setInput('');
-                 setTimeout(() => {
-                    setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: "收到 (Phase 1 Mock)" }]);
-                 }, 800);
+                 setIsTyping(true);
+
+                 // 2. Check API Key
+                 if (!settings.apiKey) {
+                     setTimeout(() => {
+                         setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: "請先點擊右上角鑰匙圖示，設定 Google API Key 才能啟用大腦。" }]);
+                         setIsTyping(false);
+                     }, 500);
+                     return;
+                 }
+
+                 // 3. Build Prompt
+                 const context = getContextData();
+                 const systemPrompt = `你是一位餐飲經營顧問，語氣簡潔、專業、像個老大哥。
+                 以下是目前店內的即時數據：
+                 ${context}
+                 
+                 請根據以上數據回答老闆的問題：${userMsg}`;
+
+                 // 4. Fetch Gemini
+                 try {
+                     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.apiKey}`, {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({
+                             contents: [{ parts: [{ text: systemPrompt }] }]
+                         })
+                     });
+
+                     if (!response.ok) throw new Error('API Error');
+                     const data = await response.json();
+                     const aiText = data.candidates[0].content.parts[0].text;
+
+                     setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: aiText }]);
+                 } catch (error) {
+                     setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: "連線失敗，請檢查網路或確認 API Key 是否正確。" }]);
+                 } finally {
+                     setIsTyping(false);
+                 }
              };
 
              return (
@@ -596,7 +655,7 @@
                             </div>
                             <div>
                                 <h1 className="font-bold text-navy-900">AI 參謀</h1>
-                                <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full">Phase 1</span>
+                                <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full animate-pulse">Live</span>
                             </div>
                         </div>
                         <button onClick={() => setShowSettings(true)} className="text-navy-600 bg-white p-2 rounded-full border border-navy-100 shadow-sm"><i className="fa-solid fa-key"></i></button>
@@ -609,19 +668,26 @@
                                 </div>
                             </div>
                         ))}
+                        {isTyping && (
+                            <div className="flex justify-start">
+                                <div className="bg-white text-gray-400 p-3 rounded-2xl rounded-bl-none shadow-sm text-xs flex items-center">
+                                    <i className="fa-solid fa-circle-notch fa-spin mr-2"></i> 思考中...
+                                </div>
+                            </div>
+                        )}
                         <div ref={messagesEndRef} />
                     </div>
                     <div className="fixed bottom-[60px] left-0 right-0 p-3 bg-white border-t border-navy-50 flex gap-2 z-40 items-center">
                         <button className="w-10 h-10 rounded-full bg-navy-50 text-navy-600 flex items-center justify-center"><i className="fa-solid fa-microphone"></i></button>
                         <button className="w-10 h-10 rounded-full bg-navy-50 text-navy-600 flex items-center justify-center"><i className="fa-solid fa-camera"></i></button>
-                        <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} className="flex-1 bg-navy-50 rounded-full px-4 py-3 text-sm text-darkgray focus:outline-none" placeholder="輸入..." />
-                        <button onClick={handleSend} className="w-11 h-11 rounded-full bg-navy-900 text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform"><i className="fa-solid fa-paper-plane text-xs"></i></button>
+                        <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} className="flex-1 bg-navy-50 rounded-full px-4 py-3 text-sm text-darkgray focus:outline-none" placeholder="輸入..." disabled={isTyping} />
+                        <button onClick={handleSend} className={`w-11 h-11 rounded-full text-white flex items-center justify-center shadow-lg transition-transform ${isTyping ? 'bg-gray-400' : 'bg-navy-900 active:scale-95'}`} disabled={isTyping}><i className="fa-solid fa-paper-plane text-xs"></i></button>
                     </div>
                     {showSettings && (
                         <div className="fixed inset-0 bg-navy-900 bg-opacity-50 z-[80] flex items-center justify-center p-6">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
                                 <h3 className="font-bold text-navy-900 mb-2">設定 AI 大腦</h3>
-                                <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full bg-navy-50 border border-navy-100 rounded-lg p-3 text-sm mb-6 focus:outline-none" placeholder="API Key..." />
+                                <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full bg-navy-50 border border-navy-100 rounded-lg p-3 text-sm mb-6 focus:outline-none" placeholder="Paste Gemini API Key Here..." />
                                 <div className="flex gap-3">
                                     <button onClick={() => setShowSettings(false)} className="flex-1 py-3 text-gray-500 font-bold bg-gray-100 rounded-lg">取消</button>
                                     <button onClick={() => { saveSettings({...settings, apiKey}); setShowSettings(false); }} className="flex-1 py-3 bg-navy-900 text-white rounded-lg font-bold">儲存</button>
@@ -675,7 +741,8 @@
                     <div className="content-padding min-h-screen bg-gray-50"> 
                         {page === 'dashboard' && <Dashboard setPage={setPage} transactions={transactions} logs={logs} setLogs={setLogs} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} settings={settings} />}
                         {page === 'ops' && <Operations transactions={transactions} setTransactions={setTransactions} settings={settings} saveSettings={saveSettings} />}
-                        {page === 'ai' && <AIAdvisor settings={settings} saveSettings={saveSettings} />}
+                        {/* Pass data to AI Advisor */}
+                        {page === 'ai' && <AIAdvisor settings={settings} saveSettings={saveSettings} transactions={transactions} envData={envData} logs={logs} />}
                     </div>
                     <div className="bottom-nav-fix flex justify-around items-center h-[60px] border-t border-navy-50">
                         <button onClick={() => setPage('dashboard')} className={`flex flex-col items-center w-full py-2 transition-colors ${page === 'dashboard' ? 'text-navy-900' : 'text-gray-300'}`}>
@@ -698,10 +765,10 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
 
-        // --- 註冊 SW (指向新檔名 sw-v2.2.js 以強制更新) ---
+        // --- SW Registration (指向 sw-v2.3.js) ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw-v2.2.js').then(registration => {
+                navigator.serviceWorker.register('./sw-v2.3.js').then(registration => {
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
                         installingWorker.onstatechange = () => {
