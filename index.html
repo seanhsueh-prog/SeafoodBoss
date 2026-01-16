@@ -1,12 +1,12 @@
-<!-- 檔名：SeafoodBossApp_v3.5_Final.html -->
-<!-- 版本：v3.5 (Final Polish) -->
-<!-- 修正：成本設定歸零且可勾選項目、主頁功能區強制置底 -->
+<!-- 檔名：SeafoodBossApp_v3.6_Final.html -->
+<!-- 版本：v3.6 (Final & Persistent AI) -->
+<!-- 修正：計時器極簡化、財務卡片隱私化、AI對話持久儲存 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS (v3.5)</title>
+    <title>SEAFOOD.BOSS (v3.6)</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0284c7"> 
@@ -102,7 +102,6 @@
             padding: 0 1rem;
             box-shadow: 0 2px 10px rgba(0,0,0,0.15);
         }
-        /* Sticky Controls for Operations */
         .sticky-ops-controls {
             position: sticky;
             top: 60px; 
@@ -114,32 +113,21 @@
             padding-top: 16px;
         }
         
-        /* Sticky for AI Page */
-        .sticky-ai-header {
-            position: sticky;
-            top: 60px;
-            z-index: 40;
-            background-color: #F8FAFC;
-            padding-top: 10px;
-            padding-bottom: 10px;
-        }
-
-        /* v3.5: Force Bottom Logic */
         .force-bottom-container {
             position: fixed;
-            bottom: 100px; /* Above status bar (60+40) */
+            bottom: 80px; /* Above status bar */
             left: 0;
             right: 0;
             z-index: 30;
             padding: 0 1rem;
             max-width: 28rem; /* Matches max-w-md */
             margin: 0 auto;
-            background: linear-gradient(to top, #F8FAFC 90%, transparent); /* Fade effect */
+            background: linear-gradient(to top, #F8FAFC 90%, transparent);
             padding-top: 20px;
         }
         .content-padding-dashboard {
             padding-top: 120px; /* Header + AI Entry */
-            padding-bottom: 280px; /* Huge padding for fixed bottom area */
+            padding-bottom: 300px; /* Huge padding for fixed bottom area */
         }
         .content-padding-normal {
             padding-top: 60px;
@@ -158,6 +146,7 @@
         const DB_KEY_LOGS = 'sf_logs';                 
         const DB_KEY_SETTINGS = 'sf_settings';         
         const DB_KEY_ENV = 'sf_daily_env';             
+        const DB_KEY_CHAT = 'sf_ai_chat'; // v3.6 New Key
 
         // --- Helpers ---
         const getTodayStr = () => new Date().toISOString().split('T')[0];
@@ -212,7 +201,7 @@
                     </div>
                     <div className="leading-tight">
                         <div className="font-black text-sm tracking-wider uppercase">{title}</div>
-                        <div className="text-[10px] opacity-80 font-mono">v3.5</div>
+                        <div className="text-[10px] opacity-80 font-mono">v3.6</div>
                     </div>
                 </div>
                 {showKey && (
@@ -223,7 +212,7 @@
             </div>
         );
 
-        // 2. Timer
+        // 2. Timer (v3.6 Minimalist)
         const TimerButton = ({ minutes, activeTimer, startTimer, stopTimer }) => {
             const isActive = activeTimer && activeTimer.minutes === minutes;
             return (
@@ -237,8 +226,8 @@
                             style={{ animationDuration: `${minutes * 60}s`, width: '100%' }}
                         ></div>
                     )}
-                    <span className={`relative z-10 font-bold text-sm ${isActive ? 'text-white' : 'text-gray-400'}`}>
-                        {minutes}分
+                    <span className={`relative z-10 font-black text-lg ${isActive ? 'text-white' : 'text-gray-400'}`}>
+                        {minutes}
                     </span>
                 </button>
             );
@@ -298,7 +287,7 @@
 
         // --- Pages ---
 
-        // A. Dashboard (v3.5 Final Layout)
+        // A. Dashboard
         const Dashboard = ({ setPage, transactions, logs, setLogs, activeTimer, startTimer, stopTimer, settings }) => {
             const today = getTodayStr();
             const todayStats = useMemo(() => {
@@ -317,7 +306,7 @@
                 <div className="min-h-screen relative flex flex-col">
                     <MainHeader />
 
-                    {/* AI Entry - Fixed below header */}
+                    {/* AI Entry */}
                     <div className="fixed top-[60px] left-0 right-0 px-4 pt-2 pb-2 z-40 bg-[#F8FAFC] max-w-md mx-auto">
                         <div onClick={() => setPage('ai')} className="bg-white rounded-full p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border border-navy-50 shadow-sm active:scale-95 transition-transform">
                             <div className="flex items-center space-x-3">
@@ -328,17 +317,17 @@
                         </div>
                     </div>
 
-                    {/* Content - Padded top and bottom */}
+                    {/* Content */}
                     <div className="px-4 content-padding-dashboard animate-fade-in flex flex-col flex-1 h-full gap-4">
                         <OwnerLog logs={logs} setLogs={setLogs} />
                     </div>
 
-                    {/* Forced Bottom Section (v3.5) */}
+                    {/* Forced Bottom Section (v3.6 Fixed) */}
                     <div className="force-bottom-container space-y-4">
                         {/* Timer */}
                         <div>
                             <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider uppercase flex items-center gap-1">
-                                <i className="fa-solid fa-stopwatch"></i> 暫離/轉場提醒
+                                <i className="fa-solid fa-stopwatch"></i> ⚠️ 暫離提醒
                             </p>
                             <div className="grid grid-cols-3 gap-2">
                                 <TimerButton minutes={10} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
@@ -347,7 +336,7 @@
                             </div>
                         </div>
 
-                        {/* Financial Card */}
+                        {/* Financial Card (Privacy Mode) */}
                         <div className="pb-4">
                             <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider uppercase">Financials (Private)</p>
                             <div onClick={() => setPage('ops')} className="bg-gradient-to-br from-white to-gray-50 rounded-xl card-shadow p-5 border border-navy-50 flex items-center justify-between active:scale-95 transition-transform cursor-pointer">
@@ -360,11 +349,9 @@
                                         <p className="text-[10px] text-gray-400">點擊查看詳情</p>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <span className={`text-xl font-black ${todayStats.net >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                                        {todayStats.net > 0 ? '+' : ''}{todayStats.net.toLocaleString()}
-                                    </span>
-                                    <p className="text-[10px] text-gray-400">今日淨利(估)</p>
+                                {/* Removed Right Side Numbers for Privacy */}
+                                <div className="text-navy-900">
+                                    <i className="fa-solid fa-chevron-right text-gray-300"></i>
                                 </div>
                             </div>
                         </div>
@@ -382,7 +369,7 @@
             );
         };
 
-        // B. Operations (v3.5 - Improved Fixed Cost Modal)
+        // B. Operations (v3.5 Logic)
         const Operations = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
@@ -398,8 +385,7 @@
             const [cat, setCat] = useState('現金');
             const [note, setNote] = useState('');
             
-            // v3.5 Fixed Cost Logic
-            const [tempFixedCost, setTempFixedCost] = useState(settings.dailyFixedCost || ''); // Default empty/0
+            const [tempFixedCost, setTempFixedCost] = useState(settings.dailyFixedCost || '');
             const [selectedCostItems, setSelectedCostItems] = useState(settings.costItems || []);
             const costOptions = ['房租', '人事', '進貨', '水電', '雜支'];
 
@@ -493,7 +479,6 @@
                 <div className="content-padding-normal pb-20 animate-fade-in min-h-screen">
                     <MainHeader title="營運報表" />
                     
-                    {/* Sticky Controls */}
                     <div className="sticky-ops-controls px-4 shadow-sm">
                         <div className="flex justify-between items-center mb-3">
                             <div className="bg-white p-0.5 rounded-lg border border-navy-50 shadow-sm inline-flex">
@@ -637,7 +622,6 @@
                         </div>
                     )}
 
-                    {/* v3.5 New Settings Modal */}
                     {showSettingModal && (
                         <div className="fixed inset-0 bg-navy-900 bg-opacity-40 z-[70] flex items-center justify-center p-4">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
@@ -673,10 +657,14 @@
             );
         };
 
-        // C. Private Secretary (Same as v3.4)
+        // C. Private Secretary (v3.6 Persistent Storage)
         const PrivateSecretary = ({ settings, saveSettings, transactions, envData, logs }) => {
              const [input, setInput] = useState('');
-             const [chat, setChat] = useState([{ id: 1, role: 'ai', text: '老哥，今天還順利嗎？' }]);
+             // Initialize chat from localStorage or default
+             const [chat, setChat] = useState(() => {
+                 const saved = localStorage.getItem(DB_KEY_CHAT);
+                 return saved ? JSON.parse(saved) : [{ id: 1, role: 'ai', text: '老哥，今天還順利嗎？' }];
+             });
              const [showSettings, setShowSettings] = useState(false);
              const [apiKey, setApiKey] = useState(settings.apiKey || '');
              const [isTyping, setIsTyping] = useState(false);
@@ -685,7 +673,12 @@
              const { isListening, startListening } = useVoiceInput((text) => setInput(prev => prev + text));
 
              const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
-             useEffect(scrollToBottom, [chat]);
+             
+             // Save chat to localStorage whenever it changes
+             useEffect(() => {
+                 localStorage.setItem(DB_KEY_CHAT, JSON.stringify(chat));
+                 scrollToBottom();
+             }, [chat]);
 
              useEffect(() => {
                 if (!settings.apiKey) { setShowSettings(true); }
@@ -696,6 +689,13 @@
                  setApiKey(cleanKey);
                  saveSettings({...settings, apiKey: cleanKey}); 
                  setShowSettings(false);
+             };
+
+             const clearChat = () => {
+                 if(confirm("確定要清除所有對話紀錄嗎？")) {
+                     const initChat = [{ id: Date.now(), role: 'ai', text: '紀錄已清除。老哥，有什麼新吩咐？' }];
+                     setChat(initChat);
+                 }
              };
 
              const handleImageUpload = async (e) => {
@@ -725,7 +725,12 @@
                  const userMsg = input.trim() || (imageBase64 ? "[傳送了一張圖片]" : "");
                  if(!userMsg) return;
                  if(isTyping) return;
-                 setChat(prev => [...prev, { id: Date.now(), role: 'user', text: userMsg }]);
+                 
+                 // Don't save large base64 image strings to chat history (it will exceed LocalStorage)
+                 // Save a placeholder text instead
+                 const displayMsg = imageBase64 ? "[圖片已傳送]" : userMsg;
+                 
+                 setChat(prev => [...prev, { id: Date.now(), role: 'user', text: displayMsg }]);
                  setInput('');
                  setIsTyping(true);
                  const currentKey = settings.apiKey ? settings.apiKey.trim() : '';
@@ -739,7 +744,8 @@
                  const systemPrompt = `你是一位極簡風格的私人秘書。老闆喜歡效率。
                  [規則] 1.嚴禁廢話。 2.字數限制：50字內。 3.格式：列點說明。 4.語氣：精準有力。
                  [店舖現況] ${context}
-                 [老闆的問題] ${input}`;
+                 [老闆的問題] ${imageBase64 ? "[老闆傳了一張圖片]" : input}`;
+                 
                  const parts = [{ text: systemPrompt }];
                  if (imageBase64) { parts.push({ inlineData: { mimeType: mimeType, data: imageBase64 } }); }
 
@@ -782,6 +788,7 @@
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
                                 <h3 className="font-bold text-navy-900 mb-2">秘書設定</h3>
                                 <input type="text" value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full bg-navy-50 border border-navy-100 rounded-lg p-3 text-sm mb-4 font-mono" placeholder="API Key..." />
+                                <button onClick={clearChat} className="w-full py-2 mb-4 text-red-500 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-50">清除所有對話紀錄</button>
                                 <div className="flex gap-3"><button onClick={() => setShowSettings(false)} className="flex-1 py-3 text-gray-500 font-bold bg-gray-100 rounded-lg">取消</button><button onClick={handleSaveSettings} className="flex-1 py-3 bg-navy-900 text-white rounded-lg font-bold">儲存</button></div>
                             </div>
                         </div>
@@ -851,7 +858,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw-v3.5.js').then(registration => {
+                navigator.serviceWorker.register('./sw-v3.6.js').then(registration => {
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
                         installingWorker.onstatechange = () => {
