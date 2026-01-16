@@ -1,10 +1,10 @@
-<!-- 檔名：SeafoodBossApp_Spec_new.v3.0.html (v3.0 Gemini 2.5 Flash) -->
+<!-- 檔名：SeafoodBossApp_Spec_new.v3.1.html (v3.1 Private Secretary Edition) -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Seafood Boss (v3.0)</title>
+    <title>Seafood Boss (v3.1)</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0284c7"> 
@@ -87,10 +87,10 @@
         }
         .content-padding {
             padding-bottom: 90px; 
-            padding-top: 60px; /* Space for Sticky Env Bar */
+            padding-top: 60px; /* Space for Sticky Header */
         }
         /* Sticky Elements */
-        .sticky-env-bar {
+        .sticky-header-main {
             position: fixed;
             top: 0;
             left: 0;
@@ -104,13 +104,13 @@
             padding: 0 1rem;
             box-shadow: 0 2px 10px rgba(0,0,0,0.15);
         }
-        .sticky-sub-header {
+        .sticky-ops-controls {
             position: sticky;
             top: 60px; 
-            z-index: 40;
+            z-index: 50;
             background-color: #F8FAFC;
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
         }
     </style>
 </head>
@@ -145,54 +145,48 @@
             return days;
         };
 
+        // Voice Input Hook (Simple)
+        const useVoiceInput = (onResult) => {
+            const [isListening, setIsListening] = useState(false);
+            
+            const startListening = () => {
+                if (!('webkitSpeechRecognition' in window)) {
+                    alert("您的瀏覽器不支援語音輸入");
+                    return;
+                }
+                const recognition = new window.webkitSpeechRecognition();
+                recognition.lang = 'zh-TW';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onstart = () => setIsListening(true);
+                recognition.onend = () => setIsListening(false);
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    onResult(transcript);
+                };
+                recognition.start();
+            };
+            return { isListening, startListening };
+        };
+
         // --- Components ---
 
-        // 1. Environment Bar
-        const EnvironmentBar = ({ envData, setEnvData }) => {
-            const today = getTodayStr();
-            const currentEnv = envData[today] || { weather: 'sunny', traffic: 'normal' };
-
-            const updateEnv = (key, value) => {
-                const newEnv = { ...envData, [today]: { ...currentEnv, [key]: value } };
-                setEnvData(newEnv);
-                localStorage.setItem(DB_KEY_ENV, JSON.stringify(newEnv));
-            };
-
-            const IconBtn = ({ active, onClick, icon, activeClass }) => (
-                <button 
-                    onClick={onClick} 
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${active ? activeClass + ' shadow-md ring-2 ring-white/30 scale-105' : 'bg-white/20 text-white/70 hover:bg-white/30'}`}
-                >
-                    <i className={icon}></i>
-                </button>
-            );
-
-            return (
-                <div className="sticky-env-bar">
-                    <div className="flex items-center text-white">
-                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-2 backdrop-blur-sm">
-                            <i className="fa-solid fa-fish text-sm"></i>
-                        </div>
-                        <div className="leading-tight">
-                            <div className="font-black text-sm tracking-wider">SF.BOSS</div>
-                            <div className="text-[10px] opacity-80 font-mono">v3.0</div>
-                        </div>
+        // 1. Main Header (Clean, No Settings)
+        const MainHeader = () => (
+            <div className="sticky-header-main">
+                <div className="flex items-center text-white">
+                    <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-2 backdrop-blur-sm">
+                        <i className="fa-solid fa-fish text-sm"></i>
                     </div>
-                    <div className="flex space-x-3">
-                        <div className="flex space-x-1 bg-black/10 p-1 rounded-xl backdrop-blur-sm">
-                            <IconBtn active={currentEnv.traffic === 'slow'} onClick={() => updateEnv('traffic', 'slow')} icon="fa-solid fa-turtle" activeClass="bg-green-500 text-white" />
-                            <IconBtn active={currentEnv.traffic === 'normal'} onClick={() => updateEnv('traffic', 'normal')} icon="fa-solid fa-person-walking" activeClass="bg-yellow-500 text-white" />
-                            <IconBtn active={currentEnv.traffic === 'busy'} onClick={() => updateEnv('traffic', 'busy')} icon="fa-solid fa-fire" activeClass="bg-red-600 text-white" />
-                        </div>
-                        <div className="flex space-x-1 bg-black/10 p-1 rounded-xl backdrop-blur-sm">
-                            <IconBtn active={currentEnv.weather === 'sunny'} onClick={() => updateEnv('weather', 'sunny')} icon="fa-solid fa-sun" activeClass="bg-orange-500 text-white" />
-                            <IconBtn active={currentEnv.weather === 'cloudy'} onClick={() => updateEnv('weather', 'cloudy')} icon="fa-solid fa-cloud" activeClass="bg-gray-500 text-white" />
-                            <IconBtn active={currentEnv.weather === 'rainy'} onClick={() => updateEnv('weather', 'rainy')} icon="fa-solid fa-cloud-showers-heavy" activeClass="bg-blue-600 text-white" />
-                        </div>
+                    <div className="leading-tight">
+                        <div className="font-black text-sm tracking-wider">SF.BOSS</div>
+                        <div className="text-[10px] opacity-80 font-mono">v3.1</div>
                     </div>
                 </div>
-            );
-        };
+                {/* Right side is intentionally empty for Dashboard */}
+            </div>
+        );
 
         // 2. Timer
         const TimerButton = ({ minutes, activeTimer, startTimer, stopTimer }) => {
@@ -200,7 +194,7 @@
             return (
                 <button 
                     onClick={() => isActive ? stopTimer() : startTimer(minutes)}
-                    className="relative h-10 bg-white rounded-lg card-shadow overflow-hidden cursor-pointer active:scale-95 transition-transform flex items-center justify-center border border-navy-50 w-full"
+                    className="relative h-12 bg-white rounded-xl card-shadow overflow-hidden cursor-pointer active:scale-95 transition-transform flex items-center justify-center border border-navy-50 w-full"
                 >
                     {isActive && (
                         <div 
@@ -208,16 +202,18 @@
                             style={{ animationDuration: `${minutes * 60}s`, width: '100%' }}
                         ></div>
                     )}
-                    <span className={`relative z-10 font-bold text-xs ${isActive ? 'text-ocean-800' : 'text-gray-400'}`}>
-                        {minutes}分
-                    </span>
+                    <div className="relative z-10 flex flex-col items-center">
+                        <span className={`font-black text-sm ${isActive ? 'text-ocean-800' : 'text-gray-400'}`}>{minutes}m</span>
+                    </div>
                 </button>
             );
         };
 
-        // 3. Owner Log
+        // 3. Owner Log (With Voice)
         const OwnerLog = ({ logs, setLogs }) => {
             const [input, setInput] = useState('');
+            const { isListening, startListening } = useVoiceInput((text) => setInput(prev => prev + text));
+
             const addLog = () => {
                 if(!input.trim()) return;
                 const newLog = { id: Date.now(), date: getTodayStr(), timestamp: formatTime(), text: input };
@@ -226,13 +222,14 @@
                 localStorage.setItem(DB_KEY_LOGS, JSON.stringify(updated));
                 setInput('');
             };
+            
             const deleteLog = (id) => {
                 const updated = logs.filter(l => l.id !== id);
                 setLogs(updated);
                 localStorage.setItem(DB_KEY_LOGS, JSON.stringify(updated));
             };
             
-            const recentLogs = logs.filter(l => (Date.now() - l.id) < (3 * 24 * 60 * 60 * 1000)).slice(0, 10);
+            const recentLogs = logs.filter(l => (Date.now() - l.id) < (3 * 24 * 60 * 60 * 1000)).slice(0, 5); // Show fewer on dashboard
 
             return (
                 <div className="bg-white rounded-xl card-shadow p-4 border border-navy-50 mb-4">
@@ -241,9 +238,15 @@
                     </div>
                     <div className="flex gap-2 mb-4">
                         <input type="text" value={input} onChange={e => setInput(e.target.value)} className="flex-1 bg-navy-50 rounded-lg px-3 py-2 text-sm focus:outline-none text-navy-900" placeholder="快速記事..." />
+                        
+                        {/* Voice Button */}
+                        <button onClick={startListening} className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 text-gray-500'}`}>
+                            <i className="fa-solid fa-microphone"></i>
+                        </button>
+
                         <button onClick={addLog} className="w-10 h-10 bg-navy-900 text-white rounded-lg flex items-center justify-center shrink-0 shadow-lg"><i className="fa-solid fa-plus"></i></button>
                     </div>
-                    <div className="space-y-3 pl-2 border-l-2 border-navy-50 max-h-60 overflow-y-auto no-scrollbar">
+                    <div className="space-y-3 pl-2 border-l-2 border-navy-50 max-h-48 overflow-y-auto no-scrollbar">
                         {recentLogs.length === 0 ? <p className="text-xs text-gray-300 py-1 pl-2">今日尚未記錄</p> : 
                             recentLogs.map(l => (
                                 <div key={l.id} className="relative pl-4 animate-fade-in group">
@@ -265,65 +268,59 @@
 
         // --- Pages ---
 
-        // A. Owner Dashboard
+        // A. Owner Dashboard (Minimalist)
         const Dashboard = ({ setPage, transactions, logs, setLogs, activeTimer, startTimer, stopTimer, settings }) => {
             const today = getTodayStr();
             const todayStats = useMemo(() => {
                 const todayTrans = transactions.filter(t => t.date === today);
                 const income = todayTrans.filter(t => t.type === 'income').reduce((acc, c) => acc + c.amount, 0);
                 const expense = todayTrans.filter(t => t.type === 'expense').reduce((acc, c) => acc + c.amount, 0);
-                const net = income - expense - (settings.dailyFixedCost || 0);
+                // 預設成本為 0，若有設定則扣除
+                const cost = settings.dailyFixedCost || 0;
+                const net = income - expense - cost;
+                
                 let status = "觀察中"; let color = "bg-gray-400";
                 if (net > 1000) { status = "營收穩健"; color = "bg-green-500"; }
-                else if (net >= -1000) { status = "收支平衡"; color = "bg-yellow-500"; }
+                else if (net >= -0) { status = "收支平衡"; color = "bg-yellow-500"; } // Changed logic slightly
                 else { status = "審慎留意"; color = "bg-red-500"; }
                 return { net, status, color };
             }, [transactions, settings, today]);
 
             return (
                 <div className="min-h-screen relative">
-                    <div className="sticky-sub-header px-4 z-50 bg-[#F8FAFC]">
-                        <div onClick={() => setPage('ai')} className="bg-white rounded-full p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border border-navy-50 shadow-sm active:scale-95 transition-transform">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-ocean-600 rounded-full flex items-center justify-center text-white"><i className="fa-solid fa-robot text-xs"></i></div>
-                                <span className="text-gray-400 text-xs font-medium">問問 AI 參謀...</span>
-                            </div>
-                            <div className="flex space-x-1">
-                                <div className="w-8 h-8 bg-navy-50 rounded-full flex items-center justify-center text-navy-600"><i className="fa-solid fa-microphone text-xs"></i></div>
-                                <div className="w-8 h-8 bg-navy-50 rounded-full flex items-center justify-center text-navy-600"><i className="fa-solid fa-camera text-xs"></i></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="px-4 pb-20 pt-2 animate-fade-in flex flex-col h-full">
+                    <MainHeader />
+                    
+                    <div className="px-4 pb-20 pt-4 animate-fade-in flex flex-col h-full gap-4">
+                        {/* 1. Note with Mic */}
                         <OwnerLog logs={logs} setLogs={setLogs} />
 
-                        <div className="mb-6">
+                        {/* 2. Timer (Middle) */}
+                        <div>
                             <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider uppercase">Transition Timer</p>
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-3 gap-3">
                                 <TimerButton minutes={10} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
                                 <TimerButton minutes={15} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
                                 <TimerButton minutes={20} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
                             </div>
                         </div>
 
+                        {/* 3. Financial Card (Bottom) */}
                         <div className="mt-auto">
-                            <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider uppercase">Financials (Private)</p>
+                            <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider uppercase">Financial Overview</p>
                             <div onClick={() => setPage('ops')} className="bg-gradient-to-br from-white to-gray-50 rounded-xl card-shadow p-5 border border-navy-50 flex items-center justify-between active:scale-95 transition-transform cursor-pointer">
                                 <div className="flex items-center">
-                                    <div className="w-10 h-10 bg-navy-900 rounded-lg flex items-center justify-center text-white mr-3 shadow-md">
-                                        <i className="fa-solid fa-calculator text-sm"></i>
+                                    <div className="w-12 h-12 bg-navy-900 rounded-xl flex items-center justify-center text-white mr-4 shadow-md">
+                                        <i className="fa-solid fa-chart-pie text-lg"></i>
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-navy-900 text-sm">內部營運</h3>
-                                        <p className="text-[10px] text-gray-400">點擊查看詳情</p>
+                                        <h3 className="font-bold text-navy-900 text-base">今日淨利</h3>
+                                        <p className="text-[10px] text-gray-400 mt-0.5">點擊查看詳情</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <span className={`text-xl font-black ${todayStats.net >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className={`text-3xl font-black ${todayStats.net >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                                         {todayStats.net > 0 ? '+' : ''}{todayStats.net.toLocaleString()}
                                     </span>
-                                    <p className="text-[10px] text-gray-400">今日淨利(估)</p>
                                 </div>
                             </div>
                         </div>
@@ -340,22 +337,30 @@
             );
         };
 
-        // B. Operations
-        const Operations = ({ transactions, setTransactions, settings, saveSettings }) => {
+        // B. Operations (The Core Data Center)
+        const Operations = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
             const [showSettingModal, setShowSettingModal] = useState(false);
-            const [isCalExpanded, setIsCalExpanded] = useState(true); 
             
             const [selectedDate, setSelectedDate] = useState(getTodayStr());
             const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
             
+            // Transaction Form State
             const [date, setDate] = useState(getTodayStr());
             const [type, setType] = useState('income');
             const [amount, setAmount] = useState('');
             const [cat, setCat] = useState('現金');
             const [note, setNote] = useState('');
-            const [tempFixedCost, setTempFixedCost] = useState(settings.dailyFixedCost);
+            const [tempFixedCost, setTempFixedCost] = useState(settings.dailyFixedCost || 0);
+
+            // Environment State
+            const currentEnv = envData[selectedDate] || { weather: 'sunny', traffic: 'normal' };
+            const updateEnv = (key, value) => {
+                const newEnv = { ...envData, [selectedDate]: { ...currentEnv, [key]: value } };
+                setEnvData(newEnv);
+                localStorage.setItem(DB_KEY_ENV, JSON.stringify(newEnv));
+            };
 
             const stats = useMemo(() => {
                 const now = new Date();
@@ -370,9 +375,11 @@
                     else dailyStats[t.date].expense += t.amount;
                 });
 
+                const dailyCost = settings.dailyFixedCost || 0;
+
                 if (period === 'day') {
                     filtered = transactions.filter(t => t.date === selectedDate);
-                    fixedCostTotal = parseInt(settings.dailyFixedCost || 0);
+                    fixedCostTotal = dailyCost;
                     listData = filtered;
                     income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
                     expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
@@ -383,27 +390,10 @@
                     if(now.getFullYear() === parseInt(yearStr) && (now.getMonth() + 1) === currentMonth) {
                         daysPassed = now.getDate();
                     }
-                    fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * daysPassed;
+                    fixedCostTotal = dailyCost * daysPassed;
                     income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
                     expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
-                    listData = transactions.filter(t => t.date === selectedDate);
-                } else { // Year
-                    filtered = transactions.filter(t => t.date.startsWith(yearStr));
-                    const startOfYear = new Date(now.getFullYear(), 0, 1);
-                    const diffTime = Math.abs(now - startOfYear);
-                    const daysPassedYear = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                    fixedCostTotal = parseInt(settings.dailyFixedCost || 0) * daysPassedYear;
-
-                    income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
-                    expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
-                    const grouped = {};
-                    filtered.forEach(t => {
-                         const m = t.date.slice(0, 7);
-                         if(!grouped[m]) grouped[m] = { date: m, income: 0, expense: 0 };
-                         if(t.type === 'income') grouped[m].income += t.amount;
-                         else grouped[m].expense += t.amount;
-                    });
-                    listData = Object.values(grouped).sort((a,b) => b.date.localeCompare(a.date));
+                    listData = transactions.filter(t => t.date === selectedDate); // Month view still shows day details
                 }
                 net = income - expense - fixedCostTotal;
                 return { income, expense, fixedCostTotal, net, listData, dailyStats };
@@ -418,101 +408,108 @@
                 setAmount(''); setNote(''); setShowAddModal(false);
             };
 
-            const calendarDays = useMemo(() => getCalendarDays(new Date().getFullYear(), currentMonth), [currentMonth]);
+            // Traffic Button Component
+            const TrafficBtn = ({ val, icon, label, colorClass }) => (
+                <button 
+                    onClick={() => updateEnv('traffic', val)}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${currentEnv.traffic === val ? colorClass + ' text-white border-transparent shadow-md scale-105' : 'bg-white text-gray-400 border-gray-200'}`}
+                >
+                    {icon} {label}
+                </button>
+            );
 
             return (
                 <div className="pb-20 animate-fade-in min-h-screen">
-                    <div className="sticky-sub-header bg-white px-4 border-b border-navy-50 flex justify-between items-center shadow-sm">
-                        <h2 className="font-black text-navy-900 text-lg">營運報表</h2>
-                        <button onClick={() => setShowSettingModal(true)} className="w-8 h-8 rounded-full bg-navy-50 text-navy-600 flex items-center justify-center"><i className="fa-solid fa-gear"></i></button>
-                    </div>
-                    <div className="sticky top-[108px] z-30 bg-gray-50 px-4 py-2 border-b border-gray-100 shadow-sm flex justify-between items-center">
-                        <div className="bg-white p-0.5 rounded-lg border border-navy-50 shadow-sm inline-flex">
-                            {['day', 'month', 'year'].map(p => (
-                                <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${period === p ? 'bg-navy-900 text-white shadow' : 'text-gray-500'}`}>
-                                    {p === 'day' ? '日' : p === 'month' ? '月' : '年'}
-                                </button>
-                            ))}
-                        </div>
-                        {period === 'day' && <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="bg-white border border-navy-50 text-navy-900 text-xs font-bold py-1 px-2 rounded-md focus:outline-none" />}
-                        {period === 'month' && (
-                            <div className="flex items-center space-x-2 bg-white px-2 py-1 rounded-md border border-navy-50">
-                                <button onClick={() => setCurrentMonth(p => p===1?12:p-1)} className="text-navy-600"><i className="fa-solid fa-chevron-left text-xs"></i></button>
-                                <span className="text-xs font-bold text-navy-900 w-8 text-center">{currentMonth}月</span>
-                                <button onClick={() => setCurrentMonth(p => p===12?1:p+1)} className="text-navy-600"><i className="fa-solid fa-chevron-right text-xs"></i></button>
+                    <MainHeader />
+                    
+                    {/* Sticky Controls Area */}
+                    <div className="sticky-ops-controls px-4 pt-4 shadow-sm">
+                        
+                        {/* 1. Date Controls */}
+                        <div className="flex justify-between items-center mb-3">
+                            <div className="bg-white p-0.5 rounded-lg border border-navy-50 shadow-sm inline-flex">
+                                {['day', 'month'].map(p => (
+                                    <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${period === p ? 'bg-navy-900 text-white shadow' : 'text-gray-500'}`}>
+                                        {p === 'day' ? '日' : '月'}
+                                    </button>
+                                ))}
                             </div>
-                        )}
+                            {period === 'day' && <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="bg-white border border-navy-50 text-navy-900 text-xs font-bold py-1 px-2 rounded-md focus:outline-none" />}
+                            {period === 'month' && (
+                                <div className="flex items-center space-x-2 bg-white px-2 py-1 rounded-md border border-navy-50">
+                                    <button onClick={() => setCurrentMonth(p => p===1?12:p-1)} className="text-navy-600"><i className="fa-solid fa-chevron-left text-xs"></i></button>
+                                    <span className="text-xs font-bold text-navy-900 w-8 text-center">{currentMonth}月</span>
+                                    <button onClick={() => setCurrentMonth(p => p===12?1:p+1)} className="text-navy-600"><i className="fa-solid fa-chevron-right text-xs"></i></button>
+                                </div>
+                            )}
+                            <button onClick={() => setShowSettingModal(true)} className="w-8 h-8 rounded-full bg-navy-50 text-navy-600 flex items-center justify-center"><i className="fa-solid fa-gear"></i></button>
+                        </div>
+
+                        {/* 2. Environment Controls (New Home) */}
+                        <div className="bg-white rounded-xl p-3 border border-navy-50 mb-3 shadow-sm">
+                             <div className="flex justify-between items-center mb-2">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase">今日環境設定</span>
+                                <div className="flex space-x-2">
+                                    {['sunny','cloudy','rainy'].map(w => (
+                                        <button key={w} onClick={() => updateEnv('weather', w)} className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${currentEnv.weather === w ? 'bg-navy-900 text-white scale-110' : 'text-gray-300'}`}>
+                                            <i className={`fa-solid fa-${w === 'sunny' ? 'sun' : w === 'cloudy' ? 'cloud' : 'cloud-showers-heavy'} text-xs`}></i>
+                                        </button>
+                                    ))}
+                                </div>
+                             </div>
+                             <div className="flex gap-2">
+                                <TrafficBtn val="slow" icon="❄️" label="冷清" colorClass="bg-blue-400" />
+                                <TrafficBtn val="normal" icon="🙂" label="正常" colorClass="bg-yellow-400" />
+                                <TrafficBtn val="busy" icon="🔥" label="爆滿" colorClass="bg-red-500" />
+                             </div>
+                        </div>
+
+                        {/* 3. Summary Box */}
+                        <div className="bg-navy-900 rounded-xl p-4 text-white shadow-lg flex justify-between items-center">
+                            <div>
+                                <div className="text-[10px] opacity-60 mb-1">淨利結餘 (含攤提)</div>
+                                <div className={`text-2xl font-black ${stats.net >= 0 ? 'text-white' : 'text-red-300'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</div>
+                            </div>
+                            <div className="text-right space-y-1">
+                                <div className="text-xs"><span className="opacity-60 mr-2">收</span> <span className="text-green-300 font-bold">+{stats.income.toLocaleString()}</span></div>
+                                <div className="text-xs"><span className="opacity-60 mr-2">支</span> <span className="text-red-300 font-bold">-{stats.expense.toLocaleString()}</span></div>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="px-4 pt-4">
-                        <div className="bg-white rounded-xl p-5 mb-6 card-shadow border-l-4 border-navy-900 relative overflow-hidden">
-                            <div className="absolute right-0 top-0 p-3 opacity-5"><i className="fa-solid fa-chart-line text-6xl"></i></div>
-                            <div className="flex justify-between items-center mb-2"><span className="text-gray-500 font-bold text-xs">營收總額</span><span className="text-lg font-bold text-navy-900">+ {stats.income.toLocaleString()}</span></div>
-                            <div className="flex justify-between items-center mb-2"><span className="text-gray-500 font-bold text-xs">臨時支出</span><span className="text-lg font-bold text-red-500">- {stats.expense.toLocaleString()}</span></div>
-                            <div className="flex justify-between items-center mb-3 pb-3 border-b border-dashed border-gray-200"><span className="text-gray-400 font-bold text-[10px]">固定攤提 (動態)</span><span className="text-sm font-bold text-gray-400">- {stats.fixedCostTotal.toLocaleString()}</span></div>
-                            <div className="flex justify-between items-end"><span className="text-navy-900 font-black text-sm">淨利結餘</span><span className={`text-2xl font-black ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</span></div>
-                        </div>
-
-                        {period === 'month' && (
-                            <div className="mb-6 bg-white rounded-xl p-4 card-shadow">
-                                <div className="flex justify-between items-center mb-2 cursor-pointer" onClick={() => setIsCalExpanded(!isCalExpanded)}>
-                                    <span className="text-xs font-bold text-gray-400">日曆視圖</span>
-                                    <i className={`fa-solid fa-chevron-${isCalExpanded ? 'up' : 'down'} text-gray-400 text-xs`}></i>
-                                </div>
-                                {isCalExpanded && (
-                                    <div className="animate-fade-in">
-                                        <div className="grid grid-cols-7 gap-1 mb-2 text-center">{['日','一','二','三','四','五','六'].map(d => <span key={d} className="text-[10px] text-gray-400 font-bold">{d}</span>)}</div>
-                                        <div className="grid grid-cols-7 gap-1">
-                                            {calendarDays.map((d, i) => {
-                                                if(!d) return <div key={i}></div>;
-                                                const s = stats.dailyStats[d.dateStr];
-                                                const net = s ? (s.income - s.expense - (settings.dailyFixedCost||0)) : -(settings.dailyFixedCost||0);
-                                                const hasData = s && (s.income > 0 || s.expense > 0);
-                                                const isSelected = selectedDate === d.dateStr;
-                                                return (
-                                                    <div key={i} onClick={() => setSelectedDate(d.dateStr)} className={`aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer border transition-colors ${isSelected ? 'bg-navy-900 border-navy-900' : 'border-transparent hover:bg-gray-50'}`}>
-                                                        <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-500'}`}>{d.day}</span>
-                                                        <div className={`w-1.5 h-1.5 rounded-full mt-1 ${net > 0 ? 'bg-green-500' : 'bg-red-500'} ${!hasData ? 'opacity-0' : ''}`}></div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
                         <div className="grid grid-cols-2 gap-4 mb-6">
-                            <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); setShowAddModal(true);}} className="bg-navy-900 text-white py-4 rounded-xl font-bold shadow-lg flex items-center justify-center text-base active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
-                            <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); setShowAddModal(true);}} className="bg-white text-darkgray border border-gray-200 py-4 rounded-xl font-bold shadow flex items-center justify-center text-base active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
+                            <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); setShowAddModal(true);}} className="bg-white text-navy-900 border border-navy-100 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
+                            <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); setShowAddModal(true);}} className="bg-white text-darkgray border border-gray-200 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
                         </div>
 
-                        <h3 className="font-bold text-gray-800 mb-3 text-xs border-l-4 border-navy-500 pl-2">
-                            {period === 'day' ? `流水帳 (${selectedDate})` : period === 'month' ? `明細 (${selectedDate})` : '月度匯總'}
+                        <h3 className="font-bold text-gray-800 mb-3 text-xs border-l-4 border-navy-500 pl-2 flex items-center gap-2">
+                            <span>流水帳 ({selectedDate})</span>
+                            {/* Dynamic Env Label in List */}
+                            <span className="text-[10px] font-normal text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                                {currentEnv.weather === 'sunny' ? '☀️' : currentEnv.weather === 'cloudy' ? '☁️' : '🌧️'}
+                                {' '}
+                                {currentEnv.traffic === 'slow' ? '❄️冷清' : currentEnv.traffic === 'normal' ? '🙂正常' : '🔥爆滿'}
+                            </span>
                         </h3>
+                        
                         <div className="space-y-3">
                             {stats.listData.length === 0 ? <p className="text-gray-400 text-center py-8 text-xs">尚無資料</p> : 
                                 stats.listData.map((item, idx) => (
                                     <div key={idx} className="bg-white p-3 rounded-lg flex justify-between items-center shadow-sm border-l-2 border-navy-50">
-                                        {period === 'year' ? (
-                                            <><div className="flex flex-col"><span className="font-bold text-gray-800 text-sm">{item.date}</span></div><span className={`font-bold text-sm ${(item.income - item.expense) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{(item.income - item.expense).toLocaleString()}</span></>
-                                        ) : (
-                                            <>
-                                                <div className="flex items-center">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${item.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                                        <i className={`fa-solid ${item.type === 'income' ? 'fa-arrow-down' : 'fa-arrow-up'} text-xs`}></i>
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-bold text-darkgray text-sm">{item.category}</span>
-                                                            <span className="text-[10px] text-gray-400 bg-gray-100 px-1 rounded">{item.timestamp?.slice(0,5)}</span>
-                                                        </div>
-                                                        <p className="text-xs text-gray-400">{item.note}</p>
-                                                    </div>
+                                        <div className="flex items-center">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${item.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                <i className={`fa-solid ${item.type === 'income' ? 'fa-arrow-down' : 'fa-arrow-up'} text-xs`}></i>
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-darkgray text-sm">{item.category}</span>
+                                                    <span className="text-[10px] text-gray-400 bg-gray-100 px-1 rounded">{item.timestamp?.slice(0,5)}</span>
                                                 </div>
-                                                <span className={`font-bold text-base ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{item.type === 'income' ? '+' : '-'}{item.amount.toLocaleString()}</span>
-                                            </>
-                                        )}
+                                                <p className="text-xs text-gray-400">{item.note}</p>
+                                            </div>
+                                        </div>
+                                        <span className={`font-bold text-base ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{item.type === 'income' ? '+' : '-'}{item.amount.toLocaleString()}</span>
                                     </div>
                                 ))
                             }
@@ -546,7 +543,8 @@
                     {showSettingModal && (
                         <div className="fixed inset-0 bg-navy-900 bg-opacity-40 z-[70] flex items-center justify-center p-4">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
-                                <h3 className="font-bold text-lg mb-4 text-navy-900">日均營運成本</h3>
+                                <h3 className="font-bold text-lg mb-2 text-navy-900">日均營運成本</h3>
+                                <p className="text-xs text-gray-400 mb-4">請輸入每日房租、水電攤提金額 (預設為0)</p>
                                 <input type="number" value={tempFixedCost} onChange={e => setTempFixedCost(e.target.value)} className="w-full text-3xl font-black border-b-2 border-navy-900 py-2 mb-6 focus:outline-none text-navy-900" />
                                 <div className="flex gap-3">
                                     <button onClick={() => setShowSettingModal(false)} className="flex-1 py-3 text-gray-500 font-bold bg-gray-100 rounded-lg">取消</button>
@@ -559,16 +557,18 @@
             );
         };
 
-        // C. AI Advisor (v3.0 Gemini 2.5 Flash Fix)
-        const AIAdvisor = ({ settings, saveSettings, transactions, envData, logs }) => {
+        // C. Private Secretary (Formerly AI)
+        const PrivateSecretary = ({ settings, saveSettings, transactions, envData, logs }) => {
              const [input, setInput] = useState('');
-             const [chat, setChat] = useState([{ id: 1, role: 'ai', text: '老闆好，我是 v3.0 AI 參謀 (Gemini 2.5 Flash)。準備就緒。' }]);
+             const [chat, setChat] = useState([{ id: 1, role: 'ai', text: '老哥，今天還順利嗎？' }]); // Clean opening
              const [showSettings, setShowSettings] = useState(false);
              const [apiKey, setApiKey] = useState(settings.apiKey || '');
              const [isTyping, setIsTyping] = useState(false);
-             const [testStatus, setTestStatus] = useState('idle');
-             const [testMsg, setTestMsg] = useState('');
              const messagesEndRef = useRef(null);
+             const fileInputRef = useRef(null);
+             
+             // Voice Logic
+             const { isListening, startListening } = useVoiceInput((text) => setInput(prev => prev + text));
 
              const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
              useEffect(scrollToBottom, [chat]);
@@ -586,40 +586,17 @@
                  setShowSettings(false);
              };
 
-             const testConnection = async () => {
-                 if (!apiKey.trim()) {
-                     setTestStatus('fail');
-                     setTestMsg('請先輸入 API Key');
-                     return;
-                 }
-                 setTestStatus('testing');
-                 setTestMsg('連線中...');
+             const handleImageUpload = async (e) => {
+                 const file = e.target.files[0];
+                 if (!file) return;
                  
-                 try {
-                     // *** v3.0 CORE FIX: Hardcoded to gemini-2.5-flash ***
-                     const targetModel = 'gemini-2.5-flash';
-                     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey.trim()}`, {
-                         method: 'POST',
-                         headers: { 'Content-Type': 'application/json' },
-                         body: JSON.stringify({
-                             contents: [{ parts: [{ text: "Hello" }] }]
-                         })
-                     });
-
-                     if (!response.ok) {
-                        let msg = `HTTP ${response.status}`;
-                        if (response.status === 403) msg = "403 權限被拒 (PWA 限制)";
-                        if (response.status === 400) msg = "400 Key 無效";
-                        if (response.status === 404) msg = "404 找不到模型 (確認帳號權限)";
-                        throw new Error(msg);
-                     }
-                     
-                     setTestStatus('success');
-                     setTestMsg('連線成功 (2.5 Flash)！');
-                 } catch (e) {
-                     setTestStatus('fail');
-                     setTestMsg(e.message);
-                 }
+                 // Convert to Base64
+                 const reader = new FileReader();
+                 reader.onloadend = () => {
+                     const base64String = reader.result.split(',')[1];
+                     handleSend(base64String, file.type);
+                 };
+                 reader.readAsDataURL(file);
              };
 
              const getContextData = () => {
@@ -630,30 +607,37 @@
                  const net = income - expense - (settings.dailyFixedCost || 0);
                  
                  const env = envData[today] || { weather: '未記錄', traffic: '未記錄' };
+                 // Convert traffic code to text for AI
+                 const trafficText = env.traffic === 'slow' ? '冷清' : env.traffic === 'normal' ? '正常' : env.traffic === '爆滿';
                  const recentLogs = logs.slice(0, 3).map(l => `[${l.timestamp}] ${l.text}`).join('; ');
 
                  return `
-                    環境數據：日期=${today}, 天氣=${env.weather}, 客流=${env.traffic}
-                    財務數據：今日營收=${income}, 今日支出=${expense}, 今日淨利(扣除成本)=${net}
-                    最近筆記：${recentLogs || '無'}
+                    [今日數據]
+                    日期: ${today}
+                    天氣: ${env.weather}
+                    客流: ${trafficText}
+                    營收: ${income}
+                    支出: ${expense}
+                    淨利: ${net}
+                    最近筆記: ${recentLogs || '無'}
                  `;
              };
 
-             const handleSend = async () => {
-                 if(!input.trim()) return;
+             const handleSend = async (imageBase64 = null, mimeType = null) => {
+                 const userMsg = input.trim() || (imageBase64 ? "[傳送了一張圖片]" : "");
+                 if(!userMsg) return;
                  if(isTyping) return;
 
-                 const userMsg = input;
                  setChat(prev => [...prev, { id: Date.now(), role: 'user', text: userMsg }]);
                  setInput('');
                  setIsTyping(true);
 
                  const currentKey = settings.apiKey ? settings.apiKey.trim() : '';
-                 const targetModel = 'gemini-2.5-flash';
+                 const targetModel = 'gemini-2.5-flash'; // Locked model
 
                  if (!currentKey) {
                      setTimeout(() => {
-                         setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: "請先設定 API Key。" }]);
+                         setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: "老哥，我需要 API Key 才能工作。" }]);
                          setIsTyping(false);
                          setShowSettings(true);
                      }, 500);
@@ -661,35 +645,46 @@
                  }
 
                  const context = getContextData();
-                 const systemPrompt = `你是一位餐飲經營顧問，語氣簡潔、專業、像個老大哥。
-                 以下是目前店內的即時數據：
+                 const systemPrompt = `你是一位極簡風格的私人秘書。老闆喜歡效率。
+                 
+                 [規則]
+                 1. 嚴禁廢話，不准寫前言後語。
+                 2. 字數限制：50字內 (除非老闆要求詳解)。
+                 3. 格式：列點說明。
+                 4. 語氣：像個忙碌的老闆助手，精準有力。
+                 
+                 [店舖現況]
                  ${context}
                  
-                 請根據以上數據回答老闆的問題：${userMsg}`;
+                 [老闆的問題]
+                 ${input}`; // Note: if only image, prompt might need adjustment, but user usually speaks
+
+                 const parts = [{ text: systemPrompt }];
+                 if (imageBase64) {
+                     parts.push({
+                         inlineData: {
+                             mimeType: mimeType,
+                             data: imageBase64
+                         }
+                     });
+                 }
 
                  try {
                      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${currentKey}`, {
                          method: 'POST',
                          headers: { 'Content-Type': 'application/json' },
                          body: JSON.stringify({
-                             contents: [{ parts: [{ text: systemPrompt }] }]
+                             contents: [{ parts: parts }]
                          })
                      });
 
                      if (!response.ok) {
                          const errData = await response.json().catch(() => ({}));
-                         let errMsg = errData.error?.message || `HTTP ${response.status}`;
-                         
-                         if (response.status === 404) errMsg = `404 找不到模型 (${targetModel})。帳號權限異常。`;
-                         if (response.status === 400) errMsg = "400 Key 無效或格式錯誤。";
-                         
-                         throw new Error(errMsg);
+                         throw new Error(errData.error?.message || `HTTP ${response.status}`);
                      }
 
                      const data = await response.json();
-                     if (!data.candidates || data.candidates.length === 0) {
-                        throw new Error("AI 已讀不回 (No candidates)");
-                     }
+                     if (!data.candidates || data.candidates.length === 0) throw new Error("無回應");
                      const aiText = data.candidates[0].content.parts[0].text;
                      
                      setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: aiText }]);
@@ -707,15 +702,19 @@
                     <div className="flex justify-between items-center mb-4 sticky top-[60px] bg-gray-50 z-20 py-2">
                         <div className="flex items-center">
                             <div className="w-10 h-10 bg-navy-900 rounded-full flex items-center justify-center text-white mr-3 shadow">
-                                <i className="fa-solid fa-robot text-sm"></i>
+                                <i className="fa-solid fa-user-tie text-sm"></i>
                             </div>
                             <div>
-                                <h1 className="font-bold text-navy-900">AI 參謀</h1>
-                                <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full animate-pulse font-mono">v3.0 (2.5 Flash)</span>
+                                <h1 className="font-bold text-navy-900">私人秘書</h1>
+                                <div className="flex items-center space-x-2">
+                                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                    <span className="text-[10px] text-gray-400">在線中</span>
+                                </div>
                             </div>
                         </div>
-                        <button onClick={() => setShowSettings(true)} className={`text-navy-600 bg-white p-2 rounded-full border border-navy-100 shadow-sm ${!apiKey ? 'animate-bounce ring-2 ring-red-500' : ''}`}><i className="fa-solid fa-key"></i></button>
+                        <button onClick={() => setShowSettings(true)} className={`text-navy-600 bg-white p-2 rounded-full border border-navy-100 shadow-sm ${!apiKey ? 'ring-2 ring-red-500' : ''}`}><i className="fa-solid fa-key"></i></button>
                     </div>
+
                     <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1">
                         {chat.map(c => (
                             <div key={c.id} className={`flex ${c.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -727,41 +726,41 @@
                         {isTyping && (
                             <div className="flex justify-start">
                                 <div className="bg-white text-gray-400 p-3 rounded-2xl rounded-bl-none shadow-sm text-xs flex items-center">
-                                    <i className="fa-solid fa-circle-notch fa-spin mr-2"></i> 連線中...
+                                    <i className="fa-solid fa-circle-notch fa-spin mr-2"></i> 思考中...
                                 </div>
                             </div>
                         )}
                         <div ref={messagesEndRef} />
                     </div>
+
                     <div className="fixed bottom-[60px] left-0 right-0 p-3 bg-white border-t border-navy-50 flex gap-2 z-40 items-center">
-                        <button className="w-10 h-10 rounded-full bg-navy-50 text-navy-600 flex items-center justify-center"><i className="fa-solid fa-microphone"></i></button>
-                        <button className="w-10 h-10 rounded-full bg-navy-50 text-navy-600 flex items-center justify-center"><i className="fa-solid fa-camera"></i></button>
+                        {/* Voice Input */}
+                        <button onClick={startListening} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-navy-50 text-navy-600'}`}>
+                            <i className="fa-solid fa-microphone"></i>
+                        </button>
+                        
+                        {/* Camera Input */}
+                        <button onClick={() => fileInputRef.current.click()} className="w-10 h-10 rounded-full bg-navy-50 text-navy-600 flex items-center justify-center">
+                            <i className="fa-solid fa-camera"></i>
+                        </button>
+                        <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
+
                         <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} className="flex-1 bg-navy-50 rounded-full px-4 py-3 text-sm text-darkgray focus:outline-none" placeholder="輸入..." disabled={isTyping} />
-                        <button onClick={handleSend} className={`w-11 h-11 rounded-full text-white flex items-center justify-center shadow-lg transition-transform ${isTyping ? 'bg-gray-400' : 'bg-navy-900 active:scale-95'}`} disabled={isTyping}><i className="fa-solid fa-paper-plane text-xs"></i></button>
+                        <button onClick={() => handleSend()} className={`w-11 h-11 rounded-full text-white flex items-center justify-center shadow-lg transition-transform ${isTyping ? 'bg-gray-400' : 'bg-navy-900 active:scale-95'}`} disabled={isTyping}><i className="fa-solid fa-paper-plane text-xs"></i></button>
                     </div>
+
                     {showSettings && (
                         <div className="fixed inset-0 bg-navy-900 bg-opacity-50 z-[80] flex items-center justify-center p-6">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
-                                <h3 className="font-bold text-navy-900 mb-2">設定 AI 大腦 (v3.0)</h3>
-                                <p className="text-xs text-gray-400 mb-4">使用模型: gemini-2.5-flash</p>
+                                <h3 className="font-bold text-navy-900 mb-2">秘書設定</h3>
+                                <p className="text-xs text-gray-400 mb-4">核心: gemini-2.5-flash (省話模式)</p>
                                 
                                 <label className="block text-xs font-bold text-gray-500 mb-1">API Key</label>
-                                <input type="text" value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full bg-navy-50 border border-navy-100 rounded-lg p-3 text-sm mb-4 focus:outline-none font-mono" placeholder="Paste API Key..." />
+                                <input type="text" value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full bg-navy-50 border border-navy-100 rounded-lg p-3 text-sm mb-4 focus:outline-none font-mono" placeholder="API Key..." />
                                 
-                                {testMsg && (
-                                    <div className={`text-xs font-bold mb-4 p-2 rounded ${testStatus === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                        {testMsg}
-                                    </div>
-                                )}
-                                <div className="flex justify-end mb-4">
-                                    <button onClick={testConnection} disabled={testStatus === 'testing'} className="text-xs bg-white border border-gray-200 px-3 py-1 rounded shadow-sm font-bold text-navy-600">
-                                        {testStatus === 'testing' ? <i className="fa-solid fa-circle-notch fa-spin"></i> : '測試連線'}
-                                    </button>
-                                </div>
-
                                 <div className="flex gap-3">
                                     <button onClick={() => setShowSettings(false)} className="flex-1 py-3 text-gray-500 font-bold bg-gray-100 rounded-lg">取消</button>
-                                    <button onClick={handleSaveSettings} className="flex-1 py-3 bg-navy-900 text-white rounded-lg font-bold">儲存並啟用</button>
+                                    <button onClick={handleSaveSettings} className="flex-1 py-3 bg-navy-900 text-white rounded-lg font-bold">儲存</button>
                                 </div>
                             </div>
                         </div>
@@ -775,7 +774,7 @@
             const [page, setPage] = useState('dashboard');
             const [transactions, setTransactions] = useState([]);
             const [logs, setLogs] = useState([]);
-            const [settings, setSettings] = useState({ dailyFixedCost: 5000, apiKey: '' });
+            const [settings, setSettings] = useState({ dailyFixedCost: 0, apiKey: '' }); // Default cost 0
             const [envData, setEnvData] = useState({});
             const [activeTimer, setActiveTimer] = useState(null);
             
@@ -808,24 +807,24 @@
 
             return (
                 <div className="bg-white max-w-md mx-auto relative shadow-2xl min-h-screen pb-[60px]">
-                    <EnvironmentBar envData={envData} setEnvData={setEnvData} />
                     <div className="content-padding min-h-screen bg-gray-50"> 
                         {page === 'dashboard' && <Dashboard setPage={setPage} transactions={transactions} logs={logs} setLogs={setLogs} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} settings={settings} />}
-                        {page === 'ops' && <Operations transactions={transactions} setTransactions={setTransactions} settings={settings} saveSettings={saveSettings} />}
-                        {page === 'ai' && <AIAdvisor settings={settings} saveSettings={saveSettings} transactions={transactions} envData={envData} logs={logs} />}
+                        {page === 'ops' && <Operations transactions={transactions} setTransactions={setTransactions} settings={settings} saveSettings={saveSettings} envData={envData} setEnvData={setEnvData} />}
+                        {page === 'ai' && <PrivateSecretary settings={settings} saveSettings={saveSettings} transactions={transactions} envData={envData} logs={logs} />}
                     </div>
+                    
                     <div className="bottom-nav-fix flex justify-around items-center h-[60px] border-t border-navy-50">
                         <button onClick={() => setPage('dashboard')} className={`flex flex-col items-center w-full py-2 transition-colors ${page === 'dashboard' ? 'text-navy-900' : 'text-gray-300'}`}>
                             <i className="fa-solid fa-chart-pie text-lg mb-0.5"></i>
-                            <span className="text-[10px] font-bold">總覽</span>
+                            <span className="text-[10px] font-bold">戰情室</span>
                         </button>
                         <button onClick={() => setPage('ops')} className={`flex flex-col items-center w-full py-2 transition-colors ${page === 'ops' ? 'text-navy-900' : 'text-gray-300'}`}>
                             <i className="fa-solid fa-calculator text-lg mb-0.5"></i>
                             <span className="text-[10px] font-bold">營運</span>
                         </button>
                         <button onClick={() => setPage('ai')} className={`flex flex-col items-center w-full py-2 transition-colors ${page === 'ai' ? 'text-navy-900' : 'text-gray-300'}`}>
-                            <i className="fa-solid fa-robot text-lg mb-0.5"></i>
-                            <span className="text-[10px] font-bold">AI</span>
+                            <i className="fa-solid fa-user-tie text-lg mb-0.5"></i>
+                            <span className="text-[10px] font-bold">秘書</span>
                         </button>
                     </div>
                 </div>
@@ -835,10 +834,10 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
 
-        // --- SW Registration (sw-v3.0.js) ---
+        // --- SW Registration (sw-v3.1.js) ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw-v3.0.js').then(registration => {
+                navigator.serviceWorker.register('./sw-v3.1.js').then(registration => {
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
                         installingWorker.onstatechange = () => {
