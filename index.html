@@ -1,10 +1,12 @@
-<!-- 檔名：SeafoodBossApp_Spec_new.v3.2.html (v3.2 Restoration & Precision Move) -->
+<!-- 檔名：SeafoodBossApp_v3.3_Final.html -->
+<!-- 版本：v3.3 (Restore & Enhance) -->
+<!-- 架構：v3.0 基底 + v3.2 AI模組 + 介面優化 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Seafood Boss (v3.2)</title>
+    <title>Seafood Boss (v3.3)</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0284c7"> 
@@ -87,7 +89,7 @@
         }
         .content-padding {
             padding-bottom: 90px; 
-            padding-top: 60px; /* Space for Sticky Header */
+            padding-top: 60px;
         }
         /* Sticky Elements */
         .sticky-header-main {
@@ -145,7 +147,7 @@
             return days;
         };
 
-        // Voice Input Hook (Simple)
+        // Voice Input Hook (From v3.2)
         const useVoiceInput = (onResult) => {
             const [isListening, setIsListening] = useState(false);
             
@@ -172,7 +174,7 @@
 
         // --- Components ---
 
-        // 1. Main Header (v3.2 - Cleaned up)
+        // 1. Main Header (v3.3: Title Left, Settings/AI Right)
         const MainHeader = ({ title = "SF.BOSS", showKey = false, onKeyClick }) => (
             <div className="sticky-header-main">
                 <div className="flex items-center text-white">
@@ -181,7 +183,7 @@
                     </div>
                     <div className="leading-tight">
                         <div className="font-black text-sm tracking-wider">{title}</div>
-                        <div className="text-[10px] opacity-80 font-mono">v3.2</div>
+                        <div className="text-[10px] opacity-80 font-mono">v3.3</div>
                     </div>
                 </div>
                 {showKey && (
@@ -192,7 +194,7 @@
             </div>
         );
 
-        // 2. Timer (v3.0 Logic)
+        // 2. Timer (v3.0)
         const TimerButton = ({ minutes, activeTimer, startTimer, stopTimer }) => {
             const isActive = activeTimer && activeTimer.minutes === minutes;
             return (
@@ -213,7 +215,7 @@
             );
         };
 
-        // 3. Owner Log (Added Voice)
+        // 3. Owner Log (v3.0 + Voice from v3.2)
         const OwnerLog = ({ logs, setLogs }) => {
             const [input, setInput] = useState('');
             const { isListening, startListening } = useVoiceInput((text) => setInput(prev => prev + text));
@@ -242,7 +244,7 @@
                     <div className="flex gap-2 mb-4">
                         <input type="text" value={input} onChange={e => setInput(e.target.value)} className="flex-1 bg-navy-50 rounded-lg px-3 py-2 text-sm focus:outline-none text-navy-900" placeholder="快速記事..." />
                         
-                        {/* Voice Button */}
+                        {/* Voice Button (v3.2 Feature) */}
                         <button onClick={startListening} className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 text-gray-500'}`}>
                             <i className="fa-solid fa-microphone"></i>
                         </button>
@@ -271,16 +273,14 @@
 
         // --- Pages ---
 
-        // A. Dashboard (Restored v3.0 Logic)
+        // A. Dashboard (Restored v3.0 Main Screen + Settings Icon)
         const Dashboard = ({ setPage, transactions, logs, setLogs, activeTimer, startTimer, stopTimer, settings }) => {
             const today = getTodayStr();
             const todayStats = useMemo(() => {
                 const todayTrans = transactions.filter(t => t.date === today);
                 const income = todayTrans.filter(t => t.type === 'income').reduce((acc, c) => acc + c.amount, 0);
                 const expense = todayTrans.filter(t => t.type === 'expense').reduce((acc, c) => acc + c.amount, 0);
-                const cost = settings.dailyFixedCost || 0;
-                const net = income - expense - cost;
-                
+                const net = income - expense - (settings.dailyFixedCost || 0);
                 let status = "觀察中"; let color = "bg-gray-400";
                 if (net > 1000) { status = "營收穩健"; color = "bg-green-500"; }
                 else if (net >= 0) { status = "收支平衡"; color = "bg-yellow-500"; }
@@ -290,13 +290,12 @@
 
             return (
                 <div className="min-h-screen relative">
-                    <MainHeader />
+                    {/* Header: Title + AI/Settings Entry */}
+                    <MainHeader showKey={true} onKeyClick={() => setPage('ai')} />
 
                     <div className="px-4 pb-20 pt-4 animate-fade-in flex flex-col h-full gap-4">
-                        {/* 1. Note with Mic */}
                         <OwnerLog logs={logs} setLogs={setLogs} />
 
-                        {/* 2. Timer */}
                         <div>
                             <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider uppercase">Transition Timer</p>
                             <div className="grid grid-cols-3 gap-2">
@@ -306,7 +305,7 @@
                             </div>
                         </div>
 
-                        {/* 3. Financial Card (Restored) */}
+                        {/* Financial Card (Restored from v3.0) */}
                         <div className="mt-auto">
                             <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider uppercase">Financials (Private)</p>
                             <div onClick={() => setPage('ops')} className="bg-gradient-to-br from-white to-gray-50 rounded-xl card-shadow p-5 border border-navy-50 flex items-center justify-between active:scale-95 transition-transform cursor-pointer">
@@ -340,12 +339,12 @@
             );
         };
 
-        // B. Operations (v3.2 - Moved Env Controls Here)
+        // B. Operations (v3.0 Logic + Moved Env Controls)
         const Operations = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
             const [showSettingModal, setShowSettingModal] = useState(false);
-            const [isCalExpanded, setIsCalExpanded] = useState(true); // Restored Month Calendar Toggle
+            const [isCalExpanded, setIsCalExpanded] = useState(true); 
             
             const [selectedDate, setSelectedDate] = useState(getTodayStr());
             const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
@@ -396,7 +395,24 @@
                     fixedCostTotal = dailyCost * daysPassed;
                     income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
                     expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
-                    listData = transactions.filter(t => t.date === selectedDate); // Month view shows day list
+                    listData = transactions.filter(t => t.date === selectedDate);
+                } else { // Year (Restored v3.0 Logic)
+                    filtered = transactions.filter(t => t.date.startsWith(yearStr));
+                    const startOfYear = new Date(now.getFullYear(), 0, 1);
+                    const diffTime = Math.abs(now - startOfYear);
+                    const daysPassedYear = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                    fixedCostTotal = dailyCost * daysPassedYear;
+
+                    income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
+                    expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
+                    const grouped = {};
+                    filtered.forEach(t => {
+                         const m = t.date.slice(0, 7);
+                         if(!grouped[m]) grouped[m] = { date: m, income: 0, expense: 0 };
+                         if(t.type === 'income') grouped[m].income += t.amount;
+                         else grouped[m].expense += t.amount;
+                    });
+                    listData = Object.values(grouped).sort((a,b) => b.date.localeCompare(a.date));
                 }
                 net = income - expense - fixedCostTotal;
                 return { income, expense, fixedCostTotal, net, listData, dailyStats };
@@ -413,11 +429,11 @@
 
             const calendarDays = useMemo(() => getCalendarDays(new Date().getFullYear(), currentMonth), [currentMonth]);
 
-            // Traffic Button Helper
-            const TrafficBtn = ({ val, icon, label, colorClass }) => (
+            // Capsule Button Helper (v3.3 Spec)
+            const TrafficBtn = ({ val, label, colorClass }) => (
                 <button 
                     onClick={() => updateEnv('traffic', val)}
-                    className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${currentEnv.traffic === val ? colorClass + ' text-white border-transparent shadow-md scale-105' : 'bg-white text-gray-400 border-gray-200'}`}
+                    className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${currentEnv.traffic === val ? colorClass + ' text-white border-transparent shadow-md' : 'bg-white text-gray-400 border-gray-200'}`}
                 >
                     {label}
                 </button>
@@ -425,17 +441,17 @@
 
             return (
                 <div className="pb-20 animate-fade-in min-h-screen">
-                    <MainHeader />
+                    <MainHeader title="營運報表" />
                     
-                    {/* Sticky Controls */}
+                    {/* Sticky Controls (v3.3 Optimized) */}
                     <div className="sticky-ops-controls px-4 pt-4 shadow-sm">
                         
-                        {/* 1. Date Controls (Same as v3.0) */}
+                        {/* 1. Date Controls (Restored Year Button) */}
                         <div className="flex justify-between items-center mb-3">
                             <div className="bg-white p-0.5 rounded-lg border border-navy-50 shadow-sm inline-flex">
-                                {['day', 'month'].map(p => (
+                                {['day', 'month', 'year'].map(p => (
                                     <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${period === p ? 'bg-navy-900 text-white shadow' : 'text-gray-500'}`}>
-                                        {p === 'day' ? '日' : '月'}
+                                        {p === 'day' ? '日' : p === 'month' ? '月' : '年'}
                                     </button>
                                 ))}
                             </div>
@@ -450,40 +466,36 @@
                             <button onClick={() => setShowSettingModal(true)} className="w-8 h-8 rounded-full bg-navy-50 text-navy-600 flex items-center justify-center"><i className="fa-solid fa-gear"></i></button>
                         </div>
 
-                        {/* 2. Environment Controls (Moved from Main Page) */}
-                        <div className="bg-white rounded-xl p-3 border border-navy-50 mb-3 shadow-sm">
-                             <div className="flex justify-between items-center mb-2">
-                                <span className="text-[10px] text-gray-400 font-bold uppercase">今日環境</span>
-                                <div className="flex space-x-2">
+                        {/* 2. Environment Controls (Moved Here, Capsule Style) */}
+                        {period === 'day' && (
+                            <div className="flex justify-between items-center mb-3 animate-fade-in">
+                                <div className="flex space-x-1">
                                     {['sunny','cloudy','rainy'].map(w => (
-                                        <button key={w} onClick={() => updateEnv('weather', w)} className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${currentEnv.weather === w ? 'bg-navy-900 text-white scale-110' : 'text-gray-300'}`}>
+                                        <button key={w} onClick={() => updateEnv('weather', w)} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${currentEnv.weather === w ? 'bg-navy-900 text-white shadow' : 'bg-white text-gray-300 border border-gray-100'}`}>
                                             <i className={`fa-solid fa-${w === 'sunny' ? 'sun' : w === 'cloudy' ? 'cloud' : 'cloud-showers-heavy'} text-xs`}></i>
                                         </button>
                                     ))}
                                 </div>
-                             </div>
-                             <div className="flex gap-2">
-                                <TrafficBtn val="slow" label="❄️ 冷清" colorClass="bg-blue-400" />
-                                <TrafficBtn val="normal" label="🙂 正常" colorClass="bg-yellow-400" />
-                                <TrafficBtn val="busy" label="🔥 爆滿" colorClass="bg-red-500" />
-                             </div>
-                        </div>
-
-                        {/* 3. Summary Box (Sticky) */}
-                        <div className="bg-navy-900 rounded-xl p-4 text-white shadow-lg flex justify-between items-center">
-                            <div>
-                                <div className="text-[10px] opacity-60 mb-1">淨利結餘</div>
-                                <div className={`text-2xl font-black ${stats.net >= 0 ? 'text-white' : 'text-red-300'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</div>
+                                <div className="flex gap-1">
+                                    <TrafficBtn val="slow" label="❄️ 冷清" colorClass="bg-blue-400" />
+                                    <TrafficBtn val="normal" label="🙂 正常" colorClass="bg-yellow-400" />
+                                    <TrafficBtn val="busy" label="🔥 爆滿" colorClass="bg-red-500" />
+                                </div>
                             </div>
-                            <div className="text-right space-y-1">
-                                <div className="text-xs"><span className="opacity-60 mr-2">收</span> <span className="text-green-300 font-bold">+{stats.income.toLocaleString()}</span></div>
-                                <div className="text-xs"><span className="opacity-60 mr-2">支</span> <span className="text-red-300 font-bold">-{stats.expense.toLocaleString()}</span></div>
-                            </div>
-                        </div>
+                        )}
                     </div>
 
                     <div className="px-4 pt-4">
-                        {/* Month View Calendar (Restored) */}
+                        {/* Summary Card */}
+                        <div className="bg-white rounded-xl p-5 mb-6 card-shadow border-l-4 border-navy-900 relative overflow-hidden">
+                            <div className="absolute right-0 top-0 p-3 opacity-5"><i className="fa-solid fa-chart-line text-6xl"></i></div>
+                            <div className="flex justify-between items-center mb-2"><span className="text-gray-500 font-bold text-xs">營收總額</span><span className="text-lg font-bold text-navy-900">+ {stats.income.toLocaleString()}</span></div>
+                            <div className="flex justify-between items-center mb-2"><span className="text-gray-500 font-bold text-xs">臨時支出</span><span className="text-lg font-bold text-red-500">- {stats.expense.toLocaleString()}</span></div>
+                            <div className="flex justify-between items-center mb-3 pb-3 border-b border-dashed border-gray-200"><span className="text-gray-400 font-bold text-[10px]">固定攤提 (動態)</span><span className="text-sm font-bold text-gray-400">- {stats.fixedCostTotal.toLocaleString()}</span></div>
+                            <div className="flex justify-between items-end"><span className="text-navy-900 font-black text-sm">淨利結餘</span><span className={`text-2xl font-black ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</span></div>
+                        </div>
+
+                        {/* Month View Calendar */}
                         {period === 'month' && (
                             <div className="mb-6 bg-white rounded-xl p-4 card-shadow border border-navy-50">
                                 <div className="flex justify-between items-center mb-2 cursor-pointer" onClick={() => setIsCalExpanded(!isCalExpanded)}>
@@ -512,45 +524,54 @@
                             </div>
                         )}
 
-                        {/* Input Buttons (Restored) */}
+                        {/* Input Buttons (Restored v3.0 logic) */}
                         <div className="grid grid-cols-2 gap-4 mb-6">
-                            <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); setShowAddModal(true);}} className="bg-white text-navy-900 border border-navy-100 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
-                            <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); setShowAddModal(true);}} className="bg-white text-darkgray border border-gray-200 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
+                            <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); setShowAddModal(true);}} className="bg-navy-900 text-white py-4 rounded-xl font-bold shadow-lg flex items-center justify-center text-base active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
+                            <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); setShowAddModal(true);}} className="bg-white text-darkgray border border-gray-200 py-4 rounded-xl font-bold shadow flex items-center justify-center text-base active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
                         </div>
 
-                        {/* List with Env Label */}
+                        {/* List with Env Label (v3.3) */}
                         <h3 className="font-bold text-gray-800 mb-3 text-xs border-l-4 border-navy-500 pl-2 flex items-center gap-2">
-                            <span>流水帳 ({selectedDate})</span>
-                            <span className="text-[10px] font-normal text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                                {currentEnv.weather === 'sunny' ? '☀️' : currentEnv.weather === 'cloudy' ? '☁️' : '🌧️'}
-                                {' '}
-                                {currentEnv.traffic === 'slow' ? '❄️冷清' : currentEnv.traffic === 'normal' ? '🙂正常' : '🔥爆滿'}
-                            </span>
+                            <span>{period === 'day' ? `流水帳 (${selectedDate})` : period === 'month' ? `明細 (${selectedDate})` : '月度匯總'}</span>
+                            {period !== 'year' && (
+                                <span className="text-[10px] font-normal text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                                    {currentEnv.weather === 'sunny' ? '☀️' : currentEnv.weather === 'cloudy' ? '☁️' : '🌧️'}
+                                    {' '}
+                                    {currentEnv.traffic === 'slow' ? '❄️冷清' : currentEnv.traffic === 'normal' ? '🙂正常' : '🔥爆滿'}
+                                </span>
+                            )}
                         </h3>
                         
                         <div className="space-y-3">
                             {stats.listData.length === 0 ? <p className="text-gray-400 text-center py-8 text-xs">尚無資料</p> : 
                                 stats.listData.map((item, idx) => (
                                     <div key={idx} className="bg-white p-3 rounded-lg flex justify-between items-center shadow-sm border-l-2 border-navy-50">
-                                        <div className="flex items-center">
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${item.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                                <i className={`fa-solid ${item.type === 'income' ? 'fa-arrow-down' : 'fa-arrow-up'} text-xs`}></i>
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-darkgray text-sm">{item.category}</span>
-                                                    <span className="text-[10px] text-gray-400 bg-gray-100 px-1 rounded">{item.timestamp?.slice(0,5)}</span>
+                                        {period === 'year' ? (
+                                            <><div className="flex flex-col"><span className="font-bold text-gray-800 text-sm">{item.date}</span></div><span className={`font-bold text-sm ${(item.income - item.expense) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{(item.income - item.expense).toLocaleString()}</span></>
+                                        ) : (
+                                            <>
+                                                <div className="flex items-center">
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${item.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                        <i className={`fa-solid ${item.type === 'income' ? 'fa-arrow-down' : 'fa-arrow-up'} text-xs`}></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-darkgray text-sm">{item.category}</span>
+                                                            <span className="text-[10px] text-gray-400 bg-gray-100 px-1 rounded">{item.timestamp?.slice(0,5)}</span>
+                                                        </div>
+                                                        <p className="text-xs text-gray-400">{item.note}</p>
+                                                    </div>
                                                 </div>
-                                                <p className="text-xs text-gray-400">{item.note}</p>
-                                            </div>
-                                        </div>
-                                        <span className={`font-bold text-base ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{item.type === 'income' ? '+' : '-'}{item.amount.toLocaleString()}</span>
+                                                <span className={`font-bold text-base ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{item.type === 'income' ? '+' : '-'}{item.amount.toLocaleString()}</span>
+                                            </>
+                                        )}
                                     </div>
                                 ))
                             }
                         </div>
                     </div>
 
+                    {/* Add Modal (Restored v3.0 Style) */}
                     {showAddModal && (
                         <div className="fixed inset-0 bg-navy-900 bg-opacity-40 z-[70] flex items-end sm:items-center justify-center sm:p-4">
                             <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
@@ -575,6 +596,7 @@
                             </div>
                         </div>
                     )}
+                    {/* Settings Modal */}
                     {showSettingModal && (
                         <div className="fixed inset-0 bg-navy-900 bg-opacity-40 z-[70] flex items-center justify-center p-4">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
@@ -592,7 +614,7 @@
             );
         };
 
-        // C. Private Secretary (Renamed, New Intro)
+        // C. Private Secretary (v3.2 Logic with v3.3 Prompt)
         const PrivateSecretary = ({ settings, saveSettings, transactions, envData, logs }) => {
              const [input, setInput] = useState('');
              const [chat, setChat] = useState([{ id: 1, role: 'ai', text: '老哥，今天還順利嗎？' }]);
@@ -724,7 +746,7 @@
                 <div className="pt-4 pb-20 px-4 h-full flex flex-col min-h-screen">
                     <MainHeader title="私人秘書" showKey={true} onKeyClick={() => setShowSettings(true)} />
 
-                    <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1 mt-14"> {/* Added mt-14 for header spacing */}
+                    <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1 mt-14">
                         {chat.map(c => (
                             <div key={c.id} className={`flex ${c.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[85%] p-3 rounded-2xl shadow-sm text-sm ${c.role === 'user' ? 'bg-navy-900 text-white rounded-br-none' : 'bg-white text-darkgray border border-navy-50 rounded-bl-none'}`}>
@@ -836,10 +858,10 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
 
-        // --- SW Registration (sw-v3.2.js) ---
+        // --- SW Registration (sw-v3.3.js) ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw-v3.2.js').then(registration => {
+                navigator.serviceWorker.register('./sw-v3.3.js').then(registration => {
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
                         installingWorker.onstatechange = () => {
