@@ -1,12 +1,12 @@
-<!-- 檔名：SeafoodBossApp_v3.6_Final.html -->
-<!-- 版本：v3.6 (Final & Persistent AI) -->
-<!-- 修正：計時器極簡化、財務卡片隱私化、AI對話持久儲存 -->
+<!-- 檔名：SeafoodBossApp_v3.7_Final.html -->
+<!-- 版本：v3.7 (Dual-Persona AI & Editing) -->
+<!-- 修正：AI雙重人格、語音回覆、記帳修改、iOS除錯增強 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS (v3.6)</title>
+    <title>SEAFOOD.BOSS (v3.7)</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0284c7"> 
@@ -115,19 +115,19 @@
         
         .force-bottom-container {
             position: fixed;
-            bottom: 80px; /* Above status bar */
+            bottom: 80px; 
             left: 0;
             right: 0;
             z-index: 30;
             padding: 0 1rem;
-            max-width: 28rem; /* Matches max-w-md */
+            max-width: 28rem; 
             margin: 0 auto;
             background: linear-gradient(to top, #F8FAFC 90%, transparent);
             padding-top: 20px;
         }
         .content-padding-dashboard {
-            padding-top: 120px; /* Header + AI Entry */
-            padding-bottom: 300px; /* Huge padding for fixed bottom area */
+            padding-top: 120px; 
+            padding-bottom: 300px;
         }
         .content-padding-normal {
             padding-top: 60px;
@@ -146,7 +146,7 @@
         const DB_KEY_LOGS = 'sf_logs';                 
         const DB_KEY_SETTINGS = 'sf_settings';         
         const DB_KEY_ENV = 'sf_daily_env';             
-        const DB_KEY_CHAT = 'sf_ai_chat'; // v3.6 New Key
+        const DB_KEY_CHAT = 'sf_ai_chat';
 
         // --- Helpers ---
         const getTodayStr = () => new Date().toISOString().split('T')[0];
@@ -190,6 +190,19 @@
             return { isListening, startListening };
         };
 
+        // Text-to-Speech Hook (v3.7)
+        const useTTS = () => {
+            const speak = (text) => {
+                if (!('speechSynthesis' in window)) return;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-TW';
+                utterance.rate = 1.0; 
+                window.speechSynthesis.cancel(); // Stop previous
+                window.speechSynthesis.speak(utterance);
+            };
+            return { speak };
+        };
+
         // --- Components ---
 
         // 1. Main Header
@@ -201,7 +214,7 @@
                     </div>
                     <div className="leading-tight">
                         <div className="font-black text-sm tracking-wider uppercase">{title}</div>
-                        <div className="text-[10px] opacity-80 font-mono">v3.6</div>
+                        <div className="text-[10px] opacity-80 font-mono">v3.7</div>
                     </div>
                 </div>
                 {showKey && (
@@ -212,7 +225,7 @@
             </div>
         );
 
-        // 2. Timer (v3.6 Minimalist)
+        // 2. Timer
         const TimerButton = ({ minutes, activeTimer, startTimer, stopTimer }) => {
             const isActive = activeTimer && activeTimer.minutes === minutes;
             return (
@@ -305,8 +318,6 @@
             return (
                 <div className="min-h-screen relative flex flex-col">
                     <MainHeader />
-
-                    {/* AI Entry */}
                     <div className="fixed top-[60px] left-0 right-0 px-4 pt-2 pb-2 z-40 bg-[#F8FAFC] max-w-md mx-auto">
                         <div onClick={() => setPage('ai')} className="bg-white rounded-full p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border border-navy-50 shadow-sm active:scale-95 transition-transform">
                             <div className="flex items-center space-x-3">
@@ -316,15 +327,10 @@
                             <div className="w-8 h-8 bg-navy-50 rounded-full flex items-center justify-center text-navy-600"><i className="fa-solid fa-microphone text-xs"></i></div>
                         </div>
                     </div>
-
-                    {/* Content */}
                     <div className="px-4 content-padding-dashboard animate-fade-in flex flex-col flex-1 h-full gap-4">
                         <OwnerLog logs={logs} setLogs={setLogs} />
                     </div>
-
-                    {/* Forced Bottom Section (v3.6 Fixed) */}
                     <div className="force-bottom-container space-y-4">
-                        {/* Timer */}
                         <div>
                             <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider uppercase flex items-center gap-1">
                                 <i className="fa-solid fa-stopwatch"></i> ⚠️ 暫離提醒
@@ -335,8 +341,6 @@
                                 <TimerButton minutes={20} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
                             </div>
                         </div>
-
-                        {/* Financial Card (Privacy Mode) */}
                         <div className="pb-4">
                             <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider uppercase">Financials (Private)</p>
                             <div onClick={() => setPage('ops')} className="bg-gradient-to-br from-white to-gray-50 rounded-xl card-shadow p-5 border border-navy-50 flex items-center justify-between active:scale-95 transition-transform cursor-pointer">
@@ -349,15 +353,12 @@
                                         <p className="text-[10px] text-gray-400">點擊查看詳情</p>
                                     </div>
                                 </div>
-                                {/* Removed Right Side Numbers for Privacy */}
                                 <div className="text-navy-900">
                                     <i className="fa-solid fa-chevron-right text-gray-300"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    {/* Status Bar */}
                     <div className="fixed bottom-[60px] left-0 right-0 bg-white border-t border-navy-50 p-2 flex items-center justify-between px-4 z-40 max-w-md mx-auto">
                         <span className="text-xs font-bold text-gray-500">今日狀態</span>
                         <div className="flex items-center space-x-2">
@@ -369,12 +370,15 @@
             );
         };
 
-        // B. Operations (v3.5 Logic)
+        // B. Operations (v3.7 - Editing Enabled)
         const Operations = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
             const [showSettingModal, setShowSettingModal] = useState(false);
             const [isCalExpanded, setIsCalExpanded] = useState(true); 
+            
+            // Edit Mode States
+            const [editingId, setEditingId] = useState(null);
             
             const [selectedDate, setSelectedDate] = useState(getTodayStr());
             const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
@@ -457,15 +461,46 @@
 
             const handleSave = () => {
                 if (!amount) return;
-                const newTrans = { id: Date.now(), date: date, amount: parseInt(amount), type, category: cat, note, timestamp: formatTime() };
-                const updated = [newTrans, ...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+                let updated;
+                if (editingId) {
+                    // Update existing
+                    updated = transactions.map(t => t.id === editingId ? { ...t, date, amount: parseInt(amount), type, category: cat, note } : t);
+                } else {
+                    // Create new
+                    const newTrans = { id: Date.now(), date: date, amount: parseInt(amount), type, category: cat, note, timestamp: formatTime() };
+                    updated = [newTrans, ...transactions];
+                }
+                updated.sort((a, b) => new Date(b.date) - new Date(a.date));
                 setTransactions(updated);
                 localStorage.setItem(DB_KEY_TRANSACTIONS, JSON.stringify(updated));
-                setAmount(''); setNote(''); setShowAddModal(false);
+                resetForm();
+            };
+
+            const handleDelete = () => {
+                if (!editingId) return;
+                if (!confirm('確定要刪除這筆紀錄嗎？')) return;
+                const updated = transactions.filter(t => t.id !== editingId);
+                setTransactions(updated);
+                localStorage.setItem(DB_KEY_TRANSACTIONS, JSON.stringify(updated));
+                resetForm();
+            };
+
+            const resetForm = () => {
+                setAmount(''); setNote(''); setEditingId(null); setShowAddModal(false);
+            };
+
+            const openEdit = (item) => {
+                if (period === 'year') return; // Year view summary not editable
+                setEditingId(item.id);
+                setDate(item.date);
+                setType(item.type);
+                setAmount(item.amount);
+                setCat(item.category);
+                setNote(item.note);
+                setShowAddModal(true);
             };
 
             const calendarDays = useMemo(() => getCalendarDays(new Date().getFullYear(), currentMonth), [currentMonth]);
-
             const TrafficBtn = ({ val, label, colorClass }) => (
                 <button 
                     onClick={() => updateEnv('traffic', val)}
@@ -555,23 +590,16 @@
                             </div>
                         )}
                         <div className="grid grid-cols-2 gap-4 mb-6">
-                            <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); setShowAddModal(true);}} className="bg-white text-navy-900 border border-navy-100 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
-                            <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); setShowAddModal(true);}} className="bg-white text-darkgray border border-gray-200 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
+                            <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-navy-900 border border-navy-100 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
+                            <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-darkgray border border-gray-200 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
                         </div>
                         <h3 className="font-bold text-gray-800 mb-3 text-xs border-l-4 border-navy-500 pl-2 flex items-center gap-2">
                             <span>{period === 'day' ? `流水帳 (${selectedDate})` : period === 'month' ? `明細 (${selectedDate})` : '月度匯總'}</span>
-                            {period === 'day' && (
-                                <span className="text-[10px] font-normal text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                                    {currentEnv.weather === 'sunny' ? '☀️' : currentEnv.weather === 'cloudy' ? '☁️' : '🌧️'}
-                                    {' '}
-                                    {currentEnv.traffic === 'slow' ? '❄️冷清' : currentEnv.traffic === 'normal' ? '🙂正常' : '🔥爆滿'}
-                                </span>
-                            )}
                         </h3>
                         <div className="space-y-3">
                             {stats.listData.length === 0 ? <p className="text-gray-400 text-center py-8 text-xs">尚無資料</p> : 
                                 stats.listData.map((item, idx) => (
-                                    <div key={idx} className="bg-white p-3 rounded-lg flex justify-between items-center shadow-sm border-l-2 border-navy-50">
+                                    <div key={idx} onClick={() => openEdit(item)} className="bg-white p-3 rounded-lg flex justify-between items-center shadow-sm border-l-2 border-navy-50 active:bg-gray-50 cursor-pointer">
                                         {period === 'year' ? (
                                             <><div className="flex flex-col"><span className="font-bold text-gray-800 text-sm">{item.date}</span></div><span className={`font-bold text-sm ${(item.income - item.expense) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{(item.income - item.expense).toLocaleString()}</span></>
                                         ) : (
@@ -600,7 +628,10 @@
                     {showAddModal && (
                         <div className="fixed inset-0 bg-navy-900 bg-opacity-40 z-[70] flex items-end sm:items-center justify-center sm:p-4">
                             <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
-                                <h3 className="font-black text-xl mb-6 text-navy-900">記一筆{type === 'income' ? '進帳' : '出帳'}</h3>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="font-black text-xl text-navy-900">{editingId ? '編輯紀錄' : (type === 'income' ? '記一筆進帳' : '記一筆出帳')}</h3>
+                                    {editingId && <button onClick={handleDelete} className="text-red-500 font-bold text-sm"><i className="fa-solid fa-trash mr-1"></i>刪除</button>}
+                                </div>
                                 <div className="space-y-5">
                                     <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-navy-50 p-3 rounded-lg font-bold text-navy-800" />
                                     <div className="relative">
@@ -627,25 +658,17 @@
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
                                 <h3 className="font-bold text-lg mb-2 text-navy-900">日均營運成本</h3>
                                 <p className="text-xs text-gray-400 mb-4">勾選包含項目，並輸入每日總攤提額 (預設為0)</p>
-                                
                                 <div className="flex flex-wrap gap-2 mb-6">
                                     {costOptions.map(item => (
-                                        <button 
-                                            key={item} 
-                                            onClick={() => toggleCostItem(item)}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${selectedCostItems.includes(item) ? 'bg-navy-900 text-white border-navy-900' : 'bg-white text-gray-400 border-gray-200'}`}
-                                        >
-                                            {selectedCostItems.includes(item) && <i className="fa-solid fa-check mr-1"></i>}
-                                            {item}
+                                        <button key={item} onClick={() => toggleCostItem(item)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${selectedCostItems.includes(item) ? 'bg-navy-900 text-white border-navy-900' : 'bg-white text-gray-400 border-gray-200'}`}>
+                                            {selectedCostItems.includes(item) && <i className="fa-solid fa-check mr-1"></i>}{item}
                                         </button>
                                     ))}
                                 </div>
-
                                 <div className="relative">
                                     <span className="absolute left-0 top-3 text-xl font-bold text-navy-900">$</span>
                                     <input type="number" value={tempFixedCost} onChange={e => setTempFixedCost(e.target.value)} className="w-full pl-6 text-3xl font-black border-b-2 border-navy-900 py-2 mb-6 focus:outline-none text-navy-900" placeholder="0" />
                                 </div>
-
                                 <div className="flex gap-3">
                                     <button onClick={() => setShowSettingModal(false)} className="flex-1 py-3 text-gray-500 font-bold bg-gray-100 rounded-lg">取消</button>
                                     <button onClick={() => { saveSettings({...settings, dailyFixedCost: parseInt(tempFixedCost) || 0, costItems: selectedCostItems}); setShowSettingModal(false); }} className="flex-1 py-3 bg-navy-900 text-white rounded-lg font-bold">儲存</button>
@@ -657,10 +680,9 @@
             );
         };
 
-        // C. Private Secretary (v3.6 Persistent Storage)
+        // C. Private Secretary (v3.7 - Dual Persona + TTS)
         const PrivateSecretary = ({ settings, saveSettings, transactions, envData, logs }) => {
              const [input, setInput] = useState('');
-             // Initialize chat from localStorage or default
              const [chat, setChat] = useState(() => {
                  const saved = localStorage.getItem(DB_KEY_CHAT);
                  return saved ? JSON.parse(saved) : [{ id: 1, role: 'ai', text: '老哥，今天還順利嗎？' }];
@@ -671,10 +693,10 @@
              const messagesEndRef = useRef(null);
              const fileInputRef = useRef(null);
              const { isListening, startListening } = useVoiceInput((text) => setInput(prev => prev + text));
+             const { speak } = useTTS(); // Use v3.7 TTS
 
              const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
              
-             // Save chat to localStorage whenever it changes
              useEffect(() => {
                  localStorage.setItem(DB_KEY_CHAT, JSON.stringify(chat));
                  scrollToBottom();
@@ -685,7 +707,7 @@
              }, [settings.apiKey]);
 
              const handleSaveSettings = () => {
-                 const cleanKey = apiKey.trim();
+                 const cleanKey = apiKey.trim(); // Trim for iOS fix
                  setApiKey(cleanKey);
                  saveSettings({...settings, apiKey: cleanKey}); 
                  setShowSettings(false);
@@ -726,14 +748,12 @@
                  if(!userMsg) return;
                  if(isTyping) return;
                  
-                 // Don't save large base64 image strings to chat history (it will exceed LocalStorage)
-                 // Save a placeholder text instead
                  const displayMsg = imageBase64 ? "[圖片已傳送]" : userMsg;
                  
                  setChat(prev => [...prev, { id: Date.now(), role: 'user', text: displayMsg }]);
                  setInput('');
                  setIsTyping(true);
-                 const currentKey = settings.apiKey ? settings.apiKey.trim() : '';
+                 const currentKey = settings.apiKey ? settings.apiKey.trim() : ''; // iOS Trim Fix
                  const targetModel = 'gemini-2.5-flash';
 
                  if (!currentKey) {
@@ -741,8 +761,13 @@
                      return;
                  }
                  const context = getContextData();
-                 const systemPrompt = `你是一位極簡風格的私人秘書。老闆喜歡效率。
-                 [規則] 1.嚴禁廢話。 2.字數限制：50字內。 3.格式：列點說明。 4.語氣：精準有力。
+                 // v3.7 Dual Persona Prompt
+                 const systemPrompt = `你是一位全能私人秘書。對老闆（老哥）忠誠且懂他。
+                 [規則]
+                 1. 如果老闆問公事（數據、營運、建議）：請保持極簡、列點、數據化。
+                 2. 如果老闆聊私事（心情、閒聊）：請像個老朋友一樣，語氣輕鬆溫暖，不要太僵硬。
+                 3. 記得，老闆喜歡效率，但偶爾也需要被理解。
+                 
                  [店舖現況] ${context}
                  [老闆的問題] ${imageBase64 ? "[老闆傳了一張圖片]" : input}`;
                  
@@ -755,12 +780,18 @@
                          headers: { 'Content-Type': 'application/json' },
                          body: JSON.stringify({ contents: [{ parts: parts }] })
                      });
-                     if (!response.ok) throw new Error("API Error");
+                     
+                     if (!response.ok) {
+                         const errData = await response.json().catch(() => ({}));
+                         throw new Error(errData.error?.message || `HTTP ${response.status}`);
+                     }
+
                      const data = await response.json();
                      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "無回應";
                      setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: aiText }]);
                  } catch (error) {
-                     setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: `連線失敗` }]);
+                     console.error("AI Error:", error);
+                     setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: `連線失敗: ${error.message} (請檢查 Key)` }]);
                  } finally { setIsTyping(false); }
              };
 
@@ -770,7 +801,16 @@
                     <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1">
                         {chat.map(c => (
                             <div key={c.id} className={`flex ${c.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[85%] p-3 rounded-2xl shadow-sm text-sm ${c.role === 'user' ? 'bg-navy-900 text-white rounded-br-none' : 'bg-white text-darkgray border border-navy-50 rounded-bl-none'}`}>{c.text}</div>
+                                <div className={`flex flex-col ${c.role === 'user' ? 'items-end' : 'items-start'} max-w-[85%]`}>
+                                    <div className={`p-3 rounded-2xl shadow-sm text-sm ${c.role === 'user' ? 'bg-navy-900 text-white rounded-br-none' : 'bg-white text-darkgray border border-navy-50 rounded-bl-none'}`}>
+                                        {c.text}
+                                    </div>
+                                    {c.role === 'ai' && (
+                                        <button onClick={() => speak(c.text)} className="mt-1 text-gray-400 text-xs flex items-center gap-1 hover:text-navy-600">
+                                            <i className="fa-solid fa-volume-high"></i> 朗讀
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         ))}
                         {isTyping && <div className="flex justify-start"><div className="bg-white text-gray-400 p-3 rounded-2xl text-xs"><i className="fa-solid fa-circle-notch fa-spin mr-2"></i> 思考中...</div></div>}
@@ -858,7 +898,8 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw-v3.6.js').then(registration => {
+                // v3.7 確保使用正確的 sw 檔名
+                navigator.serviceWorker.register('./sw-v3.7.js').then(registration => {
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
                         installingWorker.onstatechange = () => {
