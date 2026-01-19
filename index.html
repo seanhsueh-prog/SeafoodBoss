@@ -1,12 +1,12 @@
-<!-- 檔名：SeafoodBossApp_v4.7_Final.html -->
-<!-- 版本：v4.7 (Strict v3.8 AI Restore + v4.5 Layout) -->
-<!-- 核心：AI 邏輯 100% 還原自 v3.8 (gemini-2.5-flash)，解決連線問題。UI 結構維持 v4.5 (按鈕鎖定/月曆修復)。 -->
+<!-- 檔名：SeafoodBossApp_v4.8_Final.html -->
+<!-- 版本：v4.8 (Connection Fix Edition) -->
+<!-- 核心：修復 fetch 邏輯，增加 CORS 穩定性與錯誤回報。UI 維持 v4.7 不變。 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS (v4.7)</title>
+    <title>SEAFOOD.BOSS (v4.8)</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0284c7"> 
@@ -30,7 +30,7 @@
                             100: '#E0F2FE',
                             500: '#0EA5E9',
                             800: '#075985',
-                            900: '#0C4A6E', // Professional Navy
+                            900: '#0C4A6E',
                         },
                         finance: {
                             light: '#E0F2FE',
@@ -84,7 +84,6 @@
         @keyframes shrinkWidth { from { width: 100%; } to { width: 0%; } }
         .animate-progress { animation-name: shrinkWidth; animation-timing-function: linear; animation-fill-mode: forwards; }
         
-        /* Layout Structures (v4.5) */
         .dashboard-container {
             height: 100vh;
             position: relative;
@@ -97,11 +96,9 @@
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             padding-bottom: 80px; 
-            /* Fix for sticky header overlaying content */
             padding-top: 60px; 
         }
 
-        /* Fixed Elements Logic */
         .sticky-header-main {
             position: fixed; top: 0; left: 0; right: 0; z-index: 60;
             height: 60px; display: flex; align-items: center; justify-content: space-between;
@@ -130,7 +127,6 @@
             max-width: 28rem; margin: 0 auto;
         }
         
-        /* Operations Sticky Header - Includes Buttons */
         .sticky-ops-controls {
             position: sticky; top: 0; z-index: 50;
             background-color: #F8FAFC; 
@@ -140,8 +136,6 @@
         }
 
         .header-gradient { background: linear-gradient(to right, #0284c7, #0369a1); }
-        
-        /* Modal Z-Index Fix */
         .modal-overlay { z-index: 200; }
     </style>
 </head>
@@ -203,7 +197,6 @@
 
         // --- Components ---
 
-        // 1. Universal Header
         const MainHeader = ({ title = "SEAFOOD.BOSS", showKey = false, onKeyClick, themeClass = "header-gradient" }) => (
             <div className={`sticky-header-main ${themeClass}`}>
                 <div className="flex items-center text-white">
@@ -212,7 +205,7 @@
                     </div>
                     <div className="leading-tight">
                         <div className="font-black text-sm tracking-wider uppercase">{title}</div>
-                        <div className="text-[10px] opacity-80 font-mono">v4.7</div>
+                        <div className="text-[10px] opacity-80 font-mono">v4.8</div>
                     </div>
                 </div>
                 {showKey && (
@@ -223,7 +216,6 @@
             </div>
         );
 
-        // 2. Timer
         const TimerButton = ({ minutes, activeTimer, startTimer, stopTimer }) => {
             const isActive = activeTimer && activeTimer.minutes === minutes;
             return (
@@ -237,7 +229,6 @@
             );
         };
 
-        // 3. Owner Log
         const OwnerLog = ({ logs, setLogs }) => {
             const [input, setInput] = useState('');
             const [isPrivacy, setIsPrivacy] = useState(false);
@@ -310,28 +301,18 @@
             return (
                 <div className="dashboard-container">
                     <MainHeader />
-                    
-                    {/* Sticky Top Area: AI + Note */}
                     <div className="sticky-top-area">
-                        {/* AI Entry */}
                         <div onClick={() => setPage('ai')} className="bg-white rounded-xl p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border-l-4 border-ai-main shadow-sm active:scale-95 transition-transform mb-3">
                             <div className="flex items-center space-x-3">
                                 <div className="w-8 h-8 bg-ai-main rounded-full flex items-center justify-center text-white shadow-md"><i className="fa-solid fa-user-tie text-xs"></i></div>
-                                {/* Restored v3.8 Text */}
                                 <span className="text-gray-600 text-xs font-bold">問問私人秘書...</span>
                             </div>
                             <div className="w-8 h-8 bg-ai-light rounded-full flex items-center justify-center text-ai-main shadow-sm"><i className="fa-solid fa-microphone text-xs"></i></div>
                         </div>
-
-                        {/* Note Area */}
                         <OwnerLog logs={logs} setLogs={setLogs} />
                     </div>
-
                     <div className="w-full h-full bg-slate-50"></div>
-
-                    {/* Fixed Bottom Elements */}
                     <div className="force-bottom-container space-y-4">
-                        {/* Timer */}
                         <div>
                             <p className="text-[10px] text-alert-main font-bold mb-2 tracking-wider uppercase flex items-center gap-1">
                                 <i className="fa-solid fa-stopwatch"></i> ⚠️ 暫離提醒
@@ -342,8 +323,6 @@
                                 <TimerButton minutes={20} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
                             </div>
                         </div>
-
-                        {/* Finance Entry */}
                         <div className="pb-4">
                             <p className="text-[10px] text-finance-dark font-bold mb-2 tracking-wider uppercase">Financials</p>
                             <div onClick={() => setPage('ops')} className="bg-gradient-to-br from-finance-dark to-finance-main rounded-xl shadow-lg p-4 flex items-center justify-between active:scale-95 transition-transform cursor-pointer border border-finance-dark">
@@ -362,8 +341,6 @@
                             </div>
                         </div>
                     </div>
-
-                    {/* Status Bar */}
                     <div className="status-bar-fixed flex items-center justify-between px-4">
                         <span className="text-[10px] font-bold text-gray-400"><i className="fa-solid fa-gauge-high mr-1"></i>今日狀態</span>
                         <div className="flex items-center space-x-2">
@@ -375,7 +352,7 @@
             );
         };
 
-        // B. Operations (v4.5 Layout: Locked Buttons & Fixed Calendar)
+        // B. Operations
         const Operations = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
@@ -481,9 +458,7 @@
                 <div className="scrollable-page bg-slate-50 relative">
                     <MainHeader title="營運報表" themeClass="bg-finance-dark" />
                     
-                    {/* Sticky Controls Area (v4.5 Layout) */}
                     <div className="sticky-ops-controls px-4 shadow-sm">
-                         {/* 1. Date Controls */}
                         <div className="flex justify-between items-center mb-2">
                             <div className="bg-white p-0.5 rounded-lg border border-slate-200 shadow-sm inline-flex">
                                 {['day', 'month', 'year'].map(p => (
@@ -501,7 +476,6 @@
                             <button onClick={() => setShowSettingModal(true)} className="w-8 h-8 rounded-full bg-finance-light text-finance-dark flex items-center justify-center"><i className="fa-solid fa-gear"></i></button>
                         </div>
 
-                        {/* 2. Weather/Traffic Icons */}
                         {period === 'day' && (
                              <div className="flex items-center gap-2 mb-2">
                                 <div className="flex space-x-1 bg-white p-1 rounded-xl border border-gray-100">
@@ -519,23 +493,18 @@
                             </div>
                         )}
 
-                        {/* 3. Net Profit Card */}
                         <div className="bg-finance-dark rounded-xl p-3 text-white shadow-lg flex justify-between items-center mb-3">
                             <div><div className="text-[10px] opacity-60 mb-1">淨利結餘</div><div className={`text-xl font-black ${stats.net >= 0 ? 'text-white' : 'text-red-300'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</div></div>
                             <div className="text-right space-y-1"><div className="text-xs"><span className="opacity-60 mr-2">收</span> <span className="text-green-300 font-bold">+{stats.income.toLocaleString()}</span></div><div className="text-xs"><span className="opacity-60 mr-2">支</span> <span className="text-red-300 font-bold">-{stats.expense.toLocaleString()}</span></div></div>
                         </div>
 
-                        {/* 4. Action Buttons (Locked Here!) */}
                         <div className="grid grid-cols-2 gap-4 mb-2">
                             <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-navy-900 border border-navy-100 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
                             <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-slate-500 border border-gray-200 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
                         </div>
                     </div>
 
-                    {/* Scrollable List Area */}
                     <div className="px-4 py-4 space-y-3">
-                        
-                        {/* Calendar View */}
                         {period === 'month' && (
                             <div className="mb-4 bg-white rounded-xl p-3 card-shadow border border-slate-100">
                                 <div className="flex justify-between items-center mb-2 cursor-pointer" onClick={() => setIsCalExpanded(!isCalExpanded)}>
@@ -594,7 +563,6 @@
                         )}
                     </div>
 
-                    {/* Add/Edit Modal (Z-Index 200) */}
                     {showAddModal && (
                         <div className="fixed inset-0 bg-finance-dark bg-opacity-40 z-[200] flex items-end sm:items-center justify-center sm:p-4 modal-overlay">
                             <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
@@ -622,7 +590,6 @@
                             </div>
                         </div>
                     )}
-                    {/* Settings Modal (Z-Index 200) */}
                     {showSettingModal && (
                         <div className="fixed inset-0 bg-finance-dark bg-opacity-40 z-[200] flex items-center justify-center p-4 modal-overlay">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
@@ -640,10 +607,9 @@
             );
         };
 
-        // C. Private Secretary (STRICT v3.8 COPY: gemini-2.5-flash + Standard Fetch)
+        // C. Private Secretary (FIXED for v4.8)
         const PrivateSecretary = ({ settings, saveSettings, transactions, envData, logs }) => {
              const [input, setInput] = useState('');
-             // v3.8 Intro
              const [chat, setChat] = useState(() => {
                  const saved = localStorage.getItem(DB_KEY_CHAT);
                  return saved ? JSON.parse(saved) : [{ id: 1, role: 'ai', text: '老哥，今天還順利嗎？我是你的全能秘書。' }];
@@ -675,7 +641,6 @@
              };
              const clearChat = () => { if(confirm("確定要清除所有對話紀錄嗎？")) { const initChat = [{ id: Date.now(), role: 'ai', text: '紀錄已清除。' }]; setChat(initChat); } };
              
-             // v3.8 Logic
              const startNewTopic = () => { 
                 setChat(prev => [...prev, 
                     { id: Date.now(), role: 'system', text: '--- 開啟新話題 ---' },
@@ -706,14 +671,12 @@
                  setIsTyping(true);
                  
                  const currentKey = settings.apiKey ? settings.apiKey.trim() : '';
-                 // RESTORED v3.8 MODEL EXACTLY
                  const targetModel = 'gemini-2.5-flash';
                  
                  if (!currentKey) { setTimeout(() => { setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: "請先設定 API Key。" }]); setIsTyping(false); setShowSettings(true); }, 500); return; }
                  
                  const context = getContextData();
                  
-                 // RESTORED v3.8 System Prompt
                  const systemPrompt = `你是一位全能型商業秘書，也是老闆（老哥）的信任夥伴。
                  [核心原則]
                  1. 你的角色是「公私分明」的靈魂伴侶。
@@ -728,17 +691,27 @@
                  if (imageBase64) { parts.push({ inlineData: { mimeType: mimeType, data: imageBase64 } }); }
 
                  try {
-                     // RESTORED v3.8 Simple Fetch (No Retry)
+                     // v4.8 FIX: Added catch block for fetch errors explicitly
                      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${currentKey}`, {
                          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: parts }] })
                      });
                      
-                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                     if (!response.ok) {
+                         const errText = await response.text();
+                         throw new Error(`HTTP ${response.status}: ${errText}`);
+                     }
                      const data = await response.json();
                      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "無回應 (API 回傳空值)";
                      setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: aiText }]);
                  } catch (error) { 
-                     setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: `連線失敗` }]); 
+                     // Detailed Error Logging for v4.8
+                     console.error("AI Error:", error);
+                     let friendlyMsg = "連線失敗";
+                     if (error.message.includes("400")) friendlyMsg = "API Key 錯誤或參數無效";
+                     if (error.message.includes("403")) friendlyMsg = "權限不足 (API Key 限制)";
+                     if (error.message.includes("Failed to fetch")) friendlyMsg = "網路連線錯誤 (請檢查網路)";
+                     
+                     setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: `${friendlyMsg} (${error.message})` }]); 
                  } finally { setIsTyping(false); }
              };
 
@@ -759,12 +732,10 @@
                                 )}
                             </div>
                         ))}
-                        {/* RESTORED v3.8 "思考中..." */}
                         {isTyping && <div className="flex justify-start"><div className="bg-white text-gray-400 p-3 rounded-2xl text-xs flex items-center border border-slate-100"><i className="fa-solid fa-circle-notch fa-spin mr-2"></i> 思考中...</div></div>}
                         <div ref={messagesEndRef} />
                     </div>
                     
-                    {/* Input Bar (Fixed Bottom) */}
                     <div className="fixed bottom-[60px] left-0 right-0 p-3 bg-white border-t border-slate-100 flex gap-2 z-50 items-center max-w-md mx-auto">
                         <button onClick={startNewTopic} className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200"><i className="fa-solid fa-pen-to-square"></i></button>
                         <button onClick={startListening} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-rose-50 text-rose-500'}`}><i className="fa-solid fa-microphone"></i></button>
@@ -774,7 +745,6 @@
                         <button onClick={() => handleSend()} className={`w-11 h-11 rounded-full text-white flex items-center justify-center shadow-lg transition-transform ${isTyping ? 'bg-gray-400' : 'bg-ai-main active:scale-95'}`} disabled={isTyping}><i className="fa-solid fa-paper-plane text-xs"></i></button>
                     </div>
 
-                    {/* Settings Modal (Z-Index 200) */}
                     {showSettings && (
                         <div className="fixed inset-0 bg-ai-dark bg-opacity-50 z-[200] flex items-center justify-center p-6 modal-overlay">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
@@ -830,7 +800,6 @@
                      {page === 'ops' && <Operations transactions={transactions} setTransactions={setTransactions} settings={settings} saveSettings={saveSettings} envData={envData} setEnvData={setEnvData} />}
                      {page === 'ai' && <PrivateSecretary settings={settings} saveSettings={saveSettings} transactions={transactions} envData={envData} logs={logs} />}
                     
-                    {/* Fixed Bottom Navigation (z-100) */}
                     <div className="fixed bottom-0 left-0 right-0 h-[60px] bg-white border-t border-slate-100 flex justify-around items-center z-[100] max-w-md mx-auto">
                         <button onClick={() => setPage('dashboard')} className={`flex flex-col items-center w-full py-2 transition-colors ${page === 'dashboard' ? 'text-navy-900' : 'text-gray-300'}`}>
                             <i className="fa-solid fa-chart-pie text-lg mb-0.5"></i><span className="text-[10px] font-bold">總覽</span>
@@ -851,7 +820,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw-v4.7.js').then(registration => {
+                navigator.serviceWorker.register('./sw-v4.8.js').then(registration => {
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
                         installingWorker.onstatechange = () => {
