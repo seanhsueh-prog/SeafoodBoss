@@ -1,15 +1,15 @@
-<!-- 檔名：SeafoodBossApp_v3.9_Final.html -->
-<!-- 版本：v3.9 (Speed, Privacy & Color Coding) -->
-<!-- 修正：AI極速30字、筆記隱藏鎖定、全彩UI識別、記帳按鈕鎖定 -->
+<!-- 檔名：SeafoodBossApp_v4.0_Final.html -->
+<!-- 版本：v4.0 (Turbo AI, Privacy Note & Fixed Dashboard) -->
+<!-- 架構：主頁面全鎖定 (No-Scroll) | 營運頁面捲動 (Scroll) | 資料無縫繼承 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS (v3.9)</title>
+    <title>SEAFOOD.BOSS (v4.0)</title>
     
     <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#0F172A"> 
+    <meta name="theme-color" content="#0284c7"> 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="./icons/icon-192.png">
@@ -27,26 +27,28 @@
                     colors: {
                         navy: {
                             50: '#F0F9FF',
-                            800: '#1E40AF',
-                            900: '#0F172A', // Slate 900 for Dashboard
+                            100: '#E0F2FE',
+                            500: '#0EA5E9',
+                            800: '#075985',
+                            900: '#0C4A6E', // Professional Navy
                         },
                         finance: {
                             light: '#E0F2FE',
-                            main: '#0369A1', // Sky 700
-                            dark: '#0C4A6E', // Sky 900
+                            main: '#0369A1', 
+                            dark: '#0C4A6E', 
                         },
                         ai: {
                             light: '#F3E8FF',
-                            main: '#9333EA', // Purple 600
-                            dark: '#581C87', // Purple 900
+                            main: '#9333EA', // Purple
+                            dark: '#581C87', 
                         },
                         note: {
-                            bg: '#FFFBEB', // Amber 50
-                            border: '#FCD34D', // Amber 300
-                            text: '#92400E', // Amber 800
+                            bg: '#FFFBEB', // Amber-50
+                            border: '#FCD34D', 
+                            text: '#92400E', 
                         },
                         alert: {
-                            main: '#EA580C', // Orange 600
+                            main: '#EA580C', // Orange
                         }
                     },
                     animation: {
@@ -71,8 +73,10 @@
             background-color: #F8FAFC;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             min-height: 100vh;
+            /* iOS Safe Area */
             padding-bottom: env(safe-area-inset-bottom);
             color: #334155;
+            overflow: hidden; /* Prevent body scroll by default, handled by containers */
         }
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -81,50 +85,23 @@
         @keyframes shrinkWidth { from { width: 100%; } to { width: 0%; } }
         .animate-progress { animation-name: shrinkWidth; animation-timing-function: linear; animation-fill-mode: forwards; }
         
-        .bottom-nav-fix {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            padding-bottom: env(safe-area-inset-bottom);
-            background-color: white; z-index: 50;
-            border-top: 1px solid #F1F5F9;
-        }
-        
-        /* Sticky Elements Logic */
-        .sticky-header-main {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 60;
-            height: 60px; display: flex; align-items: center; justify-content: space-between;
-            padding: 0 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        /* v3.9 Locked Note Area */
-        .sticky-note-area {
-            position: fixed; top: 60px; left: 0; right: 0; z-index: 55;
-            background-color: #F8FAFC; padding: 0.5rem 1rem;
-            max-width: 28rem; margin: 0 auto;
+        /* v4.0 Layout Utilities */
+        .dashboard-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Lock entire page */
         }
 
-        .sticky-ops-controls {
-            position: sticky; top: 60px; z-index: 50;
-            background-color: #F8FAFC; padding-bottom: 10px;
-            border-bottom: 1px solid #e2e8f0; margin-top: -16px; padding-top: 16px;
+        .scrollable-page {
+            height: 100vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
-        
-        /* Force Bottom Area */
-        .force-bottom-container {
-            position: fixed; bottom: 80px; left: 0; right: 0; z-index: 30;
-            padding: 0 1rem; max-width: 28rem; margin: 0 auto;
-            background: linear-gradient(to top, #F8FAFC 95%, transparent);
-            padding-top: 20px;
-        }
-        
-        /* Padding Adjustments */
-        .content-padding-dashboard {
-            padding-top: 240px; /* Header + Note Area */
-            padding-bottom: 300px;
-        }
-        .content-padding-normal {
-            padding-top: 60px;
-            padding-bottom: 90px;
-        }
+
+        /* Gradient Textures */
+        .header-gradient { background: linear-gradient(to right, #0284c7, #0369a1); }
+        .bottom-gradient { background: linear-gradient(to top, #F8FAFC 95%, transparent); }
     </style>
 </head>
 <body>
@@ -133,7 +110,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // DB Keys
+        // --- Data Persistence Keys (CRITICAL: Do Not Change) ---
         const DB_KEY_TRANSACTIONS = 'sf_transactions'; 
         const DB_KEY_LOGS = 'sf_logs';                 
         const DB_KEY_SETTINGS = 'sf_settings';         
@@ -185,16 +162,16 @@
 
         // --- Components ---
 
-        // 1. Main Header (Adaptive Color)
-        const MainHeader = ({ title = "SEAFOOD.BOSS", showKey = false, onKeyClick, colorClass = "bg-navy-900" }) => (
-            <div className={`sticky-header-main ${colorClass}`}>
+        // 1. Universal Header
+        const MainHeader = ({ title = "SEAFOOD.BOSS", showKey = false, onKeyClick, themeClass = "header-gradient" }) => (
+            <div className={`h-[60px] flex items-center justify-between px-4 shrink-0 shadow-md relative z-50 ${themeClass}`}>
                 <div className="flex items-center text-white">
                     <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-2 backdrop-blur-sm">
                         <i className="fa-solid fa-fish text-sm"></i>
                     </div>
                     <div className="leading-tight">
                         <div className="font-black text-sm tracking-wider uppercase">{title}</div>
-                        <div className="text-[10px] opacity-80 font-mono">v3.9</div>
+                        <div className="text-[10px] opacity-80 font-mono">v4.0 Turbo</div>
                     </div>
                 </div>
                 {showKey && (
@@ -205,7 +182,7 @@
             </div>
         );
 
-        // 2. Timer
+        // 2. Timer (Fixed Bottom Component)
         const TimerButton = ({ minutes, activeTimer, startTimer, stopTimer }) => {
             const isActive = activeTimer && activeTimer.minutes === minutes;
             return (
@@ -219,10 +196,10 @@
             );
         };
 
-        // 3. Owner Log (v3.9 Sticky & Privacy)
+        // 3. Owner Log (Privacy Edition)
         const OwnerLog = ({ logs, setLogs }) => {
             const [input, setInput] = useState('');
-            const [isHidden, setIsHidden] = useState(false);
+            const [isPrivacy, setIsPrivacy] = useState(false);
             const { isListening, startListening } = useVoiceInput((text) => setInput(prev => prev + text));
 
             const addLog = () => {
@@ -241,11 +218,13 @@
             const recentLogs = logs.filter(l => (Date.now() - l.id) < (3 * 24 * 60 * 60 * 1000)).slice(0, 10);
 
             return (
-                <div className="bg-note-bg rounded-xl card-shadow p-3 border-l-4 border-note-border mb-4">
+                <div className="bg-note-bg border-b border-note-border/50 p-3 pb-4">
                     <div className="flex justify-between items-center mb-2">
-                        <h3 className="font-bold text-note-text text-sm flex items-center"><i className="fa-solid fa-pen-nib mr-2"></i>營運筆記</h3>
-                        <button onClick={() => setIsHidden(!isHidden)} className="text-note-text opacity-50 hover:opacity-100">
-                            <i className={`fa-solid ${isHidden ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                        <h3 className="font-bold text-note-text text-xs flex items-center gap-2">
+                            <i className="fa-solid fa-note-sticky"></i> 營運筆記
+                        </h3>
+                        <button onClick={() => setIsPrivacy(!isPrivacy)} className="text-note-text opacity-60 hover:opacity-100 transition-opacity">
+                            <i className={`fa-solid ${isPrivacy ? 'fa-eye-slash' : 'fa-eye'} text-xs`}></i>
                         </button>
                     </div>
                     <div className="flex gap-2 mb-3">
@@ -253,17 +232,16 @@
                         <button onClick={startListening} className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-white text-gray-400 border border-gray-200'}`}><i className="fa-solid fa-microphone"></i></button>
                         <button onClick={addLog} className="w-9 h-9 bg-note-text text-white rounded-lg flex items-center justify-center shrink-0 shadow-sm"><i className="fa-solid fa-plus"></i></button>
                     </div>
-                    <div className={`space-y-2 pl-2 border-l-2 border-note-border/20 max-h-40 overflow-y-auto no-scrollbar transition-all ${isHidden ? 'blur-sm select-none' : ''}`}>
-                        {recentLogs.length === 0 ? <p className="text-xs text-gray-400 py-1 pl-2">尚無紀錄</p> : 
+                    {/* Log List - Scrollable within container only if needed */}
+                    <div className="space-y-2 pl-1 max-h-[120px] overflow-y-auto no-scrollbar">
+                        {recentLogs.length === 0 ? <p className="text-[10px] text-gray-400 py-1">尚無紀錄</p> : 
                             recentLogs.map(l => (
-                                <div key={l.id} className="relative pl-3 animate-fade-in group">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <span className="text-[10px] font-bold text-note-text/60 mr-2">{l.date === getTodayStr() ? l.timestamp : l.date}</span>
-                                            <p className="text-sm text-slate-700 break-all inline">{l.text}</p>
-                                        </div>
-                                        <button onClick={() => deleteLog(l.id)} className="text-gray-300 hover:text-red-500 px-2 opacity-0 group-hover:opacity-100"><i className="fa-solid fa-xmark"></i></button>
+                                <div key={l.id} className="relative pl-2 animate-fade-in group flex justify-between items-start">
+                                    <div className={`text-sm text-slate-700 leading-tight ${isPrivacy ? 'blur-sm select-none opacity-50' : ''}`}>
+                                        <span className="text-[10px] font-bold text-note-text/60 mr-1.5">{l.date === getTodayStr() ? l.timestamp : l.date}</span>
+                                        {isPrivacy ? '******' : l.text}
                                     </div>
+                                    <button onClick={() => deleteLog(l.id)} className="text-gray-300 hover:text-red-500 px-2 opacity-0 group-hover:opacity-100"><i className="fa-solid fa-xmark text-xs"></i></button>
                                 </div>
                             ))
                         }
@@ -274,7 +252,7 @@
 
         // --- Pages ---
 
-        // A. Dashboard (v3.9 Color Coded)
+        // A. Dashboard (v4.0: 100vh Locked Layout)
         const Dashboard = ({ setPage, transactions, logs, setLogs, activeTimer, startTimer, stopTimer, settings }) => {
             const today = getTodayStr();
             const todayStats = useMemo(() => {
@@ -290,30 +268,33 @@
             }, [transactions, settings, today]);
 
             return (
-                <div className="min-h-screen relative flex flex-col">
-                    <MainHeader title="SEAFOOD.BOSS" colorClass="bg-navy-900" />
+                <div className="dashboard-container bg-slate-50">
+                    <MainHeader />
                     
-                    {/* v3.9 Locked Note Area */}
-                    <div className="sticky-note-area">
-                        <OwnerLog logs={logs} setLogs={setLogs} />
-                        
-                        {/* AI Entry (Purple) */}
-                        <div onClick={() => setPage('ai')} className="bg-white rounded-full p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border-l-4 border-ai-main shadow-sm active:scale-95 transition-transform mt-2">
+                    {/* 1. AI Entry (Purple) - Locked Top */}
+                    <div className="bg-white p-3 border-b border-gray-100 flex-none z-40">
+                        <div onClick={() => setPage('ai')} className="bg-ai-light/30 rounded-full p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border-l-4 border-ai-main shadow-sm active:scale-95 transition-transform">
                             <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-ai-main rounded-full flex items-center justify-center text-white"><i className="fa-solid fa-user-tie text-xs"></i></div>
-                                <span className="text-gray-500 text-xs font-medium">問問私人秘書...</span>
+                                <div className="w-8 h-8 bg-ai-main rounded-full flex items-center justify-center text-white shadow-md"><i className="fa-solid fa-user-tie text-xs"></i></div>
+                                <span className="text-gray-600 text-xs font-bold">Turbo AI 秘書待命...</span>
                             </div>
-                            <div className="w-8 h-8 bg-ai-light rounded-full flex items-center justify-center text-ai-main"><i className="fa-solid fa-microphone text-xs"></i></div>
+                            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-ai-main shadow-sm"><i className="fa-solid fa-microphone text-xs"></i></div>
                         </div>
                     </div>
 
-                    <div className="px-4 content-padding-dashboard animate-fade-in flex flex-col flex-1 h-full gap-4">
-                        {/* Placeholder for spacing behind fixed notes */}
+                    {/* 2. Owner Log (Amber) - Locked Top */}
+                    <div className="flex-none z-30">
+                        <OwnerLog logs={logs} setLogs={setLogs} />
                     </div>
 
-                    <div className="force-bottom-container space-y-4">
+                    {/* 3. Middle Spacer (Flex-1) - Takes remaining space */}
+                    <div className="flex-1 w-full bg-slate-50"></div>
+
+                    {/* 4. Bottom Area - Locked Bottom */}
+                    <div className="flex-none bg-white border-t border-slate-100 p-4 pb-4 space-y-4 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-40">
+                        {/* Timer (Orange) */}
                         <div>
-                            <p className="text-[10px] text-alert-main font-bold mb-2 ml-1 tracking-wider uppercase flex items-center gap-1">
+                            <p className="text-[10px] text-alert-main font-bold mb-2 tracking-wider uppercase flex items-center gap-1">
                                 <i className="fa-solid fa-stopwatch"></i> ⚠️ 暫離提醒
                             </p>
                             <div className="grid grid-cols-3 gap-2">
@@ -322,16 +303,18 @@
                                 <TimerButton minutes={20} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
                             </div>
                         </div>
-                        <div className="pb-4">
-                            <p className="text-[10px] text-finance-dark font-bold mb-2 ml-1 tracking-wider uppercase">Financials</p>
-                            <div onClick={() => setPage('ops')} className="bg-gradient-to-br from-finance-dark to-finance-main rounded-xl card-shadow p-5 border border-finance-dark flex items-center justify-between active:scale-95 transition-transform cursor-pointer">
+
+                        {/* Finance Entry (Navy) */}
+                        <div>
+                            <p className="text-[10px] text-finance-dark font-bold mb-2 tracking-wider uppercase">Financials</p>
+                            <div onClick={() => setPage('ops')} className="bg-gradient-to-br from-finance-dark to-finance-main rounded-xl shadow-md p-4 flex items-center justify-between active:scale-95 transition-transform cursor-pointer">
                                 <div className="flex items-center">
                                     <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center text-white mr-3 backdrop-blur-sm">
                                         <i className="fa-solid fa-calculator text-sm"></i>
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-white text-sm">內部營運</h3>
-                                        <p className="text-[10px] text-white/50">點擊查看詳情</p>
+                                        <h3 className="font-bold text-white text-sm">內部營運報表</h3>
+                                        <p className="text-[10px] text-white/60">點擊記帳與查帳</p>
                                     </div>
                                 </div>
                                 <div className="text-white">
@@ -340,19 +323,20 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <div className="fixed bottom-[60px] left-0 right-0 bg-[#1E293B] border-t border-gray-800 p-2 flex items-center justify-between px-4 z-40 max-w-md mx-auto">
-                        <span className="text-xs font-bold text-gray-400"><i className="fa-solid fa-gauge-high mr-1"></i>今日狀態</span>
+
+                    {/* Cockpit Status Bar - Absolute Bottom of Content */}
+                    <div className="bg-[#1E293B] border-t border-gray-800 p-2 flex items-center justify-between px-4 z-50 flex-none h-[30px]">
+                        <span className="text-[10px] font-bold text-gray-400"><i className="fa-solid fa-gauge-high mr-1"></i>今日狀態</span>
                         <div className="flex items-center space-x-2">
-                            <span className="text-xs font-bold text-white">{todayStats.status}</span>
-                            <div className={`h-2 w-16 rounded-full ${todayStats.color} shadow-[0_0_10px_rgba(255,255,255,0.3)]`}></div>
+                            <span className="text-[10px] font-bold text-white">{todayStats.status}</span>
+                            <div className={`h-1.5 w-12 rounded-full ${todayStats.color} shadow-[0_0_8px_rgba(255,255,255,0.4)]`}></div>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        // B. Operations (v3.9 Sticky Buttons & Blue Theme)
+        // B. Operations (v4.0: Sticky Top + Scrollable List + Clear Items)
         const Operations = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
@@ -362,11 +346,15 @@
             
             const [selectedDate, setSelectedDate] = useState(getTodayStr());
             const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
+            
+            // Modal Inputs
             const [date, setDate] = useState(getTodayStr());
             const [type, setType] = useState('income');
             const [amount, setAmount] = useState('');
             const [cat, setCat] = useState('現金');
             const [note, setNote] = useState('');
+            
+            // Settings Inputs
             const [tempFixedCost, setTempFixedCost] = useState(settings.dailyFixedCost || '');
             const [selectedCostItems, setSelectedCostItems] = useState(settings.costItems || []);
             
@@ -388,45 +376,33 @@
                 const yearStr = now.getFullYear().toString();
                 const monthStr = `${yearStr}-${String(currentMonth).padStart(2, '0')}`;
                 let filtered = [], fixedCostTotal = 0, listData = [], net = 0, income = 0, expense = 0;
-                const dailyStats = {}; 
-                transactions.forEach(t => {
-                    if(!dailyStats[t.date]) dailyStats[t.date] = { income: 0, expense: 0 };
-                    if(t.type === 'income') dailyStats[t.date].income += t.amount; else dailyStats[t.date].expense += t.amount;
-                });
+                
                 const dailyCost = settings.dailyFixedCost || 0;
                 if (period === 'day') {
                     filtered = transactions.filter(t => t.date === selectedDate);
                     fixedCostTotal = dailyCost;
                     listData = filtered;
-                    income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
-                    expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
                 } else if (period === 'month') {
                     filtered = transactions.filter(t => t.date.startsWith(monthStr));
                     const daysInM = new Date(now.getFullYear(), currentMonth, 0).getDate();
-                    let daysPassed = daysInM;
-                    if(now.getFullYear() === parseInt(yearStr) && (now.getMonth() + 1) === currentMonth) { daysPassed = now.getDate(); }
+                    let daysPassed = daysInM; // Simple approximation for month view
                     fixedCostTotal = dailyCost * daysPassed;
-                    income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
-                    expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
-                    listData = transactions.filter(t => t.date === selectedDate);
+                    listData = transactions.filter(t => t.date === selectedDate); // Still show selected date list in month view
                 } else { 
                     filtered = transactions.filter(t => t.date.startsWith(yearStr));
-                    const startOfYear = new Date(now.getFullYear(), 0, 1);
-                    const diffTime = Math.abs(now - startOfYear);
-                    const daysPassedYear = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                    fixedCostTotal = dailyCost * daysPassedYear;
-                    income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
-                    expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
-                    const grouped = {};
-                    filtered.forEach(t => {
-                         const m = t.date.slice(0, 7);
-                         if(!grouped[m]) grouped[m] = { date: m, income: 0, expense: 0 };
-                         if(t.type === 'income') grouped[m].income += t.amount; else grouped[m].expense += t.amount;
-                    });
-                    listData = Object.values(grouped).sort((a,b) => b.date.localeCompare(a.date));
+                    fixedCostTotal = dailyCost * 365;
                 }
+                
+                income = filtered.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
+                expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
                 net = income - expense - fixedCostTotal;
-                return { income, expense, fixedCostTotal, net, listData, dailyStats };
+
+                // Sort list data by timestamp desc
+                if(period !== 'year') {
+                    listData.sort((a,b) => b.id - a.id);
+                }
+
+                return { income, expense, fixedCostTotal, net, listData };
             }, [transactions, settings, period, selectedDate, currentMonth]);
 
             const handleSave = () => {
@@ -438,7 +414,6 @@
                     const newTrans = { id: Date.now(), date: date, amount: parseInt(amount), type, category: cat, note, timestamp: formatTime() };
                     updated = [newTrans, ...transactions];
                 }
-                updated.sort((a, b) => new Date(b.date) - new Date(a.date));
                 setTransactions(updated);
                 localStorage.setItem(DB_KEY_TRANSACTIONS, JSON.stringify(updated));
                 resetForm();
@@ -453,20 +428,23 @@
             };
             const resetForm = () => { setAmount(''); setNote(''); setEditingId(null); setShowAddModal(false); };
             const openEdit = (item) => {
-                if (period === 'year') return; 
                 setEditingId(item.id); setDate(item.date); setType(item.type); setAmount(item.amount); setCat(item.category); setNote(item.note); setShowAddModal(true);
             };
-            const calendarDays = useMemo(() => getCalendarDays(new Date().getFullYear(), currentMonth), [currentMonth]);
+
             const TrafficBtn = ({ val, label, colorClass }) => (
                 <button onClick={() => updateEnv('traffic', val)} className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${currentEnv.traffic === val ? colorClass + ' text-white border-transparent shadow-md' : 'bg-white text-gray-400 border-gray-200'}`}>{label}</button>
             );
 
             return (
-                <div className="content-padding-normal pb-20 animate-fade-in min-h-screen">
-                    <MainHeader title="營運報表" colorClass="bg-finance-dark" />
+                <div className="scrollable-page pb-[80px] bg-slate-50 relative">
+                    {/* Fixed Header */}
+                    <div className="sticky top-0 z-[60]">
+                        <MainHeader title="營運報表" themeClass="bg-finance-dark" />
+                    </div>
                     
-                    <div className="sticky-ops-controls px-4 shadow-sm">
-                        {/* Date Controls */}
+                    {/* Sticky Controls Area (Includes Net Profit & Buttons) */}
+                    <div className="sticky top-[60px] z-50 bg-slate-50 px-4 pt-4 pb-2 shadow-sm border-b border-gray-200">
+                         {/* Date & Settings */}
                         <div className="flex justify-between items-center mb-2">
                             <div className="bg-white p-0.5 rounded-lg border border-slate-200 shadow-sm inline-flex">
                                 {['day', 'month', 'year'].map(p => (
@@ -483,9 +461,24 @@
                             )}
                             <button onClick={() => setShowSettingModal(true)} className="w-8 h-8 rounded-full bg-finance-light text-finance-dark flex items-center justify-center"><i className="fa-solid fa-gear"></i></button>
                         </div>
-                        {/* Env Controls */}
+
+                        {/* Net Profit Card */}
+                        <div className="bg-finance-dark rounded-xl p-3 text-white shadow-lg flex justify-between items-center mb-3">
+                            <div><div className="text-[10px] opacity-60 mb-1">淨利結餘 (已扣除日成本)</div><div className={`text-xl font-black ${stats.net >= 0 ? 'text-white' : 'text-red-300'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</div></div>
+                            <div className="text-right space-y-1"><div className="text-xs"><span className="opacity-60 mr-2">收</span> <span className="text-green-300 font-bold">+{stats.income.toLocaleString()}</span></div><div className="text-xs"><span className="opacity-60 mr-2">支</span> <span className="text-red-300 font-bold">-{stats.expense.toLocaleString()}</span></div></div>
+                        </div>
+
+                        {/* Sticky Action Buttons */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-navy-900 border border-navy-100 py-2.5 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-1"></i> 記進帳</button>
+                            <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-slate-500 border border-gray-200 py-2.5 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-1"></i> 記出帳</button>
+                        </div>
+                    </div>
+
+                    {/* Scrollable List Area */}
+                    <div className="px-4 py-4 space-y-3">
                         {period === 'day' && (
-                             <div className="flex items-center gap-2 mb-2">
+                             <div className="flex items-center gap-2 mb-4">
                                 <div className="flex space-x-1 bg-white p-1 rounded-xl border border-gray-100">
                                     {['sunny','cloudy','rainy'].map(w => (
                                         <button key={w} onClick={() => updateEnv('weather', w)} className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${currentEnv.weather === w ? 'bg-finance-dark text-white shadow' : 'text-gray-300'}`}>
@@ -500,78 +493,38 @@
                                 </div>
                             </div>
                         )}
-                        {/* Summary Card */}
-                        <div className="bg-finance-dark rounded-xl p-3 text-white shadow-lg flex justify-between items-center mb-2">
-                            <div><div className="text-[10px] opacity-60 mb-1">淨利結餘</div><div className={`text-xl font-black ${stats.net >= 0 ? 'text-white' : 'text-red-300'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</div></div>
-                            <div className="text-right space-y-1"><div className="text-xs"><span className="opacity-60 mr-2">收</span> <span className="text-green-300 font-bold">+{stats.income.toLocaleString()}</span></div><div className="text-xs"><span className="opacity-60 mr-2">支</span> <span className="text-red-300 font-bold">-{stats.expense.toLocaleString()}</span></div></div>
-                        </div>
-                        {/* v3.9 Sticky Buttons */}
-                        <div className="grid grid-cols-2 gap-3 pb-1">
-                            <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-finance-dark border border-finance-dark py-2 rounded-lg font-bold shadow-sm flex items-center justify-center text-xs active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-1"></i> 記進帳</button>
-                            <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-slate-500 border border-slate-300 py-2 rounded-lg font-bold shadow-sm flex items-center justify-center text-xs active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-1"></i> 記出帳</button>
-                        </div>
-                    </div>
 
-                    <div className="px-4 pt-2">
-                        {period === 'month' && (
-                            <div className="mb-4 bg-white rounded-xl p-3 card-shadow border border-slate-100">
-                                <div className="flex justify-between items-center mb-2 cursor-pointer" onClick={() => setIsCalExpanded(!isCalExpanded)}>
-                                    <span className="text-xs font-bold text-gray-400">日曆視圖</span>
-                                    <i className={`fa-solid fa-chevron-${isCalExpanded ? 'up' : 'down'} text-gray-400 text-xs`}></i>
-                                </div>
-                                {isCalExpanded && (
-                                    <div className="animate-fade-in">
-                                        <div className="grid grid-cols-7 gap-1 mb-2 text-center">{['日','一','二','三','四','五','六'].map(d => <span key={d} className="text-[10px] text-gray-400 font-bold">{d}</span>)}</div>
-                                        <div className="grid grid-cols-7 gap-1">
-                                            {calendarDays.map((d, i) => {
-                                                if(!d) return <div key={i}></div>;
-                                                const s = stats.dailyStats[d.dateStr];
-                                                const hasData = s && (s.income > 0 || s.expense > 0);
-                                                const isSelected = selectedDate === d.dateStr;
-                                                return (
-                                                    <div key={i} onClick={() => setSelectedDate(d.dateStr)} className={`aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer border transition-colors ${isSelected ? 'bg-finance-dark border-finance-dark' : 'border-transparent hover:bg-gray-50'}`}>
-                                                        <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-500'}`}>{d.day}</span>
-                                                        <div className={`w-1.5 h-1.5 rounded-full mt-1 ${hasData ? 'bg-green-500' : 'opacity-0'}`}></div>
-                                                    </div>
-                                                );
-                                            })}
+                        <h3 className="font-bold text-slate-700 text-xs border-l-4 border-finance-main pl-2 mb-2">
+                             流水帳明細 ({selectedDate})
+                        </h3>
+
+                        {stats.listData.length === 0 ? (
+                            <div className="text-center py-10 opacity-40">
+                                <i className="fa-solid fa-clipboard-list text-3xl mb-2 text-gray-300"></i>
+                                <p className="text-xs text-gray-400">尚無資料</p>
+                            </div>
+                        ) : (
+                            stats.listData.map((item, idx) => (
+                                <div key={idx} onClick={() => openEdit(item)} className="bg-white p-3 rounded-lg flex justify-between items-center shadow-sm border-l-2 border-slate-100 active:bg-gray-50 cursor-pointer">
+                                    <div className="flex items-center">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${item.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                            <i className={`fa-solid ${item.type === 'income' ? 'fa-arrow-down' : 'fa-arrow-up'} text-xs`}></i>
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-slate-700 text-sm">{item.category}</span>
+                                                <span className="text-[10px] text-gray-400 bg-gray-100 px-1 rounded">{item.timestamp?.slice(0,5)}</span>
+                                            </div>
+                                            {item.note && <p className="text-xs text-gray-400 truncate max-w-[150px]">{item.note}</p>}
                                         </div>
                                     </div>
-                                )}
-                            </div>
+                                    <span className={`font-bold text-base ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{item.type === 'income' ? '+' : '-'}{item.amount.toLocaleString()}</span>
+                                </div>
+                            ))
                         )}
-                        <h3 className="font-bold text-slate-700 mb-2 text-xs border-l-4 border-finance-main pl-2 flex items-center gap-2">
-                            <span>{period === 'day' ? `流水帳 (${selectedDate})` : period === 'month' ? `明細 (${selectedDate})` : '月度匯總'}</span>
-                        </h3>
-                        <div className="space-y-2">
-                            {stats.listData.length === 0 ? <p className="text-gray-300 text-center py-8 text-xs">尚無資料</p> : 
-                                stats.listData.map((item, idx) => (
-                                    <div key={idx} onClick={() => openEdit(item)} className="bg-white p-3 rounded-lg flex justify-between items-center shadow-sm border-l-2 border-slate-100 active:bg-gray-50 cursor-pointer">
-                                        {period === 'year' ? (
-                                            <><div className="flex flex-col"><span className="font-bold text-slate-700 text-sm">{item.date}</span></div><span className={`font-bold text-sm ${(item.income - item.expense) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{(item.income - item.expense).toLocaleString()}</span></>
-                                        ) : (
-                                            <>
-                                                <div className="flex items-center">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${item.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                                        <i className={`fa-solid ${item.type === 'income' ? 'fa-arrow-down' : 'fa-arrow-up'} text-xs`}></i>
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-bold text-slate-700 text-sm">{item.category}</span>
-                                                            <span className="text-[10px] text-gray-400 bg-gray-100 px-1 rounded">{item.timestamp?.slice(0,5)}</span>
-                                                        </div>
-                                                        <p className="text-xs text-gray-400">{item.note}</p>
-                                                    </div>
-                                                </div>
-                                                <span className={`font-bold text-base ${item.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>{item.type === 'income' ? '+' : '-'}{item.amount.toLocaleString()}</span>
-                                            </>
-                                        )}
-                                    </div>
-                                ))
-                            }
-                        </div>
                     </div>
 
+                    {/* Add/Edit Modal */}
                     {showAddModal && (
                         <div className="fixed inset-0 bg-finance-dark bg-opacity-40 z-[70] flex items-end sm:items-center justify-center sm:p-4">
                             <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
@@ -599,6 +552,7 @@
                             </div>
                         </div>
                     )}
+                    {/* Settings Modal */}
                     {showSettingModal && (
                         <div className="fixed inset-0 bg-finance-dark bg-opacity-40 z-[70] flex items-center justify-center p-4">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
@@ -616,12 +570,12 @@
             );
         };
 
-        // C. Private Secretary (v3.9 Purple Theme)
+        // C. Turbo Private Secretary (v4.0 Purple Theme)
         const PrivateSecretary = ({ settings, saveSettings, transactions, envData, logs }) => {
              const [input, setInput] = useState('');
              const [chat, setChat] = useState(() => {
                  const saved = localStorage.getItem(DB_KEY_CHAT);
-                 return saved ? JSON.parse(saved) : [{ id: 1, role: 'ai', text: '老哥，今天還順利嗎？我是你的全能秘書。' }];
+                 return saved ? JSON.parse(saved) : [{ id: 1, role: 'ai', text: 'Turbo AI 就緒。老哥，請吩咐。' }];
              });
              const [showSettings, setShowSettings] = useState(false);
              const [apiKey, setApiKey] = useState(settings.apiKey || '');
@@ -649,7 +603,7 @@
                  setApiKey(cleanKey); saveSettings({...settings, apiKey: cleanKey}); setShowSettings(false);
              };
              const clearChat = () => { if(confirm("確定要清除所有對話紀錄嗎？")) { const initChat = [{ id: Date.now(), role: 'ai', text: '紀錄已清除。' }]; setChat(initChat); } };
-             const startNewTopic = () => { setChat(prev => [...prev, { id: Date.now(), role: 'system', text: '--- 新話題 ---' }, { id: Date.now()+1, role: 'ai', text: '好的，我們重新開始。' }]); };
+             const startNewTopic = () => { setChat(prev => [...prev, { id: Date.now(), role: 'system', text: '--- 新話題 ---' }, { id: Date.now()+1, role: 'ai', text: '收到，我們換個話題。' }]); };
              const handleImageUpload = async (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onloadend = () => { const base64String = reader.result.split(',')[1]; handleSend(base64String, file.type); }; reader.readAsDataURL(file); };
 
              const getContextData = () => {
@@ -675,15 +629,14 @@
                  if (!currentKey) { setTimeout(() => { setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: "請先設定 API Key。" }]); setIsTyping(false); setShowSettings(true); }, 500); return; }
                  
                  const context = getContextData();
-                 // v3.9 Optimized Prompt
-                 const systemPrompt = `你是一位全能商業秘書。
+                 // v4.0 Turbo Prompt
+                 const systemPrompt = `你全能商業秘書。
                  [規則]
-                 1. 絕對限制：回答保持 30 字內 (除非被追問)。
-                 2. 公事模式：遇到營運數據，極簡、列點、精準。
-                 3. 私事模式：遇到閒聊，語氣溫暖、像老朋友。
-                 4. 根據以下店舖數據回答：
+                 1. 絕對限制：回答保持 30 字內。
+                 2. 公事：數據化、列點、極簡。
+                 3. 私事：溫暖、感性、像閨蜜。
+                 4. 依據：
                  ${context}
-                 
                  [問題] ${imageBase64 ? "[圖片]" : input}`;
                  
                  const parts = [{ text: systemPrompt }];
@@ -701,9 +654,12 @@
              };
 
              return (
-                <div className="content-padding-normal pb-20 px-4 h-full flex flex-col min-h-screen">
-                    <MainHeader title="私人秘書" colorClass="bg-ai-main" showKey={true} onKeyClick={() => setShowSettings(true)} />
-                    <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1">
+                <div className="scrollable-page pb-[80px] bg-slate-50 relative flex flex-col">
+                    <div className="sticky top-0 z-[60]">
+                        <MainHeader title="私人秘書" themeClass="bg-ai-main" showKey={true} onKeyClick={() => setShowSettings(true)} />
+                    </div>
+                    
+                    <div className="flex-1 px-4 py-4 space-y-4">
                         {chat.map(c => (
                             <div key={c.id} className={`flex ${c.role === 'user' ? 'justify-end' : (c.role === 'system' ? 'justify-center' : 'justify-start')}`}>
                                 {c.role === 'system' ? <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded-full">{c.text}</span> : (
@@ -714,11 +670,12 @@
                                 )}
                             </div>
                         ))}
-                        {isTyping && <div className="flex justify-start"><div className="bg-white text-gray-400 p-3 rounded-2xl text-xs flex items-center"><i className="fa-solid fa-circle-notch fa-spin mr-2"></i> 正在分析數據...</div></div>}
+                        {isTyping && <div className="flex justify-start"><div className="bg-white text-gray-400 p-3 rounded-2xl text-xs flex items-center border border-slate-100"><i className="fa-solid fa-circle-notch fa-spin mr-2"></i> 正在分析數據...</div></div>}
                         <div ref={messagesEndRef} />
                     </div>
-                    {/* v3.9 Colored Bottom Bar */}
-                    <div className="fixed bottom-[60px] left-0 right-0 p-3 bg-white border-t border-slate-100 flex gap-2 z-40 items-center">
+                    
+                    {/* Input Bar (Fixed Bottom) */}
+                    <div className="fixed bottom-[60px] left-0 right-0 p-3 bg-white border-t border-slate-100 flex gap-2 z-50 items-center">
                         <button onClick={startNewTopic} className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200"><i className="fa-solid fa-pen-to-square"></i></button>
                         <button onClick={startListening} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-rose-50 text-rose-500'}`}><i className="fa-solid fa-microphone"></i></button>
                         <button onClick={() => fileInputRef.current.click()} className="w-10 h-10 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center"><i className="fa-solid fa-camera"></i></button>
@@ -726,6 +683,7 @@
                         <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} className="flex-1 bg-slate-100 rounded-full px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-ai-main/50" placeholder="輸入..." disabled={isTyping} />
                         <button onClick={() => handleSend()} className={`w-11 h-11 rounded-full text-white flex items-center justify-center shadow-lg transition-transform ${isTyping ? 'bg-gray-400' : 'bg-ai-main active:scale-95'}`} disabled={isTyping}><i className="fa-solid fa-paper-plane text-xs"></i></button>
                     </div>
+
                     {showSettings && (
                         <div className="fixed inset-0 bg-ai-dark bg-opacity-50 z-[80] flex items-center justify-center p-6">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
@@ -776,12 +734,13 @@
             }, [activeTimer]);
 
             return (
-                <div className="bg-white max-w-md mx-auto relative shadow-2xl min-h-screen pb-[60px]">
+                <div className="bg-white max-w-md mx-auto relative shadow-2xl h-full">
                      {page === 'dashboard' && <Dashboard setPage={setPage} transactions={transactions} logs={logs} setLogs={setLogs} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} settings={settings} />}
                      {page === 'ops' && <Operations transactions={transactions} setTransactions={setTransactions} settings={settings} saveSettings={saveSettings} envData={envData} setEnvData={setEnvData} />}
                      {page === 'ai' && <PrivateSecretary settings={settings} saveSettings={saveSettings} transactions={transactions} envData={envData} logs={logs} />}
                     
-                    <div className="bottom-nav-fix flex justify-around items-center h-[60px] border-t border-slate-100 max-w-md mx-auto">
+                    {/* Fixed Bottom Navigation */}
+                    <div className="fixed bottom-0 left-0 right-0 h-[60px] bg-white border-t border-slate-100 flex justify-around items-center z-[100] max-w-md mx-auto">
                         <button onClick={() => setPage('dashboard')} className={`flex flex-col items-center w-full py-2 transition-colors ${page === 'dashboard' ? 'text-navy-900' : 'text-gray-300'}`}>
                             <i className="fa-solid fa-chart-pie text-lg mb-0.5"></i><span className="text-[10px] font-bold">總覽</span>
                         </button>
@@ -801,7 +760,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw-v3.9.js').then(registration => {
+                navigator.serviceWorker.register('./sw-v4.0.js').then(registration => {
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
                         installingWorker.onstatechange = () => {
