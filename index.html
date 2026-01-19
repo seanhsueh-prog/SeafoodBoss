@@ -1,12 +1,12 @@
-<!-- 檔名：SeafoodBossApp_v4.2_Final.html -->
-<!-- 版本：v4.2 (Strict Layout Restoration) -->
-<!-- 修正：1. 營運頁面「月曆視圖」回歸 2. 修正彈窗按鈕被導航列遮擋(Z-Index fix) -->
+<!-- 檔名：SeafoodBossApp_v4.5_Final.html -->
+<!-- 版本：v4.5 (Final Calibration) -->
+<!-- 修正：1. 記帳按鈕鎖定於頂部區域 2. 修復月曆視圖遮蔽問題 3. AI 完全回朔 v3.8 (靈魂伴侶模式) -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS (v4.2)</title>
+    <title>SEAFOOD.BOSS (v4.5)</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0284c7"> 
@@ -39,16 +39,16 @@
                         },
                         ai: {
                             light: '#F5F3FF', 
-                            main: '#8B5CF6', // Soft Lavender
+                            main: '#8B5CF6', // Soft Lavender (v4.x style)
                             dark: '#5B21B6', 
                         },
                         note: {
-                            bg: '#FFFBEB', // Amber-50
+                            bg: '#FFFBEB', 
                             border: '#FCD34D', 
                             text: '#92400E', 
                         },
                         alert: {
-                            main: '#EA580C', // Orange
+                            main: '#EA580C', 
                         }
                     },
                     animation: {
@@ -97,9 +97,11 @@
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             padding-bottom: 80px; 
+            /* Fix for sticky header overlaying content */
+            padding-top: 60px; 
         }
 
-        /* Fixed Elements Logic (Strict v3.8 Adherence) */
+        /* Fixed Elements Logic */
         .sticky-header-main {
             position: fixed; top: 0; left: 0; right: 0; z-index: 60;
             height: 60px; display: flex; align-items: center; justify-content: space-between;
@@ -128,19 +130,18 @@
             max-width: 28rem; margin: 0 auto;
         }
         
-        /* Operations Sticky Header */
+        /* Operations Sticky Header - Now includes Buttons */
         .sticky-ops-controls {
-            position: sticky; top: 60px; z-index: 50;
+            position: sticky; top: 0; z-index: 50;
             background-color: #F8FAFC; 
             padding-bottom: 10px;
             border-bottom: 1px solid #e2e8f0;
-            margin-top: -1px; 
             padding-top: 16px;
         }
 
         .header-gradient { background: linear-gradient(to right, #0284c7, #0369a1); }
         
-        /* Modal Z-Index Fix: Must be higher than Bottom Nav (z-100) */
+        /* Modal Z-Index Fix */
         .modal-overlay { z-index: 200; }
     </style>
 </head>
@@ -211,7 +212,7 @@
                     </div>
                     <div className="leading-tight">
                         <div className="font-black text-sm tracking-wider uppercase">{title}</div>
-                        <div className="text-[10px] opacity-80 font-mono">v4.2</div>
+                        <div className="text-[10px] opacity-80 font-mono">v4.5</div>
                     </div>
                 </div>
                 {showKey && (
@@ -291,7 +292,7 @@
 
         // --- Pages ---
 
-        // A. Dashboard (v4.2)
+        // A. Dashboard (v4.5)
         const Dashboard = ({ setPage, transactions, logs, setLogs, activeTimer, startTimer, stopTimer, settings }) => {
             const today = getTodayStr();
             const todayStats = useMemo(() => {
@@ -316,7 +317,8 @@
                         <div onClick={() => setPage('ai')} className="bg-white rounded-xl p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border-l-4 border-ai-main shadow-sm active:scale-95 transition-transform mb-3">
                             <div className="flex items-center space-x-3">
                                 <div className="w-8 h-8 bg-ai-main rounded-full flex items-center justify-center text-white shadow-md"><i className="fa-solid fa-user-tie text-xs"></i></div>
-                                <span className="text-gray-600 text-xs font-bold">Turbo AI 秘書待命...</span>
+                                {/* Restored v3.8 Text */}
+                                <span className="text-gray-600 text-xs font-bold">問問私人秘書...</span>
                             </div>
                             <div className="w-8 h-8 bg-ai-light rounded-full flex items-center justify-center text-ai-main shadow-sm"><i className="fa-solid fa-microphone text-xs"></i></div>
                         </div>
@@ -374,14 +376,12 @@
             );
         };
 
-        // B. Operations (v4.2: Calendar Restored & Modal Z-Index Fixed)
+        // B. Operations (v4.5: Buttons Locked in Sticky Header)
         const Operations = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
             const [showSettingModal, setShowSettingModal] = useState(false);
             const [editingId, setEditingId] = useState(null);
-            
-            // Calendar State (Restored from v3.8)
             const [isCalExpanded, setIsCalExpanded] = useState(true);
 
             const [selectedDate, setSelectedDate] = useState(getTodayStr());
@@ -415,7 +415,6 @@
                 const monthStr = `${yearStr}-${String(currentMonth).padStart(2, '0')}`;
                 let filtered = [], fixedCostTotal = 0, listData = [], net = 0, income = 0, expense = 0;
                 
-                // Need dailyStats for Calendar (v3.8 Logic)
                 const dailyStats = {}; 
                 transactions.forEach(t => {
                     if(!dailyStats[t.date]) dailyStats[t.date] = { income: 0, expense: 0 };
@@ -480,10 +479,10 @@
             );
 
             return (
-                <div className="scrollable-page pb-[80px] bg-slate-50 relative">
+                <div className="scrollable-page bg-slate-50 relative">
                     <MainHeader title="營運報表" themeClass="bg-finance-dark" />
                     
-                    {/* Sticky Controls Area */}
+                    {/* Sticky Controls Area (Includes Buttons Now) */}
                     <div className="sticky-ops-controls px-4 shadow-sm">
                          {/* 1. Date Controls */}
                         <div className="flex justify-between items-center mb-2">
@@ -526,12 +525,18 @@
                             <div><div className="text-[10px] opacity-60 mb-1">淨利結餘</div><div className={`text-xl font-black ${stats.net >= 0 ? 'text-white' : 'text-red-300'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</div></div>
                             <div className="text-right space-y-1"><div className="text-xs"><span className="opacity-60 mr-2">收</span> <span className="text-green-300 font-bold">+{stats.income.toLocaleString()}</span></div><div className="text-xs"><span className="opacity-60 mr-2">支</span> <span className="text-red-300 font-bold">-{stats.expense.toLocaleString()}</span></div></div>
                         </div>
+
+                        {/* 4. Action Buttons (Locked Here!) */}
+                        <div className="grid grid-cols-2 gap-4 mb-2">
+                            <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-navy-900 border border-navy-100 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
+                            <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-slate-500 border border-gray-200 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
+                        </div>
                     </div>
 
                     {/* Scrollable List Area */}
                     <div className="px-4 py-4 space-y-3">
                         
-                        {/* RESTORED: Calendar View (Strict v3.8 Logic) */}
+                        {/* Calendar View */}
                         {period === 'month' && (
                             <div className="mb-4 bg-white rounded-xl p-3 card-shadow border border-slate-100">
                                 <div className="flex justify-between items-center mb-2 cursor-pointer" onClick={() => setIsCalExpanded(!isCalExpanded)}>
@@ -559,12 +564,6 @@
                                 )}
                             </div>
                         )}
-
-                        {/* 4. Action Buttons (Big Buttons below calendar) */}
-                        <div className="grid grid-cols-2 gap-4 mb-2">
-                            <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-navy-900 border border-navy-100 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
-                            <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-slate-500 border border-gray-200 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
-                        </div>
 
                         <h3 className="font-bold text-slate-700 text-xs border-l-4 border-finance-main pl-2 mb-2">
                              流水帳明細 ({selectedDate})
@@ -596,7 +595,7 @@
                         )}
                     </div>
 
-                    {/* Add/Edit Modal (Fix: z-index increased to 200) */}
+                    {/* Add/Edit Modal (Z-Index 200) */}
                     {showAddModal && (
                         <div className="fixed inset-0 bg-finance-dark bg-opacity-40 z-[200] flex items-end sm:items-center justify-center sm:p-4 modal-overlay">
                             <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
@@ -624,7 +623,7 @@
                             </div>
                         </div>
                     )}
-                    {/* Settings Modal (Fix: z-index increased to 200) */}
+                    {/* Settings Modal (Z-Index 200) */}
                     {showSettingModal && (
                         <div className="fixed inset-0 bg-finance-dark bg-opacity-40 z-[200] flex items-center justify-center p-4 modal-overlay">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
@@ -642,12 +641,13 @@
             );
         };
 
-        // C. Turbo Private Secretary (v4.2 Soft Purple)
+        // C. Private Secretary (v3.8 BRAIN - Soulmate)
         const PrivateSecretary = ({ settings, saveSettings, transactions, envData, logs }) => {
              const [input, setInput] = useState('');
+             // v3.8 Intro
              const [chat, setChat] = useState(() => {
                  const saved = localStorage.getItem(DB_KEY_CHAT);
-                 return saved ? JSON.parse(saved) : [{ id: 1, role: 'ai', text: 'Turbo AI 就緒。老哥，請吩咐。' }];
+                 return saved ? JSON.parse(saved) : [{ id: 1, role: 'ai', text: '老哥，今天還順利嗎？我是你的全能秘書。' }];
              });
              const [showSettings, setShowSettings] = useState(false);
              const [apiKey, setApiKey] = useState(settings.apiKey || '');
@@ -675,7 +675,14 @@
                  setApiKey(cleanKey); saveSettings({...settings, apiKey: cleanKey}); setShowSettings(false);
              };
              const clearChat = () => { if(confirm("確定要清除所有對話紀錄嗎？")) { const initChat = [{ id: Date.now(), role: 'ai', text: '紀錄已清除。' }]; setChat(initChat); } };
-             const startNewTopic = () => { setChat(prev => [...prev, { id: Date.now(), role: 'system', text: '--- 新話題 ---' }, { id: Date.now()+1, role: 'ai', text: '收到，我們換個話題。' }]); };
+             
+             // v3.8 Logic
+             const startNewTopic = () => { 
+                setChat(prev => [...prev, 
+                    { id: Date.now(), role: 'system', text: '--- 開啟新話題 ---' },
+                    { id: Date.now()+1, role: 'ai', text: '好的老哥，我們重新開始。有什麼想聊的？' }
+                ]);
+             };
              const handleImageUpload = async (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onloadend = () => { const base64String = reader.result.split(',')[1]; handleSend(base64String, file.type); }; reader.readAsDataURL(file); };
 
              const getContextData = () => {
@@ -685,8 +692,9 @@
                  const expense = todayTrans.filter(t => t.type === 'expense').reduce((acc, c) => acc + c.amount, 0);
                  const net = income - expense - (settings.dailyFixedCost || 0);
                  const env = envData[today] || { weather: '未記錄', traffic: '未記錄' };
+                 const trafficText = env.traffic === 'slow' ? '冷清' : env.traffic === 'normal' ? '正常' : '爆滿';
                  const recentLogs = logs.slice(0, 3).map(l => `[${l.timestamp}] ${l.text}`).join('; ');
-                 return `[今日] ${today}, 天氣:${env.weather}, 客流:${env.traffic}, 營收:${income}, 支出:${expense}, 淨利:${net}, 筆記:${recentLogs}`;
+                 return `[今日] ${today}, 天氣:${env.weather}, 客流:${trafficText}, 營收:${income}, 支出:${expense}, 淨利:${net}, 筆記:${recentLogs}`;
              };
 
              const handleSend = async (imageBase64 = null, mimeType = null) => {
@@ -701,14 +709,17 @@
                  if (!currentKey) { setTimeout(() => { setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: "請先設定 API Key。" }]); setIsTyping(false); setShowSettings(true); }, 500); return; }
                  
                  const context = getContextData();
-                 const systemPrompt = `你全能商業秘書。
-                 [規則]
-                 1. 絕對限制：回答保持 30 字內。
-                 2. 公事：數據化、列點、極簡。
-                 3. 私事：溫暖、感性、像閨蜜。
-                 4. 依據：
-                 ${context}
-                 [問題] ${imageBase64 ? "[圖片]" : input}`;
+                 
+                 // v3.8 System Prompt (Soulmate/Partner)
+                 const systemPrompt = `你是一位全能型商業秘書，也是老闆（老哥）的信任夥伴。
+                 [核心原則]
+                 1. 你的角色是「公私分明」的靈魂伴侶。
+                 2. 遇到【公事/營運/數據】：請切換為「專業顧問模式」。回答要極簡、列點、數據化、講求效率。你不只懂餐飲，也懂一般商業邏輯，請針對老闆的問題給出具體建議。
+                 3. 遇到【私事/心情/閒聊】：請切換為「溫暖閨蜜模式」。語氣輕鬆、感性、像個老朋友一樣聊天，可以多一點人情味，不要太僵硬。
+                 4. 永遠站在老闆這邊，懂他的辛苦。
+                 
+                 [店舖現況] ${context}
+                 [老闆的問題] ${imageBase64 ? "[老闆傳了一張圖片]" : input}`;
                  
                  const parts = [{ text: systemPrompt }];
                  if (imageBase64) { parts.push({ inlineData: { mimeType: mimeType, data: imageBase64 } }); }
@@ -741,7 +752,8 @@
                                 )}
                             </div>
                         ))}
-                        {isTyping && <div className="flex justify-start"><div className="bg-white text-gray-400 p-3 rounded-2xl text-xs flex items-center border border-slate-100"><i className="fa-solid fa-circle-notch fa-spin mr-2"></i> 正在分析數據...</div></div>}
+                        {/* v3.8 Loading Text */}
+                        {isTyping && <div className="flex justify-start"><div className="bg-white text-gray-400 p-3 rounded-2xl text-xs flex items-center border border-slate-100"><i className="fa-solid fa-circle-notch fa-spin mr-2"></i> 思考中...</div></div>}
                         <div ref={messagesEndRef} />
                     </div>
                     
@@ -755,7 +767,7 @@
                         <button onClick={() => handleSend()} className={`w-11 h-11 rounded-full text-white flex items-center justify-center shadow-lg transition-transform ${isTyping ? 'bg-gray-400' : 'bg-ai-main active:scale-95'}`} disabled={isTyping}><i className="fa-solid fa-paper-plane text-xs"></i></button>
                     </div>
 
-                    {/* Settings Modal (Fix: z-index increased to 200) */}
+                    {/* Settings Modal (Z-Index 200) */}
                     {showSettings && (
                         <div className="fixed inset-0 bg-ai-dark bg-opacity-50 z-[200] flex items-center justify-center p-6 modal-overlay">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
@@ -832,7 +844,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw-v4.1.js').then(registration => {
+                navigator.serviceWorker.register('./sw-v4.5.js').then(registration => {
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
                         installingWorker.onstatechange = () => {
