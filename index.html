@@ -1,12 +1,12 @@
-<!-- 檔名：SeafoodBossApp_v4.1_Final.html -->
-<!-- 版本：v4.1 (Restored Layout & Soft Purple) -->
-<!-- 修正：主頁底部元件回歸(Fixed)、營運頁Icons歸位(Sticky)、AI紫色柔和化 -->
+<!-- 檔名：SeafoodBossApp_v4.2_Final.html -->
+<!-- 版本：v4.2 (Strict Layout Restoration) -->
+<!-- 修正：1. 營運頁面「月曆視圖」回歸 2. 修正彈窗按鈕被導航列遮擋(Z-Index fix) -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS (v4.1)</title>
+    <title>SEAFOOD.BOSS (v4.2)</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0284c7"> 
@@ -38,8 +38,8 @@
                             dark: '#0C4A6E', 
                         },
                         ai: {
-                            light: '#F5F3FF', // Very light violet
-                            main: '#8B5CF6', // Soft Lavender (Violet-500) - 修正過於鮮豔的問題
+                            light: '#F5F3FF', 
+                            main: '#8B5CF6', // Soft Lavender
                             dark: '#5B21B6', 
                         },
                         note: {
@@ -75,7 +75,7 @@
             min-height: 100vh;
             padding-bottom: env(safe-area-inset-bottom);
             color: #334155;
-            overflow: hidden; /* Prevent body scroll, handled by containers */
+            overflow: hidden; 
         }
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -84,7 +84,7 @@
         @keyframes shrinkWidth { from { width: 100%; } to { width: 0%; } }
         .animate-progress { animation-name: shrinkWidth; animation-timing-function: linear; animation-fill-mode: forwards; }
         
-        /* v4.1 Layout Structures - Restored from v3.8 */
+        /* Layout Structures */
         .dashboard-container {
             height: 100vh;
             position: relative;
@@ -96,7 +96,7 @@
             height: 100vh;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            padding-bottom: 80px; /* Space for bottom nav */
+            padding-bottom: 80px; 
         }
 
         /* Fixed Elements Logic (Strict v3.8 Adherence) */
@@ -113,10 +113,9 @@
         }
 
         .force-bottom-container {
-            position: fixed; bottom: 90px; /* Above status bar (60 + 30) */
+            position: fixed; bottom: 90px; 
             left: 0; right: 0; z-index: 30;
             padding: 0 1rem; max-width: 28rem; margin: 0 auto;
-            /* Gradient fade for smooth scroll under */
             background: linear-gradient(to top, #F8FAFC 95%, transparent);
             padding-top: 20px;
         }
@@ -139,8 +138,10 @@
             padding-top: 16px;
         }
 
-        /* Gradients */
         .header-gradient { background: linear-gradient(to right, #0284c7, #0369a1); }
+        
+        /* Modal Z-Index Fix: Must be higher than Bottom Nav (z-100) */
+        .modal-overlay { z-index: 200; }
     </style>
 </head>
 <body>
@@ -210,7 +211,7 @@
                     </div>
                     <div className="leading-tight">
                         <div className="font-black text-sm tracking-wider uppercase">{title}</div>
-                        <div className="text-[10px] opacity-80 font-mono">v4.1</div>
+                        <div className="text-[10px] opacity-80 font-mono">v4.2</div>
                     </div>
                 </div>
                 {showKey && (
@@ -290,7 +291,7 @@
 
         // --- Pages ---
 
-        // A. Dashboard (v4.1: Restored Fixed Layout)
+        // A. Dashboard (v4.2)
         const Dashboard = ({ setPage, transactions, logs, setLogs, activeTimer, startTimer, stopTimer, settings }) => {
             const today = getTodayStr();
             const todayStats = useMemo(() => {
@@ -311,7 +312,7 @@
                     
                     {/* Sticky Top Area: AI + Note */}
                     <div className="sticky-top-area">
-                        {/* AI Entry (Soft Lavender) */}
+                        {/* AI Entry */}
                         <div onClick={() => setPage('ai')} className="bg-white rounded-xl p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border-l-4 border-ai-main shadow-sm active:scale-95 transition-transform mb-3">
                             <div className="flex items-center space-x-3">
                                 <div className="w-8 h-8 bg-ai-main rounded-full flex items-center justify-center text-white shadow-md"><i className="fa-solid fa-user-tie text-xs"></i></div>
@@ -324,12 +325,12 @@
                         <OwnerLog logs={logs} setLogs={setLogs} />
                     </div>
 
-                    {/* Middle Spacer - just visual */}
+                    {/* Middle Spacer */}
                     <div className="w-full h-full bg-slate-50"></div>
 
-                    {/* Fixed Bottom Elements (Restored .force-bottom-container) */}
+                    {/* Fixed Bottom Elements */}
                     <div className="force-bottom-container space-y-4">
-                        {/* Timer (Orange) */}
+                        {/* Timer */}
                         <div>
                             <p className="text-[10px] text-alert-main font-bold mb-2 tracking-wider uppercase flex items-center gap-1">
                                 <i className="fa-solid fa-stopwatch"></i> ⚠️ 暫離提醒
@@ -341,7 +342,7 @@
                             </div>
                         </div>
 
-                        {/* Finance Entry (Navy) */}
+                        {/* Finance Entry */}
                         <div className="pb-4">
                             <p className="text-[10px] text-finance-dark font-bold mb-2 tracking-wider uppercase">Financials</p>
                             <div onClick={() => setPage('ops')} className="bg-gradient-to-br from-finance-dark to-finance-main rounded-xl shadow-lg p-4 flex items-center justify-between active:scale-95 transition-transform cursor-pointer border border-finance-dark">
@@ -361,7 +362,7 @@
                         </div>
                     </div>
 
-                    {/* Status Bar - Fixed Position */}
+                    {/* Status Bar */}
                     <div className="status-bar-fixed flex items-center justify-between px-4">
                         <span className="text-[10px] font-bold text-gray-400"><i className="fa-solid fa-gauge-high mr-1"></i>今日狀態</span>
                         <div className="flex items-center space-x-2">
@@ -373,13 +374,16 @@
             );
         };
 
-        // B. Operations (v4.1: Restored Icons Position)
+        // B. Operations (v4.2: Calendar Restored & Modal Z-Index Fixed)
         const Operations = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
             const [showSettingModal, setShowSettingModal] = useState(false);
             const [editingId, setEditingId] = useState(null);
             
+            // Calendar State (Restored from v3.8)
+            const [isCalExpanded, setIsCalExpanded] = useState(true);
+
             const [selectedDate, setSelectedDate] = useState(getTodayStr());
             const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
             
@@ -411,6 +415,13 @@
                 const monthStr = `${yearStr}-${String(currentMonth).padStart(2, '0')}`;
                 let filtered = [], fixedCostTotal = 0, listData = [], net = 0, income = 0, expense = 0;
                 
+                // Need dailyStats for Calendar (v3.8 Logic)
+                const dailyStats = {}; 
+                transactions.forEach(t => {
+                    if(!dailyStats[t.date]) dailyStats[t.date] = { income: 0, expense: 0 };
+                    if(t.type === 'income') dailyStats[t.date].income += t.amount; else dailyStats[t.date].expense += t.amount;
+                });
+
                 const dailyCost = settings.dailyFixedCost || 0;
                 if (period === 'day') {
                     filtered = transactions.filter(t => t.date === selectedDate);
@@ -433,8 +444,10 @@
 
                 if(period !== 'year') listData.sort((a,b) => b.id - a.id);
 
-                return { income, expense, fixedCostTotal, net, listData };
+                return { income, expense, fixedCostTotal, net, listData, dailyStats };
             }, [transactions, settings, period, selectedDate, currentMonth]);
+
+            const calendarDays = useMemo(() => getCalendarDays(new Date().getFullYear(), currentMonth), [currentMonth]);
 
             const handleSave = () => {
                 if (!amount) return;
@@ -470,7 +483,7 @@
                 <div className="scrollable-page pb-[80px] bg-slate-50 relative">
                     <MainHeader title="營運報表" themeClass="bg-finance-dark" />
                     
-                    {/* Sticky Controls Area (Restored Order: Date -> Icons -> Net -> Buttons) */}
+                    {/* Sticky Controls Area */}
                     <div className="sticky-ops-controls px-4 shadow-sm">
                          {/* 1. Date Controls */}
                         <div className="flex justify-between items-center mb-2">
@@ -490,7 +503,7 @@
                             <button onClick={() => setShowSettingModal(true)} className="w-8 h-8 rounded-full bg-finance-light text-finance-dark flex items-center justify-center"><i className="fa-solid fa-gear"></i></button>
                         </div>
 
-                        {/* 2. Weather/Traffic Icons (RESTORED HERE) */}
+                        {/* 2. Weather/Traffic Icons */}
                         {period === 'day' && (
                              <div className="flex items-center gap-2 mb-2">
                                 <div className="flex space-x-1 bg-white p-1 rounded-xl border border-gray-100">
@@ -513,16 +526,46 @@
                             <div><div className="text-[10px] opacity-60 mb-1">淨利結餘</div><div className={`text-xl font-black ${stats.net >= 0 ? 'text-white' : 'text-red-300'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</div></div>
                             <div className="text-right space-y-1"><div className="text-xs"><span className="opacity-60 mr-2">收</span> <span className="text-green-300 font-bold">+{stats.income.toLocaleString()}</span></div><div className="text-xs"><span className="opacity-60 mr-2">支</span> <span className="text-red-300 font-bold">-{stats.expense.toLocaleString()}</span></div></div>
                         </div>
-
-                        {/* 4. Action Buttons */}
-                        <div className="grid grid-cols-2 gap-3 pb-1">
-                            <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-navy-900 border border-navy-100 py-2.5 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-1"></i> 記進帳</button>
-                            <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-slate-500 border border-gray-200 py-2.5 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-1"></i> 記出帳</button>
-                        </div>
                     </div>
 
                     {/* Scrollable List Area */}
                     <div className="px-4 py-4 space-y-3">
+                        
+                        {/* RESTORED: Calendar View (Strict v3.8 Logic) */}
+                        {period === 'month' && (
+                            <div className="mb-4 bg-white rounded-xl p-3 card-shadow border border-slate-100">
+                                <div className="flex justify-between items-center mb-2 cursor-pointer" onClick={() => setIsCalExpanded(!isCalExpanded)}>
+                                    <span className="text-xs font-bold text-gray-400">日曆視圖</span>
+                                    <i className={`fa-solid fa-chevron-${isCalExpanded ? 'up' : 'down'} text-gray-400 text-xs`}></i>
+                                </div>
+                                {isCalExpanded && (
+                                    <div className="animate-fade-in">
+                                        <div className="grid grid-cols-7 gap-1 mb-2 text-center">{['日','一','二','三','四','五','六'].map(d => <span key={d} className="text-[10px] text-gray-400 font-bold">{d}</span>)}</div>
+                                        <div className="grid grid-cols-7 gap-1">
+                                            {calendarDays.map((d, i) => {
+                                                if(!d) return <div key={i}></div>;
+                                                const s = stats.dailyStats[d.dateStr];
+                                                const hasData = s && (s.income > 0 || s.expense > 0);
+                                                const isSelected = selectedDate === d.dateStr;
+                                                return (
+                                                    <div key={i} onClick={() => setSelectedDate(d.dateStr)} className={`aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer border transition-colors ${isSelected ? 'bg-finance-dark border-finance-dark' : 'border-transparent hover:bg-gray-50'}`}>
+                                                        <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-500'}`}>{d.day}</span>
+                                                        <div className={`w-1.5 h-1.5 rounded-full mt-1 ${hasData ? 'bg-green-500' : 'opacity-0'}`}></div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 4. Action Buttons (Big Buttons below calendar) */}
+                        <div className="grid grid-cols-2 gap-4 mb-2">
+                            <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-navy-900 border border-navy-100 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
+                            <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-slate-500 border border-gray-200 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
+                        </div>
+
                         <h3 className="font-bold text-slate-700 text-xs border-l-4 border-finance-main pl-2 mb-2">
                              流水帳明細 ({selectedDate})
                         </h3>
@@ -553,9 +596,9 @@
                         )}
                     </div>
 
-                    {/* Add/Edit Modal */}
+                    {/* Add/Edit Modal (Fix: z-index increased to 200) */}
                     {showAddModal && (
-                        <div className="fixed inset-0 bg-finance-dark bg-opacity-40 z-[70] flex items-end sm:items-center justify-center sm:p-4">
+                        <div className="fixed inset-0 bg-finance-dark bg-opacity-40 z-[200] flex items-end sm:items-center justify-center sm:p-4 modal-overlay">
                             <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
                                 <div className="flex justify-between items-center mb-6">
                                     <h3 className="font-black text-xl text-finance-dark">{editingId ? '編輯紀錄' : (type === 'income' ? '記一筆進帳' : '記一筆出帳')}</h3>
@@ -581,9 +624,9 @@
                             </div>
                         </div>
                     )}
-                    {/* Settings Modal */}
+                    {/* Settings Modal (Fix: z-index increased to 200) */}
                     {showSettingModal && (
-                        <div className="fixed inset-0 bg-finance-dark bg-opacity-40 z-[70] flex items-center justify-center p-4">
+                        <div className="fixed inset-0 bg-finance-dark bg-opacity-40 z-[200] flex items-center justify-center p-4 modal-overlay">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
                                 <h3 className="font-bold text-lg mb-2 text-finance-dark">日均營運成本</h3>
                                 <p className="text-xs text-gray-400 mb-4">勾選包含項目，並輸入每日總攤提額 (預設為0)</p>
@@ -599,7 +642,7 @@
             );
         };
 
-        // C. Turbo Private Secretary (v4.1 Soft Purple)
+        // C. Turbo Private Secretary (v4.2 Soft Purple)
         const PrivateSecretary = ({ settings, saveSettings, transactions, envData, logs }) => {
              const [input, setInput] = useState('');
              const [chat, setChat] = useState(() => {
@@ -712,8 +755,9 @@
                         <button onClick={() => handleSend()} className={`w-11 h-11 rounded-full text-white flex items-center justify-center shadow-lg transition-transform ${isTyping ? 'bg-gray-400' : 'bg-ai-main active:scale-95'}`} disabled={isTyping}><i className="fa-solid fa-paper-plane text-xs"></i></button>
                     </div>
 
+                    {/* Settings Modal (Fix: z-index increased to 200) */}
                     {showSettings && (
-                        <div className="fixed inset-0 bg-ai-dark bg-opacity-50 z-[80] flex items-center justify-center p-6">
+                        <div className="fixed inset-0 bg-ai-dark bg-opacity-50 z-[200] flex items-center justify-center p-6 modal-overlay">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
                                 <h3 className="font-bold text-ai-dark mb-2">秘書設定</h3>
                                 <input type="text" value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm mb-4 font-mono" placeholder="API Key..." />
@@ -767,7 +811,7 @@
                      {page === 'ops' && <Operations transactions={transactions} setTransactions={setTransactions} settings={settings} saveSettings={saveSettings} envData={envData} setEnvData={setEnvData} />}
                      {page === 'ai' && <PrivateSecretary settings={settings} saveSettings={saveSettings} transactions={transactions} envData={envData} logs={logs} />}
                     
-                    {/* Fixed Bottom Navigation */}
+                    {/* Fixed Bottom Navigation (z-100) */}
                     <div className="fixed bottom-0 left-0 right-0 h-[60px] bg-white border-t border-slate-100 flex justify-around items-center z-[100] max-w-md mx-auto">
                         <button onClick={() => setPage('dashboard')} className={`flex flex-col items-center w-full py-2 transition-colors ${page === 'dashboard' ? 'text-navy-900' : 'text-gray-300'}`}>
                             <i className="fa-solid fa-chart-pie text-lg mb-0.5"></i><span className="text-[10px] font-bold">總覽</span>
