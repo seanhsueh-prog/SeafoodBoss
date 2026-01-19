@@ -1,12 +1,12 @@
-<!-- 檔名：SeafoodBossApp_v3.7_Final.html -->
-<!-- 版本：v3.7 (Dual-Persona AI & Editing) -->
-<!-- 修正：AI雙重人格、語音回覆、記帳修改、iOS除錯增強 -->
+<!-- 檔名：SeafoodBossApp_v3.8_Final.html -->
+<!-- 版本：v3.8 (Universal Secretary & Soulmate) -->
+<!-- 修正：AI轉型為全能商業秘書(含私人模式)、UI配色優化、語音朗讀、記帳修改 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS (v3.7)</title>
+    <title>SEAFOOD.BOSS (v3.8)</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0284c7"> 
@@ -30,11 +30,11 @@
                             100: '#E0F2FE',
                             500: '#0EA5E9',
                             800: '#075985',
-                            900: '#0C4A6E',
+                            900: '#0C4A6E', // Professional Navy
                         },
-                        ocean: {
-                            600: '#0284c7', // Sky 600
-                            800: '#075985', // Sky 800
+                        alert: {
+                            500: '#F97316', // Orange 500
+                            600: '#EA580C', // Orange 600
                         },
                         darkgray: '#374151',
                     },
@@ -190,14 +190,14 @@
             return { isListening, startListening };
         };
 
-        // Text-to-Speech Hook (v3.7)
+        // Text-to-Speech Hook
         const useTTS = () => {
             const speak = (text) => {
                 if (!('speechSynthesis' in window)) return;
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'zh-TW';
                 utterance.rate = 1.0; 
-                window.speechSynthesis.cancel(); // Stop previous
+                window.speechSynthesis.cancel(); 
                 window.speechSynthesis.speak(utterance);
             };
             return { speak };
@@ -214,7 +214,7 @@
                     </div>
                     <div className="leading-tight">
                         <div className="font-black text-sm tracking-wider uppercase">{title}</div>
-                        <div className="text-[10px] opacity-80 font-mono">v3.7</div>
+                        <div className="text-[10px] opacity-80 font-mono">v3.8</div>
                     </div>
                 </div>
                 {showKey && (
@@ -225,13 +225,13 @@
             </div>
         );
 
-        // 2. Timer
+        // 2. Timer (v3.8 Alert Orange Style)
         const TimerButton = ({ minutes, activeTimer, startTimer, stopTimer }) => {
             const isActive = activeTimer && activeTimer.minutes === minutes;
             return (
                 <button 
                     onClick={() => isActive ? stopTimer() : startTimer(minutes)}
-                    className={`relative h-12 rounded-xl overflow-hidden cursor-pointer active:scale-95 transition-all flex items-center justify-center w-full shadow-sm border ${isActive ? 'bg-orange-500 border-orange-600 animate-pulse-slow' : 'bg-white border-navy-50'}`}
+                    className={`relative h-12 rounded-xl overflow-hidden cursor-pointer active:scale-95 transition-all flex items-center justify-center w-full shadow-sm border ${isActive ? 'bg-alert-500 border-alert-600 animate-pulse-slow' : 'bg-white border-navy-50'}`}
                 >
                     {isActive && (
                         <div 
@@ -267,7 +267,7 @@
             const recentLogs = logs.filter(l => (Date.now() - l.id) < (3 * 24 * 60 * 60 * 1000)).slice(0, 10);
 
             return (
-                <div className="bg-white rounded-xl card-shadow p-4 border border-navy-50 mb-4">
+                <div className="bg-white rounded-xl card-shadow p-4 border-l-4 border-yellow-400 mb-4">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="font-bold text-navy-900 text-sm flex items-center"><i className="fa-solid fa-pen-nib mr-2"></i>營運筆記</h3>
                     </div>
@@ -300,7 +300,7 @@
 
         // --- Pages ---
 
-        // A. Dashboard
+        // A. Dashboard (v3.8 Colored UI)
         const Dashboard = ({ setPage, transactions, logs, setLogs, activeTimer, startTimer, stopTimer, settings }) => {
             const today = getTodayStr();
             const todayStats = useMemo(() => {
@@ -308,7 +308,7 @@
                 const income = todayTrans.filter(t => t.type === 'income').reduce((acc, c) => acc + c.amount, 0);
                 const expense = todayTrans.filter(t => t.type === 'expense').reduce((acc, c) => acc + c.amount, 0);
                 const net = income - expense - (settings.dailyFixedCost || 0);
-                let status = "觀察中"; let color = "bg-gray-400";
+                let status = "觀察中"; let color = "bg-gray-500";
                 if (net > 1000) { status = "營收穩健"; color = "bg-green-500"; }
                 else if (net >= 0) { status = "收支平衡"; color = "bg-yellow-500"; }
                 else { status = "審慎留意"; color = "bg-red-500"; }
@@ -332,7 +332,7 @@
                     </div>
                     <div className="force-bottom-container space-y-4">
                         <div>
-                            <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider uppercase flex items-center gap-1">
+                            <p className="text-[10px] text-alert-600 font-bold mb-2 ml-1 tracking-wider uppercase flex items-center gap-1">
                                 <i className="fa-solid fa-stopwatch"></i> ⚠️ 暫離提醒
                             </p>
                             <div className="grid grid-cols-3 gap-2">
@@ -342,47 +342,44 @@
                             </div>
                         </div>
                         <div className="pb-4">
-                            <p className="text-[10px] text-gray-400 font-bold mb-2 ml-1 tracking-wider uppercase">Financials (Private)</p>
-                            <div onClick={() => setPage('ops')} className="bg-gradient-to-br from-white to-gray-50 rounded-xl card-shadow p-5 border border-navy-50 flex items-center justify-between active:scale-95 transition-transform cursor-pointer">
+                            <p className="text-[10px] text-navy-900 font-bold mb-2 ml-1 tracking-wider uppercase">Financials (Private)</p>
+                            <div onClick={() => setPage('ops')} className="bg-gradient-to-br from-navy-900 to-navy-800 rounded-xl card-shadow p-5 border border-navy-900 flex items-center justify-between active:scale-95 transition-transform cursor-pointer">
                                 <div className="flex items-center">
-                                    <div className="w-10 h-10 bg-navy-900 rounded-lg flex items-center justify-center text-white mr-3 shadow-md">
+                                    <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center text-white mr-3 backdrop-blur-sm">
                                         <i className="fa-solid fa-calculator text-sm"></i>
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-navy-900 text-sm">內部營運</h3>
-                                        <p className="text-[10px] text-gray-400">點擊查看詳情</p>
+                                        <h3 className="font-bold text-white text-sm">內部營運</h3>
+                                        <p className="text-[10px] text-white/50">點擊查看詳情</p>
                                     </div>
                                 </div>
-                                <div className="text-navy-900">
-                                    <i className="fa-solid fa-chevron-right text-gray-300"></i>
+                                <div className="text-white">
+                                    <i className="fa-solid fa-chevron-right text-white/30"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div className="fixed bottom-[60px] left-0 right-0 bg-white border-t border-navy-50 p-2 flex items-center justify-between px-4 z-40 max-w-md mx-auto">
-                        <span className="text-xs font-bold text-gray-500">今日狀態</span>
+                    {/* Cockpit Style Status Bar */}
+                    <div className="fixed bottom-[60px] left-0 right-0 bg-[#1E293B] border-t border-gray-800 p-2 flex items-center justify-between px-4 z-40 max-w-md mx-auto">
+                        <span className="text-xs font-bold text-gray-400"><i className="fa-solid fa-gauge-high mr-1"></i>今日狀態</span>
                         <div className="flex items-center space-x-2">
-                            <span className="text-xs font-bold text-navy-900">{todayStats.status}</span>
-                            <div className={`h-2 w-16 rounded-full ${todayStats.color}`}></div>
+                            <span className="text-xs font-bold text-white">{todayStats.status}</span>
+                            <div className={`h-2 w-16 rounded-full ${todayStats.color} shadow-[0_0_10px_rgba(255,255,255,0.3)]`}></div>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        // B. Operations (v3.7 - Editing Enabled)
+        // B. Operations (v3.8 Editing Enabled)
         const Operations = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
             const [showSettingModal, setShowSettingModal] = useState(false);
             const [isCalExpanded, setIsCalExpanded] = useState(true); 
-            
-            // Edit Mode States
             const [editingId, setEditingId] = useState(null);
-            
             const [selectedDate, setSelectedDate] = useState(getTodayStr());
             const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
-            
             const [date, setDate] = useState(getTodayStr());
             const [type, setType] = useState('income');
             const [amount, setAmount] = useState('');
@@ -463,10 +460,8 @@
                 if (!amount) return;
                 let updated;
                 if (editingId) {
-                    // Update existing
                     updated = transactions.map(t => t.id === editingId ? { ...t, date, amount: parseInt(amount), type, category: cat, note } : t);
                 } else {
-                    // Create new
                     const newTrans = { id: Date.now(), date: date, amount: parseInt(amount), type, category: cat, note, timestamp: formatTime() };
                     updated = [newTrans, ...transactions];
                 }
@@ -490,7 +485,7 @@
             };
 
             const openEdit = (item) => {
-                if (period === 'year') return; // Year view summary not editable
+                if (period === 'year') return; 
                 setEditingId(item.id);
                 setDate(item.date);
                 setType(item.type);
@@ -680,12 +675,13 @@
             );
         };
 
-        // C. Private Secretary (v3.7 - Dual Persona + TTS)
+        // C. Private Secretary (v3.8 - Universal Persona)
         const PrivateSecretary = ({ settings, saveSettings, transactions, envData, logs }) => {
              const [input, setInput] = useState('');
+             // v3.8: Initialize chat with new intro
              const [chat, setChat] = useState(() => {
                  const saved = localStorage.getItem(DB_KEY_CHAT);
-                 return saved ? JSON.parse(saved) : [{ id: 1, role: 'ai', text: '老哥，今天還順利嗎？' }];
+                 return saved ? JSON.parse(saved) : [{ id: 1, role: 'ai', text: '老哥，今天還順利嗎？我是你的全能秘書。' }];
              });
              const [showSettings, setShowSettings] = useState(false);
              const [apiKey, setApiKey] = useState(settings.apiKey || '');
@@ -693,12 +689,19 @@
              const messagesEndRef = useRef(null);
              const fileInputRef = useRef(null);
              const { isListening, startListening } = useVoiceInput((text) => setInput(prev => prev + text));
-             const { speak } = useTTS(); // Use v3.7 TTS
+             const { speak } = useTTS(); 
 
              const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
              
+             // v3.8: Auto Pruning (Keep last 50)
              useEffect(() => {
-                 localStorage.setItem(DB_KEY_CHAT, JSON.stringify(chat));
+                 if (chat.length > 50) {
+                     const pruned = chat.slice(chat.length - 50);
+                     setChat(pruned);
+                     localStorage.setItem(DB_KEY_CHAT, JSON.stringify(pruned));
+                 } else {
+                     localStorage.setItem(DB_KEY_CHAT, JSON.stringify(chat));
+                 }
                  scrollToBottom();
              }, [chat]);
 
@@ -707,7 +710,7 @@
              }, [settings.apiKey]);
 
              const handleSaveSettings = () => {
-                 const cleanKey = apiKey.trim(); // Trim for iOS fix
+                 const cleanKey = apiKey.trim(); 
                  setApiKey(cleanKey);
                  saveSettings({...settings, apiKey: cleanKey}); 
                  setShowSettings(false);
@@ -718,6 +721,13 @@
                      const initChat = [{ id: Date.now(), role: 'ai', text: '紀錄已清除。老哥，有什麼新吩咐？' }];
                      setChat(initChat);
                  }
+             };
+
+             const startNewTopic = () => {
+                 setChat(prev => [...prev, 
+                    { id: Date.now(), role: 'system', text: '--- 開啟新話題 ---' },
+                    { id: Date.now()+1, role: 'ai', text: '好的老哥，我們重新開始。有什麼想聊的？' }
+                 ]);
              };
 
              const handleImageUpload = async (e) => {
@@ -749,11 +759,11 @@
                  if(isTyping) return;
                  
                  const displayMsg = imageBase64 ? "[圖片已傳送]" : userMsg;
-                 
                  setChat(prev => [...prev, { id: Date.now(), role: 'user', text: displayMsg }]);
                  setInput('');
                  setIsTyping(true);
-                 const currentKey = settings.apiKey ? settings.apiKey.trim() : ''; // iOS Trim Fix
+                 
+                 const currentKey = settings.apiKey ? settings.apiKey.trim() : '';
                  const targetModel = 'gemini-2.5-flash';
 
                  if (!currentKey) {
@@ -761,12 +771,14 @@
                      return;
                  }
                  const context = getContextData();
-                 // v3.7 Dual Persona Prompt
-                 const systemPrompt = `你是一位全能私人秘書。對老闆（老哥）忠誠且懂他。
-                 [規則]
-                 1. 如果老闆問公事（數據、營運、建議）：請保持極簡、列點、數據化。
-                 2. 如果老闆聊私事（心情、閒聊）：請像個老朋友一樣，語氣輕鬆溫暖，不要太僵硬。
-                 3. 記得，老闆喜歡效率，但偶爾也需要被理解。
+                 
+                 // v3.8 Universal Persona Prompt
+                 const systemPrompt = `你是一位全能型商業秘書，也是老闆（老哥）的信任夥伴。
+                 [核心原則]
+                 1. 你的角色是「公私分明」的靈魂伴侶。
+                 2. 遇到【公事/營運/數據】：請切換為「專業顧問模式」。回答要極簡、列點、數據化、講求效率。你不只懂餐飲，也懂一般商業邏輯，請針對老闆的問題給出具體建議。
+                 3. 遇到【私事/心情/閒聊】：請切換為「溫暖閨蜜模式」。語氣輕鬆、感性、像個老朋友一樣聊天，可以多一點人情味，不要太僵硬。
+                 4. 永遠站在老闆這邊，懂他的辛苦。
                  
                  [店舖現況] ${context}
                  [老闆的問題] ${imageBase64 ? "[老闆傳了一張圖片]" : input}`;
@@ -800,23 +812,28 @@
                     <MainHeader title="私人秘書" showKey={true} onKeyClick={() => setShowSettings(true)} />
                     <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1">
                         {chat.map(c => (
-                            <div key={c.id} className={`flex ${c.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`flex flex-col ${c.role === 'user' ? 'items-end' : 'items-start'} max-w-[85%]`}>
-                                    <div className={`p-3 rounded-2xl shadow-sm text-sm ${c.role === 'user' ? 'bg-navy-900 text-white rounded-br-none' : 'bg-white text-darkgray border border-navy-50 rounded-bl-none'}`}>
-                                        {c.text}
+                            <div key={c.id} className={`flex ${c.role === 'user' ? 'justify-end' : (c.role === 'system' ? 'justify-center' : 'justify-start')}`}>
+                                {c.role === 'system' ? (
+                                    <span className="text-[10px] text-gray-300 bg-gray-100 px-2 py-1 rounded-full">{c.text}</span>
+                                ) : (
+                                    <div className={`flex flex-col ${c.role === 'user' ? 'items-end' : 'items-start'} max-w-[85%]`}>
+                                        <div className={`p-3 rounded-2xl shadow-sm text-sm ${c.role === 'user' ? 'bg-navy-900 text-white rounded-br-none' : 'bg-white text-darkgray border border-navy-50 rounded-bl-none'}`}>
+                                            {c.text}
+                                        </div>
+                                        {c.role === 'ai' && (
+                                            <button onClick={() => speak(c.text)} className="mt-1 text-gray-400 text-xs flex items-center gap-1 hover:text-navy-600">
+                                                <i className="fa-solid fa-volume-high"></i> 朗讀
+                                            </button>
+                                        )}
                                     </div>
-                                    {c.role === 'ai' && (
-                                        <button onClick={() => speak(c.text)} className="mt-1 text-gray-400 text-xs flex items-center gap-1 hover:text-navy-600">
-                                            <i className="fa-solid fa-volume-high"></i> 朗讀
-                                        </button>
-                                    )}
-                                </div>
+                                )}
                             </div>
                         ))}
                         {isTyping && <div className="flex justify-start"><div className="bg-white text-gray-400 p-3 rounded-2xl text-xs"><i className="fa-solid fa-circle-notch fa-spin mr-2"></i> 思考中...</div></div>}
                         <div ref={messagesEndRef} />
                     </div>
                     <div className="fixed bottom-[60px] left-0 right-0 p-3 bg-white border-t border-navy-50 flex gap-2 z-40 items-center">
+                        <button onClick={startNewTopic} className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center"><i className="fa-solid fa-broom"></i></button>
                         <button onClick={startListening} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-navy-50 text-navy-600'}`}><i className="fa-solid fa-microphone"></i></button>
                         <button onClick={() => fileInputRef.current.click()} className="w-10 h-10 rounded-full bg-navy-50 text-navy-600 flex items-center justify-center"><i className="fa-solid fa-camera"></i></button>
                         <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
@@ -898,8 +915,8 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // v3.7 確保使用正確的 sw 檔名
-                navigator.serviceWorker.register('./sw-v3.7.js').then(registration => {
+                // v3.8: 確保指向 sw-v3.8.js
+                navigator.serviceWorker.register('./sw-v3.8.js').then(registration => {
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
                         installingWorker.onstatechange = () => {
