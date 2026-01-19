@@ -1,12 +1,12 @@
-<!-- 檔名：SeafoodBossApp_v4.0_Final.html -->
-<!-- 版本：v4.0 (Turbo AI, Privacy Note & Fixed Dashboard) -->
-<!-- 架構：主頁面全鎖定 (No-Scroll) | 營運頁面捲動 (Scroll) | 資料無縫繼承 -->
+<!-- 檔名：SeafoodBossApp_v4.1_Final.html -->
+<!-- 版本：v4.1 (Restored Layout & Soft Purple) -->
+<!-- 修正：主頁底部元件回歸(Fixed)、營運頁Icons歸位(Sticky)、AI紫色柔和化 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS (v4.0)</title>
+    <title>SEAFOOD.BOSS (v4.1)</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0284c7"> 
@@ -38,9 +38,9 @@
                             dark: '#0C4A6E', 
                         },
                         ai: {
-                            light: '#F3E8FF',
-                            main: '#9333EA', // Purple
-                            dark: '#581C87', 
+                            light: '#F5F3FF', // Very light violet
+                            main: '#8B5CF6', // Soft Lavender (Violet-500) - 修正過於鮮豔的問題
+                            dark: '#5B21B6', 
                         },
                         note: {
                             bg: '#FFFBEB', // Amber-50
@@ -73,10 +73,9 @@
             background-color: #F8FAFC;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             min-height: 100vh;
-            /* iOS Safe Area */
             padding-bottom: env(safe-area-inset-bottom);
             color: #334155;
-            overflow: hidden; /* Prevent body scroll by default, handled by containers */
+            overflow: hidden; /* Prevent body scroll, handled by containers */
         }
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -85,23 +84,63 @@
         @keyframes shrinkWidth { from { width: 100%; } to { width: 0%; } }
         .animate-progress { animation-name: shrinkWidth; animation-timing-function: linear; animation-fill-mode: forwards; }
         
-        /* v4.0 Layout Utilities */
+        /* v4.1 Layout Structures - Restored from v3.8 */
         .dashboard-container {
             height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; /* Lock entire page */
+            position: relative;
+            background-color: #F8FAFC;
+            overflow: hidden;
         }
 
         .scrollable-page {
             height: 100vh;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            padding-bottom: 80px; /* Space for bottom nav */
         }
 
-        /* Gradient Textures */
+        /* Fixed Elements Logic (Strict v3.8 Adherence) */
+        .sticky-header-main {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+            height: 60px; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .sticky-top-area {
+            position: fixed; top: 60px; left: 0; right: 0; z-index: 55;
+            background-color: #F8FAFC; padding: 0.5rem 1rem;
+            max-width: 28rem; margin: 0 auto;
+        }
+
+        .force-bottom-container {
+            position: fixed; bottom: 90px; /* Above status bar (60 + 30) */
+            left: 0; right: 0; z-index: 30;
+            padding: 0 1rem; max-width: 28rem; margin: 0 auto;
+            /* Gradient fade for smooth scroll under */
+            background: linear-gradient(to top, #F8FAFC 95%, transparent);
+            padding-top: 20px;
+        }
+
+        .status-bar-fixed {
+            position: fixed; bottom: 60px; left: 0; right: 0; z-index: 40;
+            height: 30px;
+            background-color: #1E293B;
+            border-top: 1px solid #374151;
+            max-width: 28rem; margin: 0 auto;
+        }
+        
+        /* Operations Sticky Header */
+        .sticky-ops-controls {
+            position: sticky; top: 60px; z-index: 50;
+            background-color: #F8FAFC; 
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            margin-top: -1px; 
+            padding-top: 16px;
+        }
+
+        /* Gradients */
         .header-gradient { background: linear-gradient(to right, #0284c7, #0369a1); }
-        .bottom-gradient { background: linear-gradient(to top, #F8FAFC 95%, transparent); }
     </style>
 </head>
 <body>
@@ -110,7 +149,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // --- Data Persistence Keys (CRITICAL: Do Not Change) ---
+        // DB Keys
         const DB_KEY_TRANSACTIONS = 'sf_transactions'; 
         const DB_KEY_LOGS = 'sf_logs';                 
         const DB_KEY_SETTINGS = 'sf_settings';         
@@ -164,14 +203,14 @@
 
         // 1. Universal Header
         const MainHeader = ({ title = "SEAFOOD.BOSS", showKey = false, onKeyClick, themeClass = "header-gradient" }) => (
-            <div className={`h-[60px] flex items-center justify-between px-4 shrink-0 shadow-md relative z-50 ${themeClass}`}>
+            <div className={`sticky-header-main ${themeClass}`}>
                 <div className="flex items-center text-white">
                     <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-2 backdrop-blur-sm">
                         <i className="fa-solid fa-fish text-sm"></i>
                     </div>
                     <div className="leading-tight">
                         <div className="font-black text-sm tracking-wider uppercase">{title}</div>
-                        <div className="text-[10px] opacity-80 font-mono">v4.0 Turbo</div>
+                        <div className="text-[10px] opacity-80 font-mono">v4.1</div>
                     </div>
                 </div>
                 {showKey && (
@@ -182,7 +221,7 @@
             </div>
         );
 
-        // 2. Timer (Fixed Bottom Component)
+        // 2. Timer
         const TimerButton = ({ minutes, activeTimer, startTimer, stopTimer }) => {
             const isActive = activeTimer && activeTimer.minutes === minutes;
             return (
@@ -196,7 +235,7 @@
             );
         };
 
-        // 3. Owner Log (Privacy Edition)
+        // 3. Owner Log
         const OwnerLog = ({ logs, setLogs }) => {
             const [input, setInput] = useState('');
             const [isPrivacy, setIsPrivacy] = useState(false);
@@ -218,7 +257,7 @@
             const recentLogs = logs.filter(l => (Date.now() - l.id) < (3 * 24 * 60 * 60 * 1000)).slice(0, 10);
 
             return (
-                <div className="bg-note-bg border-b border-note-border/50 p-3 pb-4">
+                <div className="bg-note-bg border-b-4 border-note-border/30 rounded-xl p-3 mb-2 shadow-sm">
                     <div className="flex justify-between items-center mb-2">
                         <h3 className="font-bold text-note-text text-xs flex items-center gap-2">
                             <i className="fa-solid fa-note-sticky"></i> 營運筆記
@@ -232,12 +271,11 @@
                         <button onClick={startListening} className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-white text-gray-400 border border-gray-200'}`}><i className="fa-solid fa-microphone"></i></button>
                         <button onClick={addLog} className="w-9 h-9 bg-note-text text-white rounded-lg flex items-center justify-center shrink-0 shadow-sm"><i className="fa-solid fa-plus"></i></button>
                     </div>
-                    {/* Log List - Scrollable within container only if needed */}
-                    <div className="space-y-2 pl-1 max-h-[120px] overflow-y-auto no-scrollbar">
+                    <div className="space-y-2 pl-1 max-h-[150px] overflow-y-auto no-scrollbar">
                         {recentLogs.length === 0 ? <p className="text-[10px] text-gray-400 py-1">尚無紀錄</p> : 
                             recentLogs.map(l => (
                                 <div key={l.id} className="relative pl-2 animate-fade-in group flex justify-between items-start">
-                                    <div className={`text-sm text-slate-700 leading-tight ${isPrivacy ? 'blur-sm select-none opacity-50' : ''}`}>
+                                    <div className={`text-sm text-slate-700 leading-tight w-full ${isPrivacy ? 'blur-sm select-none opacity-50' : ''}`}>
                                         <span className="text-[10px] font-bold text-note-text/60 mr-1.5">{l.date === getTodayStr() ? l.timestamp : l.date}</span>
                                         {isPrivacy ? '******' : l.text}
                                     </div>
@@ -252,7 +290,7 @@
 
         // --- Pages ---
 
-        // A. Dashboard (v4.0: 100vh Locked Layout)
+        // A. Dashboard (v4.1: Restored Fixed Layout)
         const Dashboard = ({ setPage, transactions, logs, setLogs, activeTimer, startTimer, stopTimer, settings }) => {
             const today = getTodayStr();
             const todayStats = useMemo(() => {
@@ -268,30 +306,29 @@
             }, [transactions, settings, today]);
 
             return (
-                <div className="dashboard-container bg-slate-50">
+                <div className="dashboard-container">
                     <MainHeader />
                     
-                    {/* 1. AI Entry (Purple) - Locked Top */}
-                    <div className="bg-white p-3 border-b border-gray-100 flex-none z-40">
-                        <div onClick={() => setPage('ai')} className="bg-ai-light/30 rounded-full p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border-l-4 border-ai-main shadow-sm active:scale-95 transition-transform">
+                    {/* Sticky Top Area: AI + Note */}
+                    <div className="sticky-top-area">
+                        {/* AI Entry (Soft Lavender) */}
+                        <div onClick={() => setPage('ai')} className="bg-white rounded-xl p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border-l-4 border-ai-main shadow-sm active:scale-95 transition-transform mb-3">
                             <div className="flex items-center space-x-3">
                                 <div className="w-8 h-8 bg-ai-main rounded-full flex items-center justify-center text-white shadow-md"><i className="fa-solid fa-user-tie text-xs"></i></div>
                                 <span className="text-gray-600 text-xs font-bold">Turbo AI 秘書待命...</span>
                             </div>
-                            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-ai-main shadow-sm"><i className="fa-solid fa-microphone text-xs"></i></div>
+                            <div className="w-8 h-8 bg-ai-light rounded-full flex items-center justify-center text-ai-main shadow-sm"><i className="fa-solid fa-microphone text-xs"></i></div>
                         </div>
-                    </div>
 
-                    {/* 2. Owner Log (Amber) - Locked Top */}
-                    <div className="flex-none z-30">
+                        {/* Note Area */}
                         <OwnerLog logs={logs} setLogs={setLogs} />
                     </div>
 
-                    {/* 3. Middle Spacer (Flex-1) - Takes remaining space */}
-                    <div className="flex-1 w-full bg-slate-50"></div>
+                    {/* Middle Spacer - just visual */}
+                    <div className="w-full h-full bg-slate-50"></div>
 
-                    {/* 4. Bottom Area - Locked Bottom */}
-                    <div className="flex-none bg-white border-t border-slate-100 p-4 pb-4 space-y-4 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-40">
+                    {/* Fixed Bottom Elements (Restored .force-bottom-container) */}
+                    <div className="force-bottom-container space-y-4">
                         {/* Timer (Orange) */}
                         <div>
                             <p className="text-[10px] text-alert-main font-bold mb-2 tracking-wider uppercase flex items-center gap-1">
@@ -305,9 +342,9 @@
                         </div>
 
                         {/* Finance Entry (Navy) */}
-                        <div>
+                        <div className="pb-4">
                             <p className="text-[10px] text-finance-dark font-bold mb-2 tracking-wider uppercase">Financials</p>
-                            <div onClick={() => setPage('ops')} className="bg-gradient-to-br from-finance-dark to-finance-main rounded-xl shadow-md p-4 flex items-center justify-between active:scale-95 transition-transform cursor-pointer">
+                            <div onClick={() => setPage('ops')} className="bg-gradient-to-br from-finance-dark to-finance-main rounded-xl shadow-lg p-4 flex items-center justify-between active:scale-95 transition-transform cursor-pointer border border-finance-dark">
                                 <div className="flex items-center">
                                     <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center text-white mr-3 backdrop-blur-sm">
                                         <i className="fa-solid fa-calculator text-sm"></i>
@@ -324,8 +361,8 @@
                         </div>
                     </div>
 
-                    {/* Cockpit Status Bar - Absolute Bottom of Content */}
-                    <div className="bg-[#1E293B] border-t border-gray-800 p-2 flex items-center justify-between px-4 z-50 flex-none h-[30px]">
+                    {/* Status Bar - Fixed Position */}
+                    <div className="status-bar-fixed flex items-center justify-between px-4">
                         <span className="text-[10px] font-bold text-gray-400"><i className="fa-solid fa-gauge-high mr-1"></i>今日狀態</span>
                         <div className="flex items-center space-x-2">
                             <span className="text-[10px] font-bold text-white">{todayStats.status}</span>
@@ -336,25 +373,22 @@
             );
         };
 
-        // B. Operations (v4.0: Sticky Top + Scrollable List + Clear Items)
+        // B. Operations (v4.1: Restored Icons Position)
         const Operations = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
             const [showSettingModal, setShowSettingModal] = useState(false);
-            const [isCalExpanded, setIsCalExpanded] = useState(true); 
             const [editingId, setEditingId] = useState(null);
             
             const [selectedDate, setSelectedDate] = useState(getTodayStr());
             const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
             
-            // Modal Inputs
             const [date, setDate] = useState(getTodayStr());
             const [type, setType] = useState('income');
             const [amount, setAmount] = useState('');
             const [cat, setCat] = useState('現金');
             const [note, setNote] = useState('');
             
-            // Settings Inputs
             const [tempFixedCost, setTempFixedCost] = useState(settings.dailyFixedCost || '');
             const [selectedCostItems, setSelectedCostItems] = useState(settings.costItems || []);
             
@@ -385,9 +419,9 @@
                 } else if (period === 'month') {
                     filtered = transactions.filter(t => t.date.startsWith(monthStr));
                     const daysInM = new Date(now.getFullYear(), currentMonth, 0).getDate();
-                    let daysPassed = daysInM; // Simple approximation for month view
+                    let daysPassed = daysInM; 
                     fixedCostTotal = dailyCost * daysPassed;
-                    listData = transactions.filter(t => t.date === selectedDate); // Still show selected date list in month view
+                    listData = transactions.filter(t => t.date === selectedDate);
                 } else { 
                     filtered = transactions.filter(t => t.date.startsWith(yearStr));
                     fixedCostTotal = dailyCost * 365;
@@ -397,10 +431,7 @@
                 expense = filtered.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
                 net = income - expense - fixedCostTotal;
 
-                // Sort list data by timestamp desc
-                if(period !== 'year') {
-                    listData.sort((a,b) => b.id - a.id);
-                }
+                if(period !== 'year') listData.sort((a,b) => b.id - a.id);
 
                 return { income, expense, fixedCostTotal, net, listData };
             }, [transactions, settings, period, selectedDate, currentMonth]);
@@ -437,14 +468,11 @@
 
             return (
                 <div className="scrollable-page pb-[80px] bg-slate-50 relative">
-                    {/* Fixed Header */}
-                    <div className="sticky top-0 z-[60]">
-                        <MainHeader title="營運報表" themeClass="bg-finance-dark" />
-                    </div>
+                    <MainHeader title="營運報表" themeClass="bg-finance-dark" />
                     
-                    {/* Sticky Controls Area (Includes Net Profit & Buttons) */}
-                    <div className="sticky top-[60px] z-50 bg-slate-50 px-4 pt-4 pb-2 shadow-sm border-b border-gray-200">
-                         {/* Date & Settings */}
+                    {/* Sticky Controls Area (Restored Order: Date -> Icons -> Net -> Buttons) */}
+                    <div className="sticky-ops-controls px-4 shadow-sm">
+                         {/* 1. Date Controls */}
                         <div className="flex justify-between items-center mb-2">
                             <div className="bg-white p-0.5 rounded-lg border border-slate-200 shadow-sm inline-flex">
                                 {['day', 'month', 'year'].map(p => (
@@ -462,23 +490,9 @@
                             <button onClick={() => setShowSettingModal(true)} className="w-8 h-8 rounded-full bg-finance-light text-finance-dark flex items-center justify-center"><i className="fa-solid fa-gear"></i></button>
                         </div>
 
-                        {/* Net Profit Card */}
-                        <div className="bg-finance-dark rounded-xl p-3 text-white shadow-lg flex justify-between items-center mb-3">
-                            <div><div className="text-[10px] opacity-60 mb-1">淨利結餘 (已扣除日成本)</div><div className={`text-xl font-black ${stats.net >= 0 ? 'text-white' : 'text-red-300'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</div></div>
-                            <div className="text-right space-y-1"><div className="text-xs"><span className="opacity-60 mr-2">收</span> <span className="text-green-300 font-bold">+{stats.income.toLocaleString()}</span></div><div className="text-xs"><span className="opacity-60 mr-2">支</span> <span className="text-red-300 font-bold">-{stats.expense.toLocaleString()}</span></div></div>
-                        </div>
-
-                        {/* Sticky Action Buttons */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-navy-900 border border-navy-100 py-2.5 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-1"></i> 記進帳</button>
-                            <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-slate-500 border border-gray-200 py-2.5 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-1"></i> 記出帳</button>
-                        </div>
-                    </div>
-
-                    {/* Scrollable List Area */}
-                    <div className="px-4 py-4 space-y-3">
+                        {/* 2. Weather/Traffic Icons (RESTORED HERE) */}
                         {period === 'day' && (
-                             <div className="flex items-center gap-2 mb-4">
+                             <div className="flex items-center gap-2 mb-2">
                                 <div className="flex space-x-1 bg-white p-1 rounded-xl border border-gray-100">
                                     {['sunny','cloudy','rainy'].map(w => (
                                         <button key={w} onClick={() => updateEnv('weather', w)} className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${currentEnv.weather === w ? 'bg-finance-dark text-white shadow' : 'text-gray-300'}`}>
@@ -494,6 +508,21 @@
                             </div>
                         )}
 
+                        {/* 3. Net Profit Card */}
+                        <div className="bg-finance-dark rounded-xl p-3 text-white shadow-lg flex justify-between items-center mb-3">
+                            <div><div className="text-[10px] opacity-60 mb-1">淨利結餘</div><div className={`text-xl font-black ${stats.net >= 0 ? 'text-white' : 'text-red-300'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</div></div>
+                            <div className="text-right space-y-1"><div className="text-xs"><span className="opacity-60 mr-2">收</span> <span className="text-green-300 font-bold">+{stats.income.toLocaleString()}</span></div><div className="text-xs"><span className="opacity-60 mr-2">支</span> <span className="text-red-300 font-bold">-{stats.expense.toLocaleString()}</span></div></div>
+                        </div>
+
+                        {/* 4. Action Buttons */}
+                        <div className="grid grid-cols-2 gap-3 pb-1">
+                            <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-navy-900 border border-navy-100 py-2.5 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-1"></i> 記進帳</button>
+                            <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-slate-500 border border-gray-200 py-2.5 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm active:scale-95 transition-transform"><i className="fa-solid fa-minus mr-1"></i> 記出帳</button>
+                        </div>
+                    </div>
+
+                    {/* Scrollable List Area */}
+                    <div className="px-4 py-4 space-y-3">
                         <h3 className="font-bold text-slate-700 text-xs border-l-4 border-finance-main pl-2 mb-2">
                              流水帳明細 ({selectedDate})
                         </h3>
@@ -570,7 +599,7 @@
             );
         };
 
-        // C. Turbo Private Secretary (v4.0 Purple Theme)
+        // C. Turbo Private Secretary (v4.1 Soft Purple)
         const PrivateSecretary = ({ settings, saveSettings, transactions, envData, logs }) => {
              const [input, setInput] = useState('');
              const [chat, setChat] = useState(() => {
@@ -629,7 +658,6 @@
                  if (!currentKey) { setTimeout(() => { setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: "請先設定 API Key。" }]); setIsTyping(false); setShowSettings(true); }, 500); return; }
                  
                  const context = getContextData();
-                 // v4.0 Turbo Prompt
                  const systemPrompt = `你全能商業秘書。
                  [規則]
                  1. 絕對限制：回答保持 30 字內。
@@ -675,7 +703,7 @@
                     </div>
                     
                     {/* Input Bar (Fixed Bottom) */}
-                    <div className="fixed bottom-[60px] left-0 right-0 p-3 bg-white border-t border-slate-100 flex gap-2 z-50 items-center">
+                    <div className="fixed bottom-[60px] left-0 right-0 p-3 bg-white border-t border-slate-100 flex gap-2 z-50 items-center max-w-md mx-auto">
                         <button onClick={startNewTopic} className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200"><i className="fa-solid fa-pen-to-square"></i></button>
                         <button onClick={startListening} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-rose-50 text-rose-500'}`}><i className="fa-solid fa-microphone"></i></button>
                         <button onClick={() => fileInputRef.current.click()} className="w-10 h-10 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center"><i className="fa-solid fa-camera"></i></button>
@@ -760,7 +788,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw-v4.0.js').then(registration => {
+                navigator.serviceWorker.register('./sw-v4.1.js').then(registration => {
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
                         installingWorker.onstatechange = () => {
