@@ -1,12 +1,12 @@
-<!-- 檔名：SeafoodBossApp_v4.9_Final.html -->
-<!-- 版本：v4.9 (Model Downgrade Fix) -->
-<!-- 核心：AI 模型更換為 gemini-2.0-flash-lite-preview-02-05 以解決連線問題。保留 v4.8 的 CORS 修正與 v4.7 的 UI。 -->
+<!-- 檔名：SeafoodBossApp_v4.8_Final.html -->
+<!-- 版本：v4.8 (Connection Fix Edition) -->
+<!-- 核心：修復 fetch 邏輯，增加 CORS 穩定性與錯誤回報。UI 維持 v4.7 不變。 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS (v4.9)</title>
+    <title>SEAFOOD.BOSS (v4.8)</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0284c7"> 
@@ -205,7 +205,7 @@
                     </div>
                     <div className="leading-tight">
                         <div className="font-black text-sm tracking-wider uppercase">{title}</div>
-                        <div className="text-[10px] opacity-80 font-mono">v4.9</div>
+                        <div className="text-[10px] opacity-80 font-mono">v4.8</div>
                     </div>
                 </div>
                 {showKey && (
@@ -301,7 +301,6 @@
             return (
                 <div className="dashboard-container">
                     <MainHeader />
-                    
                     <div className="sticky-top-area">
                         <div onClick={() => setPage('ai')} className="bg-white rounded-xl p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border-l-4 border-ai-main shadow-sm active:scale-95 transition-transform mb-3">
                             <div className="flex items-center space-x-3">
@@ -312,9 +311,7 @@
                         </div>
                         <OwnerLog logs={logs} setLogs={setLogs} />
                     </div>
-
                     <div className="w-full h-full bg-slate-50"></div>
-
                     <div className="force-bottom-container space-y-4">
                         <div>
                             <p className="text-[10px] text-alert-main font-bold mb-2 tracking-wider uppercase flex items-center gap-1">
@@ -326,7 +323,6 @@
                                 <TimerButton minutes={20} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} />
                             </div>
                         </div>
-
                         <div className="pb-4">
                             <p className="text-[10px] text-finance-dark font-bold mb-2 tracking-wider uppercase">Financials</p>
                             <div onClick={() => setPage('ops')} className="bg-gradient-to-br from-finance-dark to-finance-main rounded-xl shadow-lg p-4 flex items-center justify-between active:scale-95 transition-transform cursor-pointer border border-finance-dark">
@@ -345,7 +341,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div className="status-bar-fixed flex items-center justify-between px-4">
                         <span className="text-[10px] font-bold text-gray-400"><i className="fa-solid fa-gauge-high mr-1"></i>今日狀態</span>
                         <div className="flex items-center space-x-2">
@@ -612,7 +607,7 @@
             );
         };
 
-        // C. Private Secretary (v4.9 Model Downgrade Fix)
+        // C. Private Secretary (FIXED for v4.8)
         const PrivateSecretary = ({ settings, saveSettings, transactions, envData, logs }) => {
              const [input, setInput] = useState('');
              const [chat, setChat] = useState(() => {
@@ -676,9 +671,7 @@
                  setIsTyping(true);
                  
                  const currentKey = settings.apiKey ? settings.apiKey.trim() : '';
-                 
-                 // v4.9 CORE FIX: Use the specific "Lite" preview model
-                 const targetModel = 'gemini-2.0-flash-lite-preview-02-05';
+                 const targetModel = 'gemini-2.5-flash';
                  
                  if (!currentKey) { setTimeout(() => { setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: "請先設定 API Key。" }]); setIsTyping(false); setShowSettings(true); }, 500); return; }
                  
@@ -698,6 +691,7 @@
                  if (imageBase64) { parts.push({ inlineData: { mimeType: mimeType, data: imageBase64 } }); }
 
                  try {
+                     // v4.8 FIX: Added catch block for fetch errors explicitly
                      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${currentKey}`, {
                          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: parts }] })
                      });
@@ -710,13 +704,12 @@
                      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "無回應 (API 回傳空值)";
                      setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: aiText }]);
                  } catch (error) { 
-                     // Detailed Error Logging
+                     // Detailed Error Logging for v4.8
                      console.error("AI Error:", error);
                      let friendlyMsg = "連線失敗";
                      if (error.message.includes("400")) friendlyMsg = "API Key 錯誤或參數無效";
                      if (error.message.includes("403")) friendlyMsg = "權限不足 (API Key 限制)";
-                     if (error.message.includes("404")) friendlyMsg = `模型未開放 (${targetModel})`;
-                     if (error.message.includes("Failed to fetch")) friendlyMsg = "網路連線錯誤 (請檢查網路/CORS)";
+                     if (error.message.includes("Failed to fetch")) friendlyMsg = "網路連線錯誤 (請檢查網路)";
                      
                      setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: `${friendlyMsg} (${error.message})` }]); 
                  } finally { setIsTyping(false); }
@@ -827,7 +820,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw-v4.9.js').then(registration => {
+                navigator.serviceWorker.register('./sw-v4.8.js').then(registration => {
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
                         installingWorker.onstatechange = () => {
