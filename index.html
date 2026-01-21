@@ -1,12 +1,12 @@
-<!-- 檔名：SeafoodBossApp_v4.8_Final.html -->
-<!-- 版本：v4.8 (Connection Fix Edition) -->
-<!-- 核心：修復 fetch 邏輯，增加 CORS 穩定性與錯誤回報。UI 維持 v4.7 不變。 -->
+<!-- 檔名：SeafoodBossApp_Product_v1.0.html -->
+<!-- (上傳 GitHub 時請改名為 index.html) -->
+<!-- 修正：Service Worker 路徑指回 sw-v4.8.js 以配合覆蓋更新 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS (v4.8)</title>
+    <title>SEAFOOD.BOSS</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0284c7"> 
@@ -137,6 +137,12 @@
 
         .header-gradient { background: linear-gradient(to right, #0284c7, #0369a1); }
         .modal-overlay { z-index: 200; }
+        
+        /* Product Version Specific Styles */
+        .ai-placeholder-bg {
+            background-image: radial-gradient(#E0E7FF 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
     </style>
 </head>
 <body>
@@ -150,7 +156,7 @@
         const DB_KEY_LOGS = 'sf_logs';                 
         const DB_KEY_SETTINGS = 'sf_settings';         
         const DB_KEY_ENV = 'sf_daily_env';             
-        const DB_KEY_CHAT = 'sf_ai_chat';
+        // DB_KEY_CHAT removed for Product Version
 
         // --- Helpers ---
         const getTodayStr = () => new Date().toISOString().split('T')[0];
@@ -185,16 +191,6 @@
             return { isListening, startListening };
         };
 
-        const useTTS = () => {
-            const speak = (text) => {
-                if (!('speechSynthesis' in window)) return;
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'zh-TW'; utterance.rate = 1.0; 
-                window.speechSynthesis.cancel(); window.speechSynthesis.speak(utterance);
-            };
-            return { speak };
-        };
-
         // --- Components ---
 
         const MainHeader = ({ title = "SEAFOOD.BOSS", showKey = false, onKeyClick, themeClass = "header-gradient" }) => (
@@ -205,9 +201,10 @@
                     </div>
                     <div className="leading-tight">
                         <div className="font-black text-sm tracking-wider uppercase">{title}</div>
-                        <div className="text-[10px] opacity-80 font-mono">v4.8</div>
+                        <div className="text-[10px] opacity-80 font-mono">Product v1.0</div>
                     </div>
                 </div>
+                {/* Product Version: Hidden Settings Button by default unless forced */}
                 {showKey && (
                     <button onClick={onKeyClick} className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors">
                         <i className="fa-solid fa-gear text-xs"></i>
@@ -283,7 +280,7 @@
 
         // --- Pages ---
 
-        // A. Dashboard
+        // A. Dashboard (Product Version: Same as v4.8)
         const Dashboard = ({ setPage, transactions, logs, setLogs, activeTimer, startTimer, stopTimer, settings }) => {
             const today = getTodayStr();
             const todayStats = useMemo(() => {
@@ -352,7 +349,7 @@
             );
         };
 
-        // B. Operations
+        // B. Operations (Product Version: Same as v4.8)
         const Operations = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
@@ -607,154 +604,51 @@
             );
         };
 
-        // C. Private Secretary (FIXED for v4.8)
-        const PrivateSecretary = ({ settings, saveSettings, transactions, envData, logs }) => {
-             const [input, setInput] = useState('');
-             const [chat, setChat] = useState(() => {
-                 const saved = localStorage.getItem(DB_KEY_CHAT);
-                 return saved ? JSON.parse(saved) : [{ id: 1, role: 'ai', text: '老哥，今天還順利嗎？我是你的全能秘書。' }];
-             });
-             const [showSettings, setShowSettings] = useState(false);
-             const [apiKey, setApiKey] = useState(settings.apiKey || '');
-             const [isTyping, setIsTyping] = useState(false);
-             const messagesEndRef = useRef(null);
-             const fileInputRef = useRef(null);
-             const { isListening, startListening } = useVoiceInput((text) => setInput(prev => prev + text));
-             const { speak } = useTTS(); 
-
-             const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
+        // C. Private Secretary (PRODUCT VERSION: Dummy UI & Disconnected)
+        const PrivateSecretary = ({ settings, saveSettings }) => {
+             // NO API Key logic, NO Fetch, NO Chat State
              
-             useEffect(() => {
-                 if (chat.length > 50) {
-                     const pruned = chat.slice(chat.length - 50);
-                     setChat(pruned);
-                     localStorage.setItem(DB_KEY_CHAT, JSON.stringify(pruned));
-                 } else { localStorage.setItem(DB_KEY_CHAT, JSON.stringify(chat)); }
-                 scrollToBottom();
-             }, [chat]);
-
-             useEffect(() => { if (!settings.apiKey) { setShowSettings(true); } }, [settings.apiKey]);
-
-             const handleSaveSettings = () => {
-                 const cleanKey = apiKey.trim(); 
-                 setApiKey(cleanKey); saveSettings({...settings, apiKey: cleanKey}); setShowSettings(false);
-             };
-             const clearChat = () => { if(confirm("確定要清除所有對話紀錄嗎？")) { const initChat = [{ id: Date.now(), role: 'ai', text: '紀錄已清除。' }]; setChat(initChat); } };
-             
-             const startNewTopic = () => { 
-                setChat(prev => [...prev, 
-                    { id: Date.now(), role: 'system', text: '--- 開啟新話題 ---' },
-                    { id: Date.now()+1, role: 'ai', text: '好的老哥，我們重新開始。有什麼想聊的？' }
-                ]);
-             };
-             const handleImageUpload = async (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onloadend = () => { const base64String = reader.result.split(',')[1]; handleSend(base64String, file.type); }; reader.readAsDataURL(file); };
-
-             const getContextData = () => {
-                 const today = getTodayStr();
-                 const todayTrans = transactions.filter(t => t.date === today);
-                 const income = todayTrans.filter(t => t.type === 'income').reduce((acc, c) => acc + c.amount, 0);
-                 const expense = todayTrans.filter(t => t.type === 'expense').reduce((acc, c) => acc + c.amount, 0);
-                 const net = income - expense - (settings.dailyFixedCost || 0);
-                 const env = envData[today] || { weather: '未記錄', traffic: '未記錄' };
-                 const trafficText = env.traffic === 'slow' ? '冷清' : env.traffic === 'normal' ? '正常' : '爆滿';
-                 const recentLogs = logs.slice(0, 3).map(l => `[${l.timestamp}] ${l.text}`).join('; ');
-                 return `[今日] ${today}, 天氣:${env.weather}, 客流:${trafficText}, 營收:${income}, 支出:${expense}, 淨利:${net}, 筆記:${recentLogs}`;
-             };
-
-             const handleSend = async (imageBase64 = null, mimeType = null) => {
-                 const userMsg = input.trim() || (imageBase64 ? "[傳送了一張圖片]" : "");
-                 if(!userMsg) return; if(isTyping) return;
-                 const displayMsg = imageBase64 ? "[圖片已傳送]" : userMsg;
-                 
-                 setChat(prev => [...prev, { id: Date.now(), role: 'user', text: displayMsg }]);
-                 setInput(''); 
-                 setIsTyping(true);
-                 
-                 const currentKey = settings.apiKey ? settings.apiKey.trim() : '';
-                 const targetModel = 'gemini-2.5-flash';
-                 
-                 if (!currentKey) { setTimeout(() => { setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: "請先設定 API Key。" }]); setIsTyping(false); setShowSettings(true); }, 500); return; }
-                 
-                 const context = getContextData();
-                 
-                 const systemPrompt = `你是一位全能型商業秘書，也是老闆（老哥）的信任夥伴。
-                 [核心原則]
-                 1. 你的角色是「公私分明」的靈魂伴侶。
-                 2. 遇到【公事/營運/數據】：請切換為「專業顧問模式」。回答要極簡、列點、數據化、講求效率。你不只懂餐飲，也懂一般商業邏輯，請針對老闆的問題給出具體建議。
-                 3. 遇到【私事/心情/閒聊】：請切換為「溫暖閨蜜模式」。語氣輕鬆、感性、像個老朋友一樣聊天，可以多一點人情味，不要太僵硬。
-                 4. 永遠站在老闆這邊，懂他的辛苦。
-                 
-                 [店舖現況] ${context}
-                 [老闆的問題] ${imageBase64 ? "[老闆傳了一張圖片]" : input}`;
-                 
-                 const parts = [{ text: systemPrompt }];
-                 if (imageBase64) { parts.push({ inlineData: { mimeType: mimeType, data: imageBase64 } }); }
-
-                 try {
-                     // v4.8 FIX: Added catch block for fetch errors explicitly
-                     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${currentKey}`, {
-                         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: parts }] })
-                     });
-                     
-                     if (!response.ok) {
-                         const errText = await response.text();
-                         throw new Error(`HTTP ${response.status}: ${errText}`);
-                     }
-                     const data = await response.json();
-                     const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "無回應 (API 回傳空值)";
-                     setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: aiText }]);
-                 } catch (error) { 
-                     // Detailed Error Logging for v4.8
-                     console.error("AI Error:", error);
-                     let friendlyMsg = "連線失敗";
-                     if (error.message.includes("400")) friendlyMsg = "API Key 錯誤或參數無效";
-                     if (error.message.includes("403")) friendlyMsg = "權限不足 (API Key 限制)";
-                     if (error.message.includes("Failed to fetch")) friendlyMsg = "網路連線錯誤 (請檢查網路)";
-                     
-                     setChat(prev => [...prev, { id: Date.now()+1, role: 'ai', text: `${friendlyMsg} (${error.message})` }]); 
-                 } finally { setIsTyping(false); }
+             const showNotAvailable = () => {
+                 alert("【功能規劃中】\nAI 智慧顧問為未來擴充功能，敬請期待後續版本更新！");
              };
 
              return (
-                <div className="scrollable-page pb-[80px] bg-slate-50 relative flex flex-col">
+                <div className="scrollable-page pb-[80px] bg-slate-50 relative flex flex-col ai-placeholder-bg h-screen">
                     <div className="sticky top-0 z-[60]">
-                        <MainHeader title="私人秘書" themeClass="bg-ai-main" showKey={true} onKeyClick={() => setShowSettings(true)} />
+                        <MainHeader title="私人秘書" themeClass="bg-ai-main" showKey={false} />
                     </div>
                     
-                    <div className="flex-1 px-4 py-4 space-y-4">
-                        {chat.map(c => (
-                            <div key={c.id} className={`flex ${c.role === 'user' ? 'justify-end' : (c.role === 'system' ? 'justify-center' : 'justify-start')}`}>
-                                {c.role === 'system' ? <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded-full">{c.text}</span> : (
-                                    <div className={`flex flex-col ${c.role === 'user' ? 'items-end' : 'items-start'} max-w-[85%]`}>
-                                        <div className={`p-3 rounded-2xl shadow-sm text-sm ${c.role === 'user' ? 'bg-ai-main text-white rounded-br-none' : 'bg-white text-slate-700 border border-slate-100 rounded-bl-none'}`}>{c.text}</div>
-                                        {c.role === 'ai' && <button onClick={() => speak(c.text)} className="mt-1 text-gray-400 text-xs flex items-center gap-1 hover:text-ai-main"><i className="fa-solid fa-volume-high"></i></button>}
-                                    </div>
-                                )}
+                    <div className="flex-1 flex flex-col items-center justify-center px-6 text-center animate-fade-in pb-20">
+                        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg mb-6 relative">
+                            <div className="absolute inset-0 rounded-full border-4 border-ai-light animate-pulse-slow"></div>
+                            <i className="fa-solid fa-robot text-4xl text-ai-main"></i>
+                        </div>
+                        <h2 className="text-xl font-black text-slate-700 mb-2">AI 智慧顧問服務</h2>
+                        <div className="bg-ai-main text-white text-[10px] px-2 py-0.5 rounded-full mb-4 font-bold tracking-wider uppercase">Coming Soon</div>
+                        <p className="text-sm text-gray-400 max-w-[250px] leading-relaxed">
+                            我們正在為您的店舖訓練專屬的商業模型。此功能將協助您分析數據、提供營運建議。
+                        </p>
+                        
+                        <div className="mt-8 grid grid-cols-2 gap-3 w-full max-w-[280px]">
+                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm opacity-60">
+                                <i className="fa-solid fa-chart-line text-ai-main mb-2"></i>
+                                <div className="text-xs font-bold text-gray-600">營收分析</div>
                             </div>
-                        ))}
-                        {isTyping && <div className="flex justify-start"><div className="bg-white text-gray-400 p-3 rounded-2xl text-xs flex items-center border border-slate-100"><i className="fa-solid fa-circle-notch fa-spin mr-2"></i> 思考中...</div></div>}
-                        <div ref={messagesEndRef} />
-                    </div>
-                    
-                    <div className="fixed bottom-[60px] left-0 right-0 p-3 bg-white border-t border-slate-100 flex gap-2 z-50 items-center max-w-md mx-auto">
-                        <button onClick={startNewTopic} className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200"><i className="fa-solid fa-pen-to-square"></i></button>
-                        <button onClick={startListening} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-rose-50 text-rose-500'}`}><i className="fa-solid fa-microphone"></i></button>
-                        <button onClick={() => fileInputRef.current.click()} className="w-10 h-10 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center"><i className="fa-solid fa-camera"></i></button>
-                        <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
-                        <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} className="flex-1 bg-slate-100 rounded-full px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-ai-main/50" placeholder="輸入..." disabled={isTyping} />
-                        <button onClick={() => handleSend()} className={`w-11 h-11 rounded-full text-white flex items-center justify-center shadow-lg transition-transform ${isTyping ? 'bg-gray-400' : 'bg-ai-main active:scale-95'}`} disabled={isTyping}><i className="fa-solid fa-paper-plane text-xs"></i></button>
-                    </div>
-
-                    {showSettings && (
-                        <div className="fixed inset-0 bg-ai-dark bg-opacity-50 z-[200] flex items-center justify-center p-6 modal-overlay">
-                            <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
-                                <h3 className="font-bold text-ai-dark mb-2">秘書設定</h3>
-                                <input type="text" value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm mb-4 font-mono" placeholder="API Key..." />
-                                <button onClick={clearChat} className="w-full py-2 mb-4 text-red-500 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-50">清除所有對話紀錄</button>
-                                <div className="flex gap-3"><button onClick={() => setShowSettings(false)} className="flex-1 py-3 text-gray-500 font-bold bg-gray-100 rounded-lg">取消</button><button onClick={handleSaveSettings} className="flex-1 py-3 bg-ai-main text-white rounded-lg font-bold">儲存</button></div>
+                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm opacity-60">
+                                <i className="fa-solid fa-lightbulb text-ai-main mb-2"></i>
+                                <div className="text-xs font-bold text-gray-600">決策建議</div>
                             </div>
                         </div>
-                    )}
+                    </div>
+                    
+                    {/* Dummy Input Bar - Non-functional but visually consistent */}
+                    <div className="fixed bottom-[60px] left-0 right-0 p-3 bg-white border-t border-slate-100 flex gap-2 z-50 items-center max-w-md mx-auto opacity-80">
+                        <button onClick={showNotAvailable} className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center"><i className="fa-solid fa-pen-to-square"></i></button>
+                        <button onClick={showNotAvailable} className="w-10 h-10 rounded-full bg-rose-50 text-rose-300 flex items-center justify-center"><i className="fa-solid fa-microphone"></i></button>
+                        <button onClick={showNotAvailable} className="w-10 h-10 rounded-full bg-sky-50 text-sky-300 flex items-center justify-center"><i className="fa-solid fa-camera"></i></button>
+                        <div onClick={showNotAvailable} className="flex-1 bg-slate-100 rounded-full px-4 py-3 text-sm text-slate-400">功能暫未開放...</div>
+                        <button onClick={showNotAvailable} className="w-11 h-11 rounded-full bg-gray-300 text-white flex items-center justify-center shadow-sm"><i className="fa-solid fa-paper-plane text-xs"></i></button>
+                    </div>
                 </div>
              );
         };
@@ -763,7 +657,8 @@
             const [page, setPage] = useState('dashboard');
             const [transactions, setTransactions] = useState([]);
             const [logs, setLogs] = useState([]);
-            const [settings, setSettings] = useState({ dailyFixedCost: 0, apiKey: '', costItems: [] });
+            // Product Version: Removed apiKey from settings default
+            const [settings, setSettings] = useState({ dailyFixedCost: 0, costItems: [] });
             const [envData, setEnvData] = useState({});
             const [activeTimer, setActiveTimer] = useState(null);
             
@@ -798,7 +693,8 @@
                 <div className="bg-white max-w-md mx-auto relative shadow-2xl h-full">
                      {page === 'dashboard' && <Dashboard setPage={setPage} transactions={transactions} logs={logs} setLogs={setLogs} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} settings={settings} />}
                      {page === 'ops' && <Operations transactions={transactions} setTransactions={setTransactions} settings={settings} saveSettings={saveSettings} envData={envData} setEnvData={setEnvData} />}
-                     {page === 'ai' && <PrivateSecretary settings={settings} saveSettings={saveSettings} transactions={transactions} envData={envData} logs={logs} />}
+                     {/* Product Version: PrivateSecretary now uses reduced props */}
+                     {page === 'ai' && <PrivateSecretary settings={settings} saveSettings={saveSettings} />}
                     
                     <div className="fixed bottom-0 left-0 right-0 h-[60px] bg-white border-t border-slate-100 flex justify-around items-center z-[100] max-w-md mx-auto">
                         <button onClick={() => setPage('dashboard')} className={`flex flex-col items-center w-full py-2 transition-colors ${page === 'dashboard' ? 'text-navy-900' : 'text-gray-300'}`}>
@@ -820,6 +716,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
+                // Product Version: Updated SW filename to match sw-v4.8.js
                 navigator.serviceWorker.register('./sw-v4.8.js').then(registration => {
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
