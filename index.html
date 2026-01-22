@@ -1,6 +1,7 @@
-<!-- 檔名：SeafoodBossApp_Product_v1.0.html -->
-<!-- (上傳 GitHub 時請改名為 index.html) -->
-<!-- 修正：Service Worker 路徑指回 sw-v4.8.js 以配合覆蓋更新 -->
+<!-- 檔名：SeafoodBossApp_v6.8_Stable.html -->
+<!-- 版本：v6.8 (v4.8 Core + Advanced Todo) -->
+<!-- 核心：100% 保留 v4.8 原始結構。新增進階待辦事項（含日期、分類、細節、金額）。 -->
+<!-- 上傳 GitHub 時請務必改名為 index.html -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -49,6 +50,11 @@
                         },
                         alert: {
                             main: '#EA580C', 
+                        },
+                        todo: {
+                            main: '#F43F5E', // 待辦事項主色 (螢光紅)
+                            light: '#FFE4E6',
+                            text: '#881337'
                         }
                     },
                     animation: {
@@ -138,10 +144,28 @@
         .header-gradient { background: linear-gradient(to right, #0284c7, #0369a1); }
         .modal-overlay { z-index: 200; }
         
-        /* Product Version Specific Styles */
-        .ai-placeholder-bg {
-            background-image: radial-gradient(#E0E7FF 1px, transparent 1px);
-            background-size: 20px 20px;
+        /* Custom Checkbox for Todo */
+        .todo-checkbox {
+            appearance: none;
+            width: 1.2rem;
+            height: 1.2rem;
+            border: 2px solid #E2E8F0;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            background: white;
+        }
+        .todo-checkbox:checked {
+            background-color: #F43F5E;
+            border-color: #F43F5E;
+        }
+        .todo-checkbox:checked::after {
+            content: '✔';
+            color: white;
+            font-size: 0.8rem;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -156,7 +180,8 @@
         const DB_KEY_LOGS = 'sf_logs';                 
         const DB_KEY_SETTINGS = 'sf_settings';         
         const DB_KEY_ENV = 'sf_daily_env';             
-        // DB_KEY_CHAT removed for Product Version
+        // DB_KEY_CHAT 保留但不使用
+        const DB_KEY_TODOS = 'sf_todos_advanced_v1'; // 新增進階待辦 Key
 
         // --- Helpers ---
         const getTodayStr = () => new Date().toISOString().split('T')[0];
@@ -201,15 +226,10 @@
                     </div>
                     <div className="leading-tight">
                         <div className="font-black text-sm tracking-wider uppercase">{title}</div>
-                        <div className="text-[10px] opacity-80 font-mono">Product v1.0</div>
+                        <div className="text-[10px] opacity-80 font-mono">Product v6.8</div>
                     </div>
                 </div>
-                {/* Product Version: Hidden Settings Button by default unless forced */}
-                {showKey && (
-                    <button onClick={onKeyClick} className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors">
-                        <i className="fa-solid fa-gear text-xs"></i>
-                    </button>
-                )}
+                {/* Product Version: Settings mostly hidden */}
             </div>
         );
 
@@ -280,8 +300,8 @@
 
         // --- Pages ---
 
-        // A. Dashboard (Product Version: Same as v4.8)
-        const Dashboard = ({ setPage, transactions, logs, setLogs, activeTimer, startTimer, stopTimer, settings }) => {
+        // A. Dashboard (微調：AI 位置換成 待辦事項入口)
+        const Dashboard = ({ setPage, transactions, logs, setLogs, activeTimer, startTimer, stopTimer, settings, todos }) => {
             const today = getTodayStr();
             const todayStats = useMemo(() => {
                 const todayTrans = transactions.filter(t => t.date === today);
@@ -295,16 +315,23 @@
                 return { net, status, color };
             }, [transactions, settings, today]);
 
+            // 計算今日未完成
+            const pendingCount = todos.filter(t => t.date === today && !t.done).length;
+
             return (
                 <div className="dashboard-container">
                     <MainHeader />
                     <div className="sticky-top-area">
-                        <div onClick={() => setPage('ai')} className="bg-white rounded-xl p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border-l-4 border-ai-main shadow-sm active:scale-95 transition-transform mb-3">
+                        {/* Modified: AI Button -> Todo Entry */}
+                        <div onClick={() => setPage('todo')} className="bg-white rounded-xl p-2 pl-4 pr-2 flex items-center justify-between cursor-pointer border-l-4 border-todo-main shadow-sm active:scale-95 transition-transform mb-3">
                             <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-ai-main rounded-full flex items-center justify-center text-white shadow-md"><i className="fa-solid fa-user-tie text-xs"></i></div>
-                                <span className="text-gray-600 text-xs font-bold">問問私人秘書...</span>
+                                <div className="w-8 h-8 bg-todo-main rounded-full flex items-center justify-center text-white shadow-md"><i className="fa-solid fa-clipboard-check text-xs"></i></div>
+                                <div>
+                                    <div className="text-gray-600 text-xs font-bold">待辦事項</div>
+                                    <div className="text-[10px] text-gray-400">今日尚有 <span className="text-todo-main font-bold">{pendingCount}</span> 項未完成</div>
+                                </div>
                             </div>
-                            <div className="w-8 h-8 bg-ai-light rounded-full flex items-center justify-center text-ai-main shadow-sm"><i className="fa-solid fa-microphone text-xs"></i></div>
+                            <div className="w-8 h-8 bg-todo-light rounded-full flex items-center justify-center text-todo-main shadow-sm"><i className="fa-solid fa-chevron-right text-xs"></i></div>
                         </div>
                         <OwnerLog logs={logs} setLogs={setLogs} />
                     </div>
@@ -349,7 +376,7 @@
             );
         };
 
-        // B. Operations (Product Version: Same as v4.8)
+        // B. Operations (Strictly Original Code from v4.8)
         const Operations = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
@@ -604,50 +631,144 @@
             );
         };
 
-        // C. Private Secretary (PRODUCT VERSION: Dummy UI & Disconnected)
-        const PrivateSecretary = ({ settings, saveSettings }) => {
-             // NO API Key logic, NO Fetch, NO Chat State
-             
-             const showNotAvailable = () => {
-                 alert("【功能規劃中】\nAI 智慧顧問為未來擴充功能，敬請期待後續版本更新！");
-             };
+        // C. Todo Page (全新升級版)
+        const TodoPage = ({ todos, setTodos }) => {
+            const categories = ['進料', '款項', '員工', '修繕', '其他'];
+            const [dateTab, setDateTab] = useState('today'); // 'today', 'tomorrow'
+            const [activeCat, setActiveCat] = useState('進料');
+            const [itemInput, setItemInput] = useState(''); // 事項名稱
+            const [detailInput, setDetailInput] = useState(''); // 金額或細節
+            const { isListening, startListening } = useVoiceInput((text) => setItemInput(prev => prev + text));
 
-             return (
-                <div className="scrollable-page pb-[80px] bg-slate-50 relative flex flex-col ai-placeholder-bg h-screen">
+            // Logic: 根據日期 (今日/明日) 篩選
+            const todayStr = getTodayStr();
+            const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = tomorrow.toISOString().split('T')[0];
+            const targetDate = dateTab === 'today' ? todayStr : tomorrowStr;
+
+            const filteredTodos = todos.filter(t => t.date === targetDate);
+
+            const addTodo = () => {
+                if(!itemInput.trim()) return;
+                const newItem = { 
+                    id: Date.now(), 
+                    text: itemInput, 
+                    detail: detailInput, 
+                    category: activeCat, 
+                    done: false, 
+                    date: targetDate 
+                };
+                const updated = [newItem, ...todos];
+                setTodos(updated);
+                localStorage.setItem(DB_KEY_TODOS, JSON.stringify(updated));
+                setItemInput(''); setDetailInput('');
+            };
+
+            const toggleDone = (id) => {
+                const updated = todos.map(t => t.id === id ? { ...t, done: !t.done } : t);
+                setTodos(updated);
+                localStorage.setItem(DB_KEY_TODOS, JSON.stringify(updated));
+            };
+
+            const deleteTodo = (id) => {
+                const updated = todos.filter(t => t.id !== id);
+                setTodos(updated);
+                localStorage.setItem(DB_KEY_TODOS, JSON.stringify(updated));
+            };
+
+            return (
+                <div className="scrollable-page pb-[80px] bg-slate-50 relative flex flex-col">
                     <div className="sticky top-0 z-[60]">
-                        <MainHeader title="私人秘書" themeClass="bg-ai-main" showKey={false} />
+                        <MainHeader title="待辦事項" themeClass="bg-todo-main" />
                     </div>
-                    
+
+                    <div className="flex-1 px-4 py-4">
+                        {/* Date Tabs (今日/明日) */}
+                        <div className="flex bg-white p-1 rounded-xl shadow-sm mb-4 border border-gray-100">
+                            <button onClick={() => setDateTab('today')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${dateTab === 'today' ? 'bg-todo-main text-white shadow' : 'text-gray-400'}`}>今日戰情</button>
+                            <button onClick={() => setDateTab('tomorrow')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${dateTab === 'tomorrow' ? 'bg-orange-400 text-white shadow' : 'text-gray-400'}`}>明日預排</button>
+                        </div>
+
+                        {/* Input Section */}
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4">
+                            {/* Categories */}
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar mb-3 pb-1">
+                                {categories.map(cat => (
+                                    <button 
+                                        key={cat}
+                                        onClick={() => setActiveCat(cat)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${activeCat === cat ? 'bg-todo-main text-white' : 'bg-gray-100 text-gray-500'}`}
+                                    >
+                                        {cat}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            <div className="space-y-3">
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">預估/細節</span>
+                                    <input 
+                                        type="text" 
+                                        value={detailInput} 
+                                        onChange={e => setDetailInput(e.target.value)} 
+                                        className="w-full bg-gray-50 rounded-lg pl-20 pr-3 py-2 text-sm focus:outline-none border border-transparent focus:border-todo-main/30" 
+                                        placeholder="例：$5000 或 廠商電話..." 
+                                    />
+                                </div>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        value={itemInput} 
+                                        onChange={e => setItemInput(e.target.value)} 
+                                        className="flex-1 bg-gray-50 rounded-lg px-3 py-2 text-sm focus:outline-none border border-transparent focus:border-todo-main/30" 
+                                        placeholder="事項名稱..." 
+                                    />
+                                    <button onClick={startListening} className={`w-10 rounded-lg flex items-center justify-center shrink-0 ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 text-gray-400'}`}><i className="fa-solid fa-microphone"></i></button>
+                                </div>
+                                <button onClick={addTodo} className="w-full py-3 bg-todo-main text-white rounded-lg font-bold text-sm shadow-md active:scale-95 transition-transform"><i className="fa-solid fa-plus mr-1"></i> 新增至{dateTab === 'today' ? '今日' : '明日'}</button>
+                            </div>
+                        </div>
+
+                        {/* List */}
+                        <div className="space-y-3">
+                            {filteredTodos.length === 0 && <div className="text-center text-gray-300 py-10 text-xs">目前無待辦事項</div>}
+                            {filteredTodos.map(item => (
+                                <div key={item.id} className={`flex items-start p-3 rounded-xl border transition-all ${item.done ? 'bg-slate-50 border-transparent opacity-60' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={item.done} 
+                                        onChange={() => toggleDone(item.id)}
+                                        className="todo-checkbox shrink-0 mr-3 mt-1 cursor-pointer"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-[10px] text-white bg-slate-400 px-1.5 rounded-md">{item.category}</span>
+                                            <span className={`text-sm font-bold truncate ${item.done ? 'text-gray-400 line-through' : 'text-slate-700'}`}>{item.text}</span>
+                                        </div>
+                                        {item.detail && <div className="text-xs text-gray-500 font-mono ml-1"><i className="fa-solid fa-caret-right text-gray-300 mr-1"></i>{item.detail}</div>}
+                                    </div>
+                                    <button onClick={() => deleteTodo(item.id)} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-400"><i className="fa-solid fa-xmark"></i></button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // D. Dummy AI Page (位置互換後的降級版)
+        const DummyAI = () => {
+             const showNotAvailable = () => { alert("AI 功能目前規劃中"); };
+             return (
+                <div className="scrollable-page pb-[80px] bg-slate-50 relative flex flex-col h-screen">
+                    <div className="sticky top-0 z-[60]">
+                        <MainHeader title="私人秘書" themeClass="bg-ai-main" />
+                    </div>
                     <div className="flex-1 flex flex-col items-center justify-center px-6 text-center animate-fade-in pb-20">
-                        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg mb-6 relative">
-                            <div className="absolute inset-0 rounded-full border-4 border-ai-light animate-pulse-slow"></div>
-                            <i className="fa-solid fa-robot text-4xl text-ai-main"></i>
-                        </div>
-                        <h2 className="text-xl font-black text-slate-700 mb-2">AI 智慧顧問服務</h2>
+                        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg mb-6 text-ai-main text-4xl"><i className="fa-solid fa-robot"></i></div>
+                        <h2 className="text-xl font-black text-slate-700 mb-2">AI 智慧顧問</h2>
                         <div className="bg-ai-main text-white text-[10px] px-2 py-0.5 rounded-full mb-4 font-bold tracking-wider uppercase">Coming Soon</div>
-                        <p className="text-sm text-gray-400 max-w-[250px] leading-relaxed">
-                            我們正在為您的店舖訓練專屬的商業模型。此功能將協助您分析數據、提供營運建議。
-                        </p>
-                        
-                        <div className="mt-8 grid grid-cols-2 gap-3 w-full max-w-[280px]">
-                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm opacity-60">
-                                <i className="fa-solid fa-chart-line text-ai-main mb-2"></i>
-                                <div className="text-xs font-bold text-gray-600">營收分析</div>
-                            </div>
-                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm opacity-60">
-                                <i className="fa-solid fa-lightbulb text-ai-main mb-2"></i>
-                                <div className="text-xs font-bold text-gray-600">決策建議</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {/* Dummy Input Bar - Non-functional but visually consistent */}
-                    <div className="fixed bottom-[60px] left-0 right-0 p-3 bg-white border-t border-slate-100 flex gap-2 z-50 items-center max-w-md mx-auto opacity-80">
-                        <button onClick={showNotAvailable} className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center"><i className="fa-solid fa-pen-to-square"></i></button>
-                        <button onClick={showNotAvailable} className="w-10 h-10 rounded-full bg-rose-50 text-rose-300 flex items-center justify-center"><i className="fa-solid fa-microphone"></i></button>
-                        <button onClick={showNotAvailable} className="w-10 h-10 rounded-full bg-sky-50 text-sky-300 flex items-center justify-center"><i className="fa-solid fa-camera"></i></button>
-                        <div onClick={showNotAvailable} className="flex-1 bg-slate-100 rounded-full px-4 py-3 text-sm text-slate-400">功能暫未開放...</div>
-                        <button onClick={showNotAvailable} className="w-11 h-11 rounded-full bg-gray-300 text-white flex items-center justify-center shadow-sm"><i className="fa-solid fa-paper-plane text-xs"></i></button>
+                        <p className="text-sm text-gray-400 max-w-[250px] leading-relaxed">此功能將協助您分析數據、提供營運建議。</p>
                     </div>
                 </div>
              );
@@ -657,7 +778,7 @@
             const [page, setPage] = useState('dashboard');
             const [transactions, setTransactions] = useState([]);
             const [logs, setLogs] = useState([]);
-            // Product Version: Removed apiKey from settings default
+            const [todos, setTodos] = useState([]); // 新增 todos state
             const [settings, setSettings] = useState({ dailyFixedCost: 0, costItems: [] });
             const [envData, setEnvData] = useState({});
             const [activeTimer, setActiveTimer] = useState(null);
@@ -667,6 +788,7 @@
                 const l = localStorage.getItem(DB_KEY_LOGS); if(l) setLogs(JSON.parse(l));
                 const s = localStorage.getItem(DB_KEY_SETTINGS); if(s) setSettings(JSON.parse(s));
                 const e = localStorage.getItem(DB_KEY_ENV); if(e) setEnvData(JSON.parse(e));
+                const d = localStorage.getItem(DB_KEY_TODOS); if(d) setTodos(JSON.parse(d)); // Load Todos
             }, []);
 
             const saveSettings = (newSettings) => {
@@ -691,10 +813,10 @@
 
             return (
                 <div className="bg-white max-w-md mx-auto relative shadow-2xl h-full">
-                     {page === 'dashboard' && <Dashboard setPage={setPage} transactions={transactions} logs={logs} setLogs={setLogs} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} settings={settings} />}
+                     {page === 'dashboard' && <Dashboard setPage={setPage} transactions={transactions} logs={logs} setLogs={setLogs} activeTimer={activeTimer} startTimer={startTimer} stopTimer={stopTimer} settings={settings} todos={todos} />}
                      {page === 'ops' && <Operations transactions={transactions} setTransactions={setTransactions} settings={settings} saveSettings={saveSettings} envData={envData} setEnvData={setEnvData} />}
-                     {/* Product Version: PrivateSecretary now uses reduced props */}
-                     {page === 'ai' && <PrivateSecretary settings={settings} saveSettings={saveSettings} />}
+                     {page === 'todo' && <TodoPage todos={todos} setTodos={setTodos} />}
+                     {page === 'ai' && <DummyAI />}
                     
                     <div className="fixed bottom-0 left-0 right-0 h-[60px] bg-white border-t border-slate-100 flex justify-around items-center z-[100] max-w-md mx-auto">
                         <button onClick={() => setPage('dashboard')} className={`flex flex-col items-center w-full py-2 transition-colors ${page === 'dashboard' ? 'text-navy-900' : 'text-gray-300'}`}>
@@ -716,7 +838,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // Product Version: Updated SW filename to match sw-v4.8.js
+                // 維持 v4.8 的 SW 路徑，確保能無痛覆蓋
                 navigator.serviceWorker.register('./sw-v4.8.js').then(registration => {
                     registration.onupdatefound = () => {
                         const installingWorker = registration.installing;
