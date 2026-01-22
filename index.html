@@ -1,12 +1,12 @@
 <!-- 檔名：index.html -->
-<!-- 版本：v7.2 (Final Structure Fix) -->
-<!-- 修正：營運頁面滑動解鎖、首頁加入今日戰情與AI入口 -->
+<!-- 版本：v7.3 (Privacy Shield Edition) -->
+<!-- 修正：移除首頁敏感數據，改為隱私狀態面板 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS v7.2</title>
+    <title>SEAFOOD.BOSS v7.3</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#F8FAFC"> 
@@ -32,7 +32,7 @@
                         rose: { 50: '#FFF1F2', 100: '#FFE4E6', 500: '#F43F5E' },                    
                         emerald: { 50: '#ECFDF5', 100: '#D1FAE5', 500: '#10B981' },                 
                         orange: { 50: '#FFF7ED', 100: '#FFEDD5', 500: '#F97316' }, 
-                        violet: { 50: '#F5F3FF', 500: '#8B5CF6' } // AI Color
+                        violet: { 50: '#F5F3FF', 500: '#8B5CF6' } 
                     },
                     boxShadow: {
                         'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
@@ -74,7 +74,6 @@
         .fixed-controls {
             flex: none; 
             z-index: 10;
-            /* 移除 padding-bottom，減少高度佔用 */
         }
         .scrollable-content {
             flex: 1;
@@ -170,7 +169,7 @@
                     {showBack ? (
                         <h1 className={`text-base font-bold tracking-wide ${themeColor}`}>{title}</h1>
                     ) : (
-                        <div className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">v7.2</div>
+                        <div className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">v7.3</div>
                     )}
                 </div>
             </div>
@@ -178,8 +177,9 @@
 
         // --- Pages ---
 
-        // 1. Home Gateway (Updated Layout)
-        const HomeGateway = ({ setPage, todayStats }) => {
+        // 1. Home Gateway (Privacy Shield Updated)
+        const HomeGateway = ({ setPage }) => {
+            const todayStr = getTodayStr();
             return (
                 <div className="h-full flex flex-col p-6 animate-fade-in relative bg-slate-50 pt-[80px]">
                     {/* Main Grid */}
@@ -210,30 +210,24 @@
                         </button>
                     </div>
 
-                    {/* Today's Status (Restored) */}
+                    {/* Privacy Status Card (Replaced Net Profit) */}
                     <div className="w-full max-w-sm mx-auto mb-4 animate-slide-up" style={{animationDelay: '0.1s'}}>
                         <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-soft flex items-center justify-between">
                             <div>
-                                <div className="text-[10px] text-slate-400 font-bold mb-1">今日概況</div>
-                                <div className="flex items-baseline gap-2">
-                                    <span className={`text-xl font-black ${todayStats.net >= 0 ? 'text-slate-700' : 'text-rose-500'}`}>
-                                        {todayStats.net > 0 ? '+' : ''}{todayStats.net.toLocaleString()}
-                                    </span>
-                                    <span className="text-xs text-slate-400">淨利</span>
+                                <div className="text-[10px] text-slate-400 font-bold mb-1">系統狀態</div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-[pulse_2s_infinite]"></div>
+                                    <span className="text-sm font-bold text-slate-600 tracking-wide">Privacy Active</span>
                                 </div>
                             </div>
-                            <div className="h-8 w-[1px] bg-slate-100"></div>
                             <div className="text-right">
-                                <div className="text-[10px] text-slate-400 font-bold mb-1">待辦事項</div>
-                                <div className="flex items-baseline gap-2 justify-end">
-                                    <span className="text-xl font-black text-rose-500">{todayStats.pendingTodos}</span>
-                                    <span className="text-xs text-slate-400">未完成</span>
-                                </div>
+                                <div className="text-[10px] text-slate-400 font-bold mb-1">今日日期</div>
+                                <div className="text-lg font-black text-slate-700 tracking-tight">{todayStr}</div>
                             </div>
                         </div>
                     </div>
 
-                    {/* AI Secretary (Restored) */}
+                    {/* AI Secretary */}
                     <button className="w-full max-w-sm mx-auto bg-violet-50 rounded-xl p-4 border border-violet-100 shadow-sm flex items-center gap-4 group active:scale-95 transition-all animate-slide-up" style={{animationDelay: '0.2s'}}>
                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
                             <i className="fa-solid fa-robot text-violet-500"></i>
@@ -248,7 +242,7 @@
             );
         };
 
-        // 2. Operations Page (Fix: Scrollable Content)
+        // 2. Operations Page (Scrollable)
         const OperationsPage = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
@@ -296,9 +290,8 @@
 
             return (
                 <div className="page-container bg-sky-50 animate-slide-up">
-                    {/* Only the Period Switcher is Fixed now */}
                     <div className="fixed-controls px-4 bg-sky-50">
-                        <div className="flex justify-between items-center pt-2">
+                        <div className="flex justify-between items-center mb-3 pt-2">
                             <div className="bg-white p-1 rounded-lg border border-slate-200 inline-flex shadow-sm">
                                 {['day', 'month', 'year'].map(p => (
                                     <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1 rounded text-xs font-bold transition-all ${period === p ? 'bg-sky-500 text-white shadow' : 'text-slate-400'}`}>{p === 'day' ? '日' : p === 'month' ? '月' : '年'}</button>
@@ -316,10 +309,8 @@
                         </div>
                     </div>
 
-                    {/* All Content is now Scrollable */}
                     <div className="scrollable-content px-4">
-                        {/* Net Card - Moved Here */}
-                        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-soft relative overflow-hidden mb-3 mt-3">
+                        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-soft relative overflow-hidden mb-3">
                             <div className="absolute right-0 top-0 p-4 opacity-10 text-sky-500"><i className="fa-solid fa-chart-line text-6xl"></i></div>
                             <div className="relative z-10 flex justify-between items-center">
                                 <div><div className="text-[10px] text-sky-500 font-bold tracking-wider mb-1">淨利結餘</div><div className={`text-2xl font-black ${stats.net >= 0 ? 'text-slate-700' : 'text-rose-500'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</div></div>
@@ -327,7 +318,6 @@
                             </div>
                         </div>
 
-                        {/* Env - Moved Here */}
                         {period === 'day' && (
                             <div className="flex items-center gap-2 mb-3">
                                 <div className="flex space-x-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
@@ -339,13 +329,11 @@
                             </div>
                         )}
 
-                        {/* Buttons - Moved Here */}
                         <div className="grid grid-cols-2 gap-3 mb-4">
                             <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-sky-600 border border-sky-100 py-3 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm active:scale-95"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
                             <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-rose-500 border border-rose-100 py-3 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm active:scale-95"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
                         </div>
 
-                        {/* Calendar - Moved Here */}
                         {period === 'month' && (
                             <div className="mb-4 bg-white rounded-xl p-3 border border-slate-100 shadow-sm">
                                 <div className="flex justify-between items-center mb-2 cursor-pointer" onClick={() => setIsCalExpanded(!isCalExpanded)}>
@@ -374,7 +362,6 @@
                             </div>
                         )}
 
-                        {/* List */}
                         <div className="border-t border-sky-200/50 pt-2 mt-2">
                             {stats.listData.length === 0 ? (
                                 <div className="text-center py-10 opacity-40 text-slate-400"><i className="fa-solid fa-clipboard-list text-2xl mb-2"></i><p className="text-xs">本日無帳務</p></div>
@@ -429,7 +416,6 @@
             );
         };
 
-        // 3. Todo Page (Restored)
         const TodoPage = ({ todos, setTodos }) => {
             const categories = ['進料', '款項', '員工', '修繕', '其他'];
             const [dateTab, setDateTab] = useState('today');
@@ -493,7 +479,6 @@
             );
         };
 
-        // 4. Note Page (Restored)
         const NotePage = ({ logs, setLogs }) => {
             const [input, setInput] = useState('');
             const { isListening, startListening } = useVoiceInput((text) => setInput(prev => prev + text));
@@ -523,7 +508,6 @@
             );
         };
 
-        // 5. Timer (Restored)
         const TimerPage = ({ activeTimer, startTimer, stopTimer }) => {
             return (
                  <div className="page-container bg-orange-50 animate-slide-up">
@@ -568,30 +552,6 @@
             const startTimer = (m) => { setActiveTimer({ minutes: m, startTime: Date.now() }); };
             const stopTimer = () => { setActiveTimer(null); };
 
-            // Calculate Today's Stats for Home Gateway
-            const todayStats = useMemo(() => {
-                const today = getTodayStr();
-                const todayTrans = transactions.filter(t => t.date === today);
-                const income = todayTrans.filter(t => t.type === 'income').reduce((a,c) => a+c.amount, 0);
-                const expense = todayTrans.filter(t => t.type === 'expense').reduce((a,c) => a+c.amount, 0);
-                const net = income - expense;
-                const pendingTodos = todos.filter(t => t.date === today && !t.done).length;
-                return { net, pendingTodos };
-            }, [transactions, todos]);
-
-            useEffect(() => {
-                let interval;
-                if (activeTimer) {
-                    interval = setInterval(() => {
-                        const elapsed = (Date.now() - activeTimer.startTime) / 1000;
-                        if (elapsed >= activeTimer.minutes * 60) {
-                            if(navigator.vibrate) navigator.vibrate([500, 200, 500]);
-                            alert('時間到！'); setActiveTimer(null);
-                        }
-                    }, 1000);
-                } return () => clearInterval(interval);
-            }, [activeTimer]);
-
             const titles = { ops: '營運報表', todo: '火線任務', note: '營運筆記', timer: '暫離鎖定' };
             const themeColors = { ops: 'text-sky-600', todo: 'text-rose-500', note: 'text-emerald-500', timer: 'text-orange-500' };
 
@@ -600,7 +560,7 @@
                     {page === 'home' ? (
                         <>
                             <Header showBack={false} />
-                            <HomeGateway setPage={setPage} todayStats={todayStats} />
+                            <HomeGateway setPage={setPage} />
                         </>
                     ) : (
                         <>
@@ -620,7 +580,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // 自動清除腳本保留，並註冊 v7.2
+                // 自動清除腳本保留，並註冊 v7.3
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                     for(let registration of registrations) {
                         if (registration.active && registration.active.scriptURL.includes('sw-v4.8.js')) {
@@ -628,7 +588,7 @@
                         }
                     }
                 }).then(() => {
-                    return navigator.serviceWorker.register('./sw-v7.2.js');
+                    return navigator.serviceWorker.register('./sw-v7.3.js');
                 });
             });
         }
