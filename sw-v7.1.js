@@ -2,7 +2,7 @@
 // 版本：v7.1 Light Pro
 // 說明：強制清除舊版 Dark Mode 快取，載入全新 Light Mode
 
-const CACHE_NAME = 'seafood-boss-v7.1-light'; 
+const CACHE_NAME = 'seafood-boss-v7.1-light-fix'; 
 
 const ASSETS_TO_CACHE = [
     './',
@@ -21,7 +21,7 @@ self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
-// 2. 啟用 & 清除舊版 (殺掉 v7.0-neon 等所有舊檔)
+// 2. 啟用 & 清除舊版 (殺掉 v7.0-neon, v4.8 等所有舊檔)
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {

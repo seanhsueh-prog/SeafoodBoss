@@ -1,6 +1,6 @@
 <!-- 檔名：index.html -->
-<!-- 版本：v7.1 (Light Mode Pro) -->
-<!-- 特色：極簡白風格、項目專屬淺底色、品牌識別回歸、操作區鎖定 -->
+<!-- 版本：v7.1 (Light Mode Pro - Fix 2) -->
+<!-- 修正：首頁 Header 回歸、Logo 顯示正常、極簡白風格 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -14,22 +14,24 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="./icons/icon-192.png">
 
+    <!-- 外部資源 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Tailwind 設定 -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
                         slate: { 50: '#F8FAFC', 100: '#F1F5F9', 200: '#E2E8F0', 700: '#334155', 800: '#1E293B' },
-                        sky: { 50: '#F0F9FF', 100: '#E0F2FE', 500: '#0EA5E9', 600: '#0284C7' },     // 營運色
-                        rose: { 50: '#FFF1F2', 100: '#FFE4E6', 500: '#F43F5E' },                    // 待辦色
-                        emerald: { 50: '#ECFDF5', 100: '#D1FAE5', 500: '#10B981' },                 // 筆記色
-                        orange: { 50: '#FFF7ED', 100: '#FFEDD5', 500: '#F97316' },                  // 暫離色
+                        sky: { 50: '#F0F9FF', 100: '#E0F2FE', 500: '#0EA5E9', 600: '#0284C7' },     
+                        rose: { 50: '#FFF1F2', 100: '#FFE4E6', 500: '#F43F5E' },                    
+                        emerald: { 50: '#ECFDF5', 100: '#D1FAE5', 500: '#10B981' },                 
+                        orange: { 50: '#FFF7ED', 100: '#FFEDD5', 500: '#F97316' },                  
                     },
                     boxShadow: {
                         'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
@@ -50,7 +52,7 @@
 
     <style>
         body {
-            background-color: #F8FAFC; /* 極簡微灰白 */
+            background-color: #F8FAFC; 
             color: #334155;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             -webkit-tap-highlight-color: transparent;
@@ -62,7 +64,7 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Sticky Layout Architecture */
+        /* Layout Architecture */
         .page-container {
             height: 100%;
             display: flex;
@@ -73,7 +75,6 @@
             flex: none; 
             z-index: 10;
             padding-bottom: 10px;
-            /* 背景色由各頁面組件動態決定，以達成無縫融合 */
         }
         .scrollable-content {
             flex: 1;
@@ -83,9 +84,9 @@
             position: relative;
         }
 
-        /* Glass Header (Light Version) */
+        /* Glass Header */
         .glass-header {
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(0, 0, 0, 0.05);
@@ -144,38 +145,44 @@
         // --- Shared Components ---
 
         const Header = ({ title, showBack, onBack, themeColor = 'text-slate-700' }) => (
-            <div className="fixed top-0 left-0 right-0 h-[60px] z-50 glass-header flex items-center justify-between px-5 transition-all">
+            <div className="fixed top-0 left-0 right-0 h-[60px] z-50 glass-header flex items-center justify-between px-5">
                 <div className="flex items-center gap-3">
                     {showBack ? (
                         <button onClick={onBack} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 active:scale-90 transition-transform">
                             <i className="fa-solid fa-chevron-left"></i>
                         </button>
                     ) : (
-                        <div className="flex items-center gap-2">
-                            {/* Logo: Fish Icon + Brand Name */}
-                            <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center">
+                        <div className="flex items-center gap-3 animate-fade-in">
+                            {/* Logo 修正：大小適中 */}
+                            <div className="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center shadow-sm border border-sky-100">
                                 <i className="fa-solid fa-fish text-sky-600 text-sm"></i>
                             </div>
-                            <span className="text-sm font-bold text-slate-700 tracking-wide">SEAFOOD.BOSS</span>
+                            <div className="flex flex-col">
+                                <span className="text-sm font-black text-slate-800 tracking-wide leading-none">SEAFOOD<span className="text-sky-500">.BOSS</span></span>
+                                <span className="text-[10px] text-slate-400 font-bold tracking-wider">PROFESSIONAL</span>
+                            </div>
                         </div>
                     )}
-                    {showBack && <h1 className={`text-base font-bold tracking-wide ${themeColor}`}>{title}</h1>}
+                    
+                    {showBack ? (
+                        <h1 className={`text-base font-bold tracking-wide ${themeColor}`}>{title}</h1>
+                    ) : (
+                        <div className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">v7.1</div>
+                    )}
                 </div>
-                {/* Version Tag */}
-                <div className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">v7.1</div>
             </div>
         );
 
         // --- Pages ---
 
-        // 1. Home Gateway (Clean Light Mode)
+        // 1. Home Gateway (Fix: Added Top Padding)
         const HomeGateway = ({ setPage }) => {
             return (
-                <div className="h-full flex flex-col items-center justify-center p-6 animate-fade-in relative bg-slate-50">
+                <div className="h-full flex flex-col items-center justify-center p-6 animate-fade-in relative bg-slate-50 pt-[80px]">
                     <div className="grid grid-cols-2 gap-5 w-full max-w-sm z-10">
                         {/* 營運 Ops */}
                         <button onClick={() => setPage('ops')} className="aspect-square bg-white rounded-2xl border border-slate-100 shadow-soft hover:shadow-lg active:scale-95 transition-all flex flex-col items-center justify-center group relative overflow-hidden">
-                            <div className="w-12 h-12 bg-sky-50 rounded-full flex items-center justify-center mb-3 group-hover:bg-sky-100 transition-colors">
+                            <div className="w-14 h-14 bg-sky-50 rounded-full flex items-center justify-center mb-3 group-hover:bg-sky-100 transition-colors">
                                 <i className="fa-solid fa-calculator text-2xl text-sky-500"></i>
                             </div>
                             <span className="text-sm font-bold text-slate-600 tracking-widest">營運中心</span>
@@ -183,7 +190,7 @@
 
                         {/* 待辦 Todo */}
                         <button onClick={() => setPage('todo')} className="aspect-square bg-white rounded-2xl border border-slate-100 shadow-soft hover:shadow-lg active:scale-95 transition-all flex flex-col items-center justify-center group relative overflow-hidden">
-                            <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center mb-3 group-hover:bg-rose-100 transition-colors">
+                            <div className="w-14 h-14 bg-rose-50 rounded-full flex items-center justify-center mb-3 group-hover:bg-rose-100 transition-colors">
                                 <i className="fa-solid fa-list-check text-2xl text-rose-500"></i>
                             </div>
                             <span className="text-sm font-bold text-slate-600 tracking-widest">火線任務</span>
@@ -191,7 +198,7 @@
 
                         {/* 筆記 Note */}
                         <button onClick={() => setPage('note')} className="aspect-square bg-white rounded-2xl border border-slate-100 shadow-soft hover:shadow-lg active:scale-95 transition-all flex flex-col items-center justify-center group relative overflow-hidden">
-                            <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-3 group-hover:bg-emerald-100 transition-colors">
+                            <div className="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mb-3 group-hover:bg-emerald-100 transition-colors">
                                 <i className="fa-solid fa-pen-to-square text-2xl text-emerald-500"></i>
                             </div>
                             <span className="text-sm font-bold text-slate-600 tracking-widest">營運筆記</span>
@@ -199,7 +206,7 @@
 
                         {/* 暫離 Timer */}
                         <button onClick={() => setPage('timer')} className="aspect-square bg-white rounded-2xl border border-slate-100 shadow-soft hover:shadow-lg active:scale-95 transition-all flex flex-col items-center justify-center group relative overflow-hidden">
-                            <div className="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center mb-3 group-hover:bg-orange-100 transition-colors">
+                            <div className="w-14 h-14 bg-orange-50 rounded-full flex items-center justify-center mb-3 group-hover:bg-orange-100 transition-colors">
                                 <i className="fa-solid fa-stopwatch text-2xl text-orange-500"></i>
                             </div>
                             <span className="text-sm font-bold text-slate-600 tracking-widest">暫離鎖定</span>
@@ -209,7 +216,7 @@
             );
         };
 
-        // 2. Operations Page (Blue Tint BG)
+        // 2. Operations Page
         const OperationsPage = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
@@ -262,7 +269,6 @@
 
             return (
                 <div className="page-container bg-sky-50 animate-slide-up">
-                    {/* Fixed Controls (Matching BG) */}
                     <div className="fixed-controls px-4 bg-sky-50">
                         <div className="flex justify-between items-center mb-3 pt-2">
                             <div className="bg-white p-1 rounded-lg border border-slate-200 inline-flex shadow-sm">
@@ -281,7 +287,6 @@
                             <button onClick={() => setShowSettingModal(true)} className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-500 flex items-center justify-center active:scale-95 shadow-sm"><i className="fa-solid fa-gear"></i></button>
                         </div>
 
-                        {/* Net Card - White with Sky Shadow */}
                         <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-soft relative overflow-hidden mb-3">
                             <div className="absolute right-0 top-0 p-4 opacity-10 text-sky-500"><i className="fa-solid fa-chart-line text-6xl"></i></div>
                             <div className="relative z-10 flex justify-between items-center">
@@ -307,7 +312,6 @@
                         </div>
                     </div>
 
-                    {/* Scrollable List */}
                     <div className="scrollable-content px-4">
                         {period === 'month' && (
                             <div className="mb-4 bg-white rounded-xl p-3 border border-slate-100 shadow-sm mt-2">
@@ -360,7 +364,6 @@
                         </div>
                     </div>
 
-                    {/* Modal */}
                     {showAddModal && (
                         <div className="fixed inset-0 bg-slate-900/40 z-[200] flex items-end sm:items-center justify-center sm:p-4 backdrop-blur-sm">
                             <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-sm p-6 shadow-2xl animate-slide-up">
@@ -392,7 +395,7 @@
             );
         };
 
-        // 3. Todo Page (Pink Tint BG)
+        // 3. Todo Page
         const TodoPage = ({ todos, setTodos }) => {
             const categories = ['進料', '款項', '員工', '修繕', '其他'];
             const [dateTab, setDateTab] = useState('today');
@@ -420,7 +423,7 @@
 
             return (
                 <div className="page-container bg-rose-50 animate-slide-up">
-                    <div className="fixed-controls px-4 pt-4 bg-rose-50">
+                    <div className="fixed-controls px-4 bg-rose-50">
                         <div className="flex bg-white p-1 rounded-xl mb-4 border border-slate-200 shadow-sm">
                             <button onClick={() => setDateTab('today')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${dateTab === 'today' ? 'bg-rose-500 text-white shadow' : 'text-slate-400'}`}>今日戰情</button>
                             <button onClick={() => setDateTab('tomorrow')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${dateTab === 'tomorrow' ? 'bg-orange-400 text-white shadow' : 'text-slate-400'}`}>明日預排</button>
@@ -467,7 +470,7 @@
             );
         };
 
-        // 4. Note Page (Green Tint BG)
+        // 4. Note Page
         const NotePage = ({ logs, setLogs }) => {
             const [input, setInput] = useState('');
             const { isListening, startListening } = useVoiceInput((text) => setInput(prev => prev + text));
@@ -475,7 +478,7 @@
             const del = (id) => { const u=logs.filter(l=>l.id!==id); setLogs(u); localStorage.setItem(DB_KEY_LOGS, JSON.stringify(u)); };
             return (
                 <div className="page-container bg-emerald-50 animate-slide-up">
-                    <div className="fixed-controls px-4 pt-4 bg-emerald-50">
+                    <div className="fixed-controls px-4 bg-emerald-50">
                         <div className="flex gap-2">
                             <input value={input} onChange={e=>setInput(e.target.value)} placeholder="輸入筆記..." className="flex-1 bg-white border border-slate-200 text-slate-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 shadow-sm" />
                             <button onClick={startListening} className="w-10 rounded-lg bg-white border border-slate-200 text-slate-400"><i className="fa-solid fa-microphone"></i></button>
@@ -497,7 +500,7 @@
             );
         };
 
-        // 5. Timer (Orange Tint BG)
+        // 5. Timer
         const TimerPage = ({ activeTimer, startTimer, stopTimer }) => {
             return (
                  <div className="page-container bg-orange-50 animate-slide-up">
@@ -562,7 +565,11 @@
             return (
                 <div className="h-full w-full bg-slate-50 text-slate-700">
                     {page === 'home' ? (
-                        <HomeGateway setPage={setPage} />
+                        <>
+                            {/* 修正：首頁 Header 強制顯示，隱藏 Back 按鈕 */}
+                            <Header showBack={false} />
+                            <HomeGateway setPage={setPage} />
+                        </>
                     ) : (
                         <>
                             <Header title={titles[page]} showBack={true} onBack={() => setPage('home')} themeColor={themeColors[page]} />
@@ -581,7 +588,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // 指向新的 v7.1 SW
+                // 修正：註冊正確的 SW 檔名
                 navigator.serviceWorker.register('./sw-v7.1.js'); 
             });
         }
