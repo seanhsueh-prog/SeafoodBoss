@@ -1,18 +1,17 @@
-// 檔名：sw-v4.8.js
-// 說明：Product Version v6.8 (Rescue Mode)
-// 修正：移除外部 CDN 強制快取，確保 SW 絕對安裝成功，解決「卡舊版」問題。
+// 檔名：sw-v4.8.js 
+// 內容版本：v7.1 Neon Chinese Stable
+// 說明：升級快取版本號，強制客戶端更新介面與翻譯
 
-const CACHE_NAME = 'seafood-boss-v6.8-rescue-patch'; // 改了版本號，強制瀏覽器更新
+const CACHE_NAME = 'seafood-boss-v7.1-neon-cn'; // 關鍵：版本號更新，確保手機吃到最新的全中文介面
 
 const ASSETS_TO_CACHE = [
     './',
     './index.html',        
     './manifest.json'
-    // 移除所有 icons 和 CDN 連結，避免任何讀取錯誤導致安裝失敗
-    // 讓 CDN 改由瀏覽器自動處理快取，不透過 SW 強制介入
+    // 不快取外部 CDN，避免安裝失敗
 ];
 
-// 安裝 (保證成功版)
+// 1. 安裝
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -20,28 +19,27 @@ self.addEventListener('install', (event) => {
                 return cache.addAll(ASSETS_TO_CACHE);
             })
     );
-    self.skipWaiting(); // 強制跳過等待，直接接管
+    self.skipWaiting();
 });
 
-// 啟用 & 殺掉舊版
+// 2. 啟用 & 清除舊版 (殺掉 v7.0, v6.8 等舊檔)
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((cacheName) => {
-                    // 只要不是這次的新版，全部殺掉
                     if (cacheName !== CACHE_NAME) {
-                        console.log('清除舊版快取:', cacheName);
+                        console.log('Clean up old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
             );
         })
     );
-    self.clients.claim(); // 立即控制所有頁面
+    self.clients.claim();
 });
 
-// 攔截請求
+// 3. 攔截請求
 self.addEventListener('fetch', (event) => {
     event.respondWith(
         caches.match(event.request)
