@@ -1,16 +1,19 @@
-<!-- 檔名：SeafoodBossApp_v7.6.2.html -->
-<!-- 版本：v7.6.2 (Flexbox Fix & Wide Timer) -->
+<!-- 檔名：SeafoodBossApp_v7.7_Final.html -->
+<!-- 版本：v7.7 (Final Polish) -->
 <!-- 修正：
-     1. 營運中心改用 Flex-col 佈局，徹底解決月曆與流水帳跑位問題。
-     2. 計時膠囊加寬、加粗邊框，底部增加「暫離提醒」文字。
-     3. 確保月曆視圖切換正常。
+     1. 營運中心：月曆與流水帳整合滑動 (Flex-col + Overflow-y-auto)。
+     2. 首頁：新增「待辦馬賽克儀表板」於計時器上方。
+     3. 計時器：底部增加「暫離提醒」文字。
+     4. Logo：顯示 v7.7 版本號。
+     5. AI頁面：頂部 Padding 加大防切頭。
+     6. 文案：今日戰情 -> 今日待辦。
 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS v7.6.2</title>
+    <title>SEAFOOD.BOSS v7.7</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#F8FAFC"> 
@@ -93,7 +96,7 @@
         .todo-checkbox:checked::after { content: '✔'; color: white; font-size: 0.8rem; }
         
         .capsule-btn { 
-            border-width: 2px; /* 加粗邊框 */
+            border-width: 2px; 
             transition: all 0.2s; 
             background: transparent;
         }
@@ -165,9 +168,11 @@
 
         // --- Pages ---
 
-        // 1. Home Matrix
+        // 1. Home Matrix (Center Logo, Dashboard, Timer)
         const HomeMatrix = ({ setPage, todos, activeTimer, startTimer, stopTimer }) => {
-            const pendingCount = todos.filter(t => t.date === getTodayStr() && !t.done).length;
+            const todayStr = getTodayStr();
+            const todayTodos = todos.filter(t => t.date === todayStr);
+            const pendingCount = todayTodos.filter(t => !t.done).length;
             
             const timerCapsules = [
                 { min: 10, activeClass: 'bg-emerald-500 text-white border-emerald-500', inactiveClass: 'border-slate-300 text-slate-500' },
@@ -178,19 +183,22 @@
             return (
                 <div className="h-full flex flex-col p-6 animate-fade-in relative bg-slate-50">
                     
-                    {/* 1. Top Center Logo */}
+                    {/* 1. Top Center Logo (v7.7) */}
                     <div className="flex flex-col items-center justify-center pt-8 pb-4">
                         <div className="w-16 h-16 rounded-2xl bg-sky-50 flex items-center justify-center shadow-sm border border-sky-100 mb-2">
                             <i className="fa-solid fa-fish text-sky-600 text-3xl"></i>
                         </div>
                         <div className="flex flex-col items-center">
                             <span className="text-2xl font-black text-slate-800 tracking-wide leading-none">SEAFOOD<span className="text-sky-500">.BOSS</span></span>
-                            <span className="text-xs text-slate-400 font-bold tracking-[0.2em] mt-1">PROFESSIONAL</span>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-slate-400 font-bold tracking-wider">PROFESSIONAL</span>
+                                <span className="text-[10px] text-white bg-slate-300 px-1.5 py-0.5 rounded font-mono">v7.7</span>
+                            </div>
                         </div>
                     </div>
 
-                    {/* 2. Main Matrix (Auto-Fill Space) */}
-                    <div className="flex-1 grid grid-cols-2 gap-4 w-full mb-24 content-start">
+                    {/* 2. Main Matrix */}
+                    <div className="flex-1 grid grid-cols-2 gap-4 w-full mb-32 content-start">
                         
                         {/* 內部營運 (Blue) */}
                         <button onClick={() => setPage('ops')} className="bg-sky-50 rounded-3xl border border-sky-100 shadow-sm flex flex-col items-center justify-center active:scale-[0.98] transition-all aspect-square">
@@ -230,8 +238,27 @@
                         </button>
                     </div>
 
-                    {/* 3. Timer Capsules (Fixed Bottom) */}
-                    <div className="fixed bottom-0 left-0 right-0 bg-slate-50/95 backdrop-blur border-t border-slate-200 z-50 pb-safe pt-3 pb-4 flex flex-col items-center">
+                    {/* 3. Bottom Control Console (Fixed) */}
+                    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 z-50 pb-safe pt-2 pb-3 flex flex-col shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                        
+                        {/* New: Mosaic Dashboard */}
+                        <div className="px-8 mb-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-slate-400">
+                                <i className="fa-solid fa-bell text-xs animate-pulse"></i>
+                                <span className="text-[10px] font-bold tracking-wider">今日待辦監控</span>
+                            </div>
+                            <div className="flex gap-1.5">
+                                {todayTodos.length === 0 ? (
+                                    <span className="text-[10px] text-slate-300 font-mono">NO TASKS</span>
+                                ) : (
+                                    todayTodos.map((t, i) => (
+                                        <div key={i} className={`w-3 h-3 rounded-sm shadow-sm transition-all ${t.done ? 'bg-emerald-400 shadow-emerald-200' : 'bg-slate-300'}`}></div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Timer Capsules */}
                         <div className="flex gap-4 items-center justify-center w-full px-6 mb-1">
                             {timerCapsules.map((t) => {
                                 const isActive = activeTimer && activeTimer.minutes === t.min;
@@ -247,15 +274,19 @@
                                 );
                             })}
                         </div>
-                        <div className="text-[10px] font-bold text-slate-400">
-                            {activeTimer ? <span className="animate-pulse text-orange-500">計時進行中...</span> : "暫離提醒"}
+                        
+                        {/* Reminder Text */}
+                        <div className="text-center">
+                            <span className={`text-[10px] font-bold ${activeTimer ? 'text-orange-500 animate-pulse' : 'text-slate-400'}`}>
+                                {activeTimer ? '計時進行中...' : '暫離提醒'}
+                            </span>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        // 2. Operations Page (Flexbox Fix - Critical!)
+        // 2. Operations Page (Fix: Scroll Month + List together)
         const OperationsPage = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
@@ -314,7 +345,7 @@
 
             return (
                 <div className="h-full bg-sky-50 flex flex-col pt-[60px]">
-                    {/* Top Section (Auto Height) */}
+                    {/* Fixed Top Part (Controls Only) */}
                     <div className="flex-none p-4 pb-2 shadow-sm border-b border-sky-100 bg-sky-50 z-10">
                         <div className="flex justify-between items-center mb-3">
                             <div className="bg-white p-1 rounded-lg border border-sky-100 inline-flex shadow-sm">
@@ -368,9 +399,9 @@
                         )}
                     </div>
 
-                    {/* Bottom Section (Scrollable & Fills Remaining Space) */}
+                    {/* SCROLLABLE BOTTOM PART: Calendar AND List scroll together */}
                     <div className="flex-1 overflow-y-auto p-4 pt-2 pb-20">
-                        {/* Calendar - Always Visible in Month Mode */}
+                        {/* Calendar - Shows here when period is Month, scrolls with list */}
                         {period === 'month' && (
                             <div className="mb-4 bg-white rounded-xl p-3 border border-sky-100 shadow-sm mt-2 animate-fade-in">
                                 <div className="mb-2 text-center text-xs font-bold text-sky-500">本月概況</div>
@@ -483,7 +514,7 @@
             );
         };
 
-        // 3. Todo Page (Pink Theme)
+        // 3. Todo Page (Rename: 今日待辦)
         const TodoPage = ({ todos, setTodos }) => {
             const categories = ['進料', '款項', '員工', '修繕', '其他'];
             const [dateTab, setDateTab] = useState('today');
@@ -503,7 +534,7 @@
                 <div className="page-container bg-rose-50 animate-slide-up">
                     <div className="fixed-controls px-4 pt-4 pb-2 bg-rose-50 sticky top-0 z-10">
                         <div className="flex bg-white p-1 rounded-xl mb-3 border border-rose-100 shadow-sm">
-                            <button onClick={() => setDateTab('today')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${dateTab === 'today' ? 'bg-rose-500 text-white shadow' : 'text-slate-400'}`}>今日戰情</button>
+                            <button onClick={() => setDateTab('today')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${dateTab === 'today' ? 'bg-rose-500 text-white shadow' : 'text-slate-400'}`}>今日待辦</button>
                             <button onClick={() => setDateTab('tomorrow')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${dateTab === 'tomorrow' ? 'bg-orange-400 text-white shadow' : 'text-slate-400'}`}>明日預排</button>
                         </div>
                         
@@ -572,9 +603,10 @@
             );
         };
 
+        // 5. AI Page (Fix: Padding Top)
         const AiPage = () => {
              return (
-                <div className="page-container bg-violet-50 animate-slide-up items-center justify-center p-6 text-center">
+                <div className="page-container bg-violet-50 animate-slide-up items-center justify-center p-6 text-center pt-24">
                     <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-soft mb-6 text-violet-500">
                         <i className="fa-solid fa-robot text-3xl"></i>
                     </div>
@@ -660,12 +692,12 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                     for(let registration of registrations) {
-                        if (registration.active && !registration.active.scriptURL.includes('sw-v7.6.2.js')) {
+                        if (registration.active && !registration.active.scriptURL.includes('sw-v7.7.js')) {
                             registration.unregister();
                         }
                     }
                 }).then(() => {
-                    return navigator.serviceWorker.register('./sw-v7.6.2.js');
+                    return navigator.serviceWorker.register('./sw-v7.7.js');
                 });
             });
         }
