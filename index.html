@@ -1,12 +1,12 @@
-<!-- 檔名：SeafoodBossApp_v7.4.html -->
-<!-- 版本：v7.4 (High-End Gray / Matrix Balance) -->
-<!-- 特色：極簡灰階、首頁矩陣平衡、修復營運設定、計時膠囊 -->
+<!-- 檔名：SeafoodBossApp_v7.5_Stable.html -->
+<!-- 版本：v7.5 (Stable Balance Edition) -->
+<!-- 修正：手機崩潰修復(移除動態class)、首頁自動填充平衡、Logo配色還原v7.3 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS v7.4</title>
+    <title>SEAFOOD.BOSS v7.5</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#F8FAFC"> 
@@ -27,16 +27,14 @@
             theme: {
                 extend: {
                     colors: {
-                        slate: { 50: '#F8FAFC', 100: '#F1F5F9', 200: '#E2E8F0', 300: '#CBD5E1', 400: '#94A3B8', 500: '#64748B', 600: '#475569', 700: '#334155', 800: '#1E293B', 900: '#0F172A' },
-                        // 保留一點點顏色做點綴，但飽和度降低
-                        sky: { 500: '#0EA5E9', 600: '#0284C7' },     
+                        slate: { 50: '#F8FAFC', 100: '#F1F5F9', 200: '#E2E8F0', 300: '#CBD5E1', 400: '#94A3B8', 500: '#64748B', 600: '#475569', 700: '#334155', 800: '#1E293B' },
+                        sky: { 50: '#F0F9FF', 100: '#E0F2FE', 500: '#0EA5E9', 600: '#0284C7' },     
                         rose: { 500: '#F43F5E' },                    
                         emerald: { 500: '#10B981' },                 
                         orange: { 500: '#F97316' }, 
                     },
                     boxShadow: {
                         'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-                        'inner-light': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.03)',
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.3s ease-out',
@@ -58,7 +56,7 @@
             color: #334155;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: none; /* 禁止下拉重整 */
+            overscroll-behavior-y: none;
             position: fixed; inset: 0; overflow: hidden; 
             user-select: none;
         }
@@ -73,7 +71,7 @@
             padding-top: 60px; /* Header Height */
         }
         
-        /* 內部營運專用佈局 (鎖定上半部) */
+        /* 內部營運專用佈局 */
         .ops-fixed-top {
             position: absolute; top: 60px; left: 0; right: 0; z-index: 20;
             background-color: #F8FAFC; 
@@ -81,7 +79,7 @@
             padding-bottom: 8px;
         }
         .ops-scroll-list {
-            position: absolute; top: 350px; /* 根據上半部高度調整 */
+            position: absolute; top: 350px; 
             bottom: 0; left: 0; right: 0;
             overflow-y: auto; 
             -webkit-overflow-scrolling: touch;
@@ -91,9 +89,9 @@
         }
 
         .glass-header {
-            background: rgba(248, 250, 252, 0.95); /* Slate-50 with opacity */
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
 
@@ -106,24 +104,20 @@
         .todo-checkbox:checked { background-color: #334155; border-color: #334155; }
         .todo-checkbox:checked::after { content: '✔'; color: white; font-size: 0.8rem; }
         
-        /* 膠囊按鈕樣式 */
-        .capsule-btn {
-            border-width: 1px;
-            transition: all 0.2s;
-        }
+        .capsule-btn { border-width: 1px; transition: all 0.2s; }
         .capsule-btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
     <div id="root">
         <div class="flex flex-col items-center justify-center h-screen bg-slate-50 text-slate-400 text-sm">
-            <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-3 text-slate-500"></i>
+            <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-3 text-sky-500"></i>
             <p>系統載入中...</p>
         </div>
     </div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
+        const { useState, useEffect, useMemo } = React;
 
         // DB Keys
         const DB_KEY_TRANSACTIONS = 'sf_transactions'; 
@@ -161,6 +155,7 @@
 
         // --- Shared Components ---
 
+        // Header: 還原 v7.3 風格 (藍色 Logo)
         const Header = ({ title, showBack, onBack }) => (
             <div className="fixed top-0 left-0 right-0 h-[60px] z-50 glass-header flex items-center justify-between px-5">
                 <div className="flex items-center gap-3 w-full">
@@ -169,18 +164,21 @@
                             <i className="fa-solid fa-chevron-left"></i>
                         </button>
                     ) : (
-                        <div className="flex items-center gap-2 animate-fade-in">
-                            <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center shadow-sm">
-                                <i className="fa-solid fa-fish text-slate-50 text-xs"></i>
+                        <div className="flex items-center gap-3 animate-fade-in">
+                            <div className="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center shadow-sm border border-sky-100">
+                                <i className="fa-solid fa-fish text-sky-600 text-sm"></i>
                             </div>
-                            <span className="text-base font-black text-slate-800 tracking-wide">SEAFOOD<span className="text-slate-400">.BOSS</span></span>
+                            <div className="flex flex-col">
+                                <span className="text-sm font-black text-slate-800 tracking-wide leading-none">SEAFOOD<span className="text-sky-500">.BOSS</span></span>
+                                <span className="text-[10px] text-slate-400 font-bold tracking-wider">PROFESSIONAL</span>
+                            </div>
                         </div>
                     )}
                     
                     {showBack ? (
                         <h1 className="text-base font-bold text-slate-700 tracking-wide absolute left-1/2 -translate-x-1/2">{title}</h1>
                     ) : (
-                        <div className="ml-auto text-[10px] font-mono text-slate-400 bg-slate-200/50 px-2 py-0.5 rounded">v7.4</div>
+                        <div className="ml-auto text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">v7.5</div>
                     )}
                 </div>
             </div>
@@ -188,114 +186,109 @@
 
         // --- Pages ---
 
-        // 1. Home Matrix (High-End Gray)
+        // 1. Home Matrix (Balanced Layout)
         const HomeMatrix = ({ setPage, todos, activeTimer, startTimer, stopTimer }) => {
-            // 計算未完成待辦
             const pendingCount = todos.filter(t => t.date === getTodayStr() && !t.done).length;
+            
+            // 硬編碼顏色，防止手機編譯失敗
             const timerCapsules = [
-                { min: 10, color: 'text-emerald-500', border: 'border-emerald-500' },
-                { min: 15, color: 'text-orange-500', border: 'border-orange-500' },
-                { min: 20, color: 'text-rose-500', border: 'border-rose-500' },
+                { min: 10, textCol: 'text-emerald-500', borderCol: 'border-emerald-500' },
+                { min: 15, textCol: 'text-orange-500', borderCol: 'border-orange-500' },
+                { min: 20, textCol: 'text-rose-500', borderCol: 'border-rose-500' },
             ];
 
             return (
                 <div className="h-full flex flex-col p-6 pt-[80px] animate-fade-in relative bg-slate-50">
                     
-                    {/* Matrix 2x2 */}
-                    <div className="flex-1 flex flex-col justify-center max-h-[500px]">
-                        <div className="grid grid-cols-2 gap-4 w-full aspect-square">
-                            
-                            {/* 內部營運 */}
-                            <button onClick={() => setPage('ops')} className="bg-white rounded-2xl border border-slate-200 shadow-soft flex flex-col items-center justify-center active:scale-[0.98] transition-all">
-                                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-600">
-                                    <i className="fa-solid fa-calculator text-xl"></i>
-                                </div>
-                                <span className="text-sm font-bold text-slate-700">內部營運</span>
-                            </button>
+                    {/* Matrix 2x2: 使用 flex-1 讓它自動佔滿剩餘高度，解決下方留白問題 */}
+                    <div className="flex-1 grid grid-cols-2 gap-4 w-full mb-6">
+                        
+                        {/* 內部營運 */}
+                        <button onClick={() => setPage('ops')} className="bg-white rounded-2xl border border-slate-200 shadow-soft flex flex-col items-center justify-center active:scale-[0.98] transition-all h-full">
+                            <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-600">
+                                <i className="fa-solid fa-calculator text-2xl"></i>
+                            </div>
+                            <span className="text-sm font-bold text-slate-700">內部營運</span>
+                        </button>
 
-                            {/* 待辦事項 */}
-                            <button onClick={() => setPage('todo')} className="bg-white rounded-2xl border border-slate-200 shadow-soft flex flex-col items-center justify-center active:scale-[0.98] transition-all relative">
-                                {pendingCount > 0 && (
-                                    <div className="absolute top-4 right-4 w-3 h-3 bg-rose-500 rounded-full border-2 border-white animate-pulse"></div>
-                                )}
-                                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-600">
-                                    <i className="fa-solid fa-list-check text-xl"></i>
-                                </div>
-                                <span className="text-sm font-bold text-slate-700">待辦事項</span>
-                                {pendingCount > 0 && <span className="text-[10px] text-rose-500 font-bold mt-1">{pendingCount} 筆未結</span>}
-                            </button>
+                        {/* 待辦事項 */}
+                        <button onClick={() => setPage('todo')} className="bg-white rounded-2xl border border-slate-200 shadow-soft flex flex-col items-center justify-center active:scale-[0.98] transition-all relative h-full">
+                            {pendingCount > 0 && (
+                                <div className="absolute top-4 right-4 w-3 h-3 bg-rose-500 rounded-full border-2 border-white animate-pulse"></div>
+                            )}
+                            <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-600">
+                                <i className="fa-solid fa-list-check text-2xl"></i>
+                            </div>
+                            <span className="text-sm font-bold text-slate-700">待辦事項</span>
+                            {pendingCount > 0 && <span className="text-[10px] text-rose-500 font-bold mt-1">{pendingCount} 筆未結</span>}
+                        </button>
 
-                            {/* 營運筆記 */}
-                            <button onClick={() => setPage('note')} className="bg-white rounded-2xl border border-slate-200 shadow-soft flex flex-col items-center justify-center active:scale-[0.98] transition-all">
-                                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-600">
-                                    <i className="fa-solid fa-pen-to-square text-xl"></i>
-                                </div>
-                                <span className="text-sm font-bold text-slate-700">營運筆記</span>
-                            </button>
+                        {/* 營運筆記 */}
+                        <button onClick={() => setPage('note')} className="bg-white rounded-2xl border border-slate-200 shadow-soft flex flex-col items-center justify-center active:scale-[0.98] transition-all h-full">
+                            <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-600">
+                                <i className="fa-solid fa-pen-to-square text-2xl"></i>
+                            </div>
+                            <span className="text-sm font-bold text-slate-700">營運筆記</span>
+                        </button>
 
-                            {/* AI 秘書 */}
-                            <button onClick={() => setPage('ai')} className="bg-white rounded-2xl border border-slate-200 shadow-soft flex flex-col items-center justify-center active:scale-[0.98] transition-all">
-                                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-600">
-                                    <i className="fa-solid fa-robot text-xl"></i>
-                                </div>
-                                <span className="text-sm font-bold text-slate-700">AI 智慧秘書</span>
-                                <span className="text-[10px] text-slate-400 font-bold mt-1 bg-slate-100 px-2 rounded-full">訂閱服務</span>
-                            </button>
+                        {/* AI 秘書 */}
+                        <button onClick={() => setPage('ai')} className="bg-white rounded-2xl border border-slate-200 shadow-soft flex flex-col items-center justify-center active:scale-[0.98] transition-all h-full">
+                            <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-600">
+                                <i className="fa-solid fa-robot text-2xl"></i>
+                            </div>
+                            <span className="text-sm font-bold text-slate-700">AI 智慧秘書</span>
+                            <span className="text-[10px] text-slate-400 font-bold mt-1 bg-slate-100 px-2 rounded-full">訂閱服務</span>
+                        </button>
+                    </div>
+
+                    {/* Timer Capsules (Fixed at Bottom) */}
+                    <div className="flex-none h-20 flex flex-col justify-end">
+                        <div className="flex gap-4 items-center justify-center w-full">
+                            {timerCapsules.map((t) => {
+                                const isActive = activeTimer && activeTimer.minutes === t.min;
+                                return (
+                                    <button 
+                                        key={t.min} 
+                                        onClick={() => isActive ? stopTimer() : startTimer(t.min)}
+                                        className={`capsule-btn flex-1 h-12 rounded-full flex items-center justify-center text-xl font-black bg-white shadow-sm ${isActive ? 'bg-slate-800 text-white border-transparent' : `${t.borderCol} ${t.textCol}`}`}
+                                    >
+                                        {isActive ? <i className="fa-solid fa-pause text-sm"></i> : t.min}
+                                    </button>
+                                );
+                            })}
                         </div>
-                    </div>
-
-                    {/* Spacer */}
-                    <div className="h-8"></div>
-
-                    {/* Timer Capsules (Bottom) */}
-                    <div className="flex gap-4 items-center justify-center w-full px-2">
-                        {timerCapsules.map((t) => {
-                            const isActive = activeTimer && activeTimer.minutes === t.min;
-                            return (
-                                <button 
-                                    key={t.min} 
-                                    onClick={() => isActive ? stopTimer() : startTimer(t.min)}
-                                    className={`capsule-btn flex-1 h-12 rounded-full flex items-center justify-center text-xl font-black bg-white shadow-sm ${isActive ? 'bg-slate-800 text-white border-transparent' : `${t.border} ${t.color}`}`}
-                                >
-                                    {isActive ? <i className="fa-solid fa-pause text-sm"></i> : t.min}
-                                </button>
-                            );
-                        })}
-                    </div>
-                    {/* Timer Status Text */}
-                    <div className="text-center h-6 mt-2">
-                        {activeTimer && (
-                            <span className="text-xs font-bold text-slate-400 animate-pulse-slow">
-                                暫離計時中... 
-                            </span>
-                        )}
+                        {/* Status Text */}
+                         <div className="text-center h-6 mt-1 flex items-center justify-center">
+                            {activeTimer && (
+                                <span className="text-xs font-bold text-slate-400 animate-pulse-slow">
+                                    暫離計時中... 
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
             );
         };
 
-        // 2. Operations Page (Fixed Top / Scroll Bottom)
+        // 2. Operations Page
         const OperationsPage = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
-            const [showSettingModal, setShowSettingModal] = useState(false); // 修正：v7.3 漏了這個
+            const [showSettingModal, setShowSettingModal] = useState(false);
             const [editingId, setEditingId] = useState(null);
-            const [isCalExpanded, setIsCalExpanded] = useState(false); // 預設收合
+            const [isCalExpanded, setIsCalExpanded] = useState(false);
             const [selectedDate, setSelectedDate] = useState(getTodayStr());
             const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
             
-            // Form State
             const [date, setDate] = useState(getTodayStr());
             const [type, setType] = useState('income');
             const [amount, setAmount] = useState('');
             const [cat, setCat] = useState('現金');
             const [note, setNote] = useState('');
             
-            // Settings State
             const [tempFixedCost, setTempFixedCost] = useState(settings.dailyFixedCost || '');
             const [selectedCostItems, setSelectedCostItems] = useState(settings.costItems || []);
 
-            // Data Logic
             const costOptions = ['房租', '人事', '水電', '食材耗損', '雜支'];
             const toggleCostItem = (item) => { 
                 if(selectedCostItems.includes(item)) setSelectedCostItems(selectedCostItems.filter(i => i !== item)); 
@@ -329,13 +322,17 @@
             const resetForm = () => { setAmount(''); setNote(''); setEditingId(null); setShowAddModal(false); };
             const openEdit = (item) => { setEditingId(item.id); setDate(item.date); setType(item.type); setAmount(item.amount); setCat(item.category); setNote(item.note); setShowAddModal(true); };
 
-            const TrafficBtn = ({ val, label, color }) => (<button onClick={() => updateEnv('traffic', val)} className={`flex-1 py-1 rounded text-xs font-bold transition-all border ${currentEnv.traffic === val ? `bg-${color}-500 text-white border-${color}-500` : 'bg-white text-slate-400 border-slate-200'}`}>{label}</button>);
+            // Hardcoded classes to prevent crash
+            const TrafficBtn = ({ val, label, activeClass, inactiveClass }) => (
+                <button onClick={() => updateEnv('traffic', val)} className={`flex-1 py-1 rounded text-xs font-bold transition-all border ${currentEnv.traffic === val ? activeClass : inactiveClass}`}>
+                    {label}
+                </button>
+            );
 
             return (
                 <div className="h-full bg-slate-50 relative">
-                    {/* Fixed Top Section (Locked) */}
+                    {/* Fixed Top Section */}
                     <div className="ops-fixed-top shadow-sm border-b border-slate-200">
-                        {/* Control Bar */}
                         <div className="flex justify-between items-center mb-3">
                             <div className="bg-white p-1 rounded-lg border border-slate-200 inline-flex shadow-sm">
                                 {['day', 'month', 'year'].map(p => (
@@ -353,7 +350,6 @@
                             <button onClick={() => setShowSettingModal(true)} className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-500 flex items-center justify-center active:scale-95 shadow-sm"><i className="fa-solid fa-gear"></i></button>
                         </div>
 
-                        {/* Net Profit Card (High End Gray) */}
                         <div className="bg-slate-800 rounded-xl p-4 shadow-lg text-white mb-3 relative overflow-hidden">
                             <div className="absolute right-0 top-0 p-4 opacity-5 text-white"><i className="fa-solid fa-chart-line text-6xl"></i></div>
                             <div className="relative z-10 flex justify-between items-center">
@@ -368,13 +364,11 @@
                             </div>
                         </div>
 
-                        {/* Buttons */}
                         <div className="grid grid-cols-2 gap-3 mb-2">
                             <button onClick={() => {setType('income'); setCat('現金'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-emerald-600 border border-emerald-100 py-3 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm active:scale-95"><i className="fa-solid fa-plus mr-2"></i> 記進帳</button>
                             <button onClick={() => {setType('expense'); setCat('進貨'); setDate(selectedDate); resetForm(); setShowAddModal(true);}} className="bg-white text-rose-500 border border-rose-100 py-3 rounded-lg font-bold shadow-sm flex items-center justify-center text-sm active:scale-95"><i className="fa-solid fa-minus mr-2"></i> 記出帳</button>
                         </div>
                         
-                         {/* Environment (Only Day) */}
                          {period === 'day' && (
                             <div className="flex items-center gap-2">
                                 <div className="flex space-x-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
@@ -382,15 +376,16 @@
                                         <button key={w} onClick={() => updateEnv('weather', w)} className={`w-6 h-6 rounded flex items-center justify-center transition-all ${currentEnv.weather === w ? 'bg-slate-600 text-white' : 'text-slate-300'}`}><i className={`fa-solid fa-${w === 'sunny' ? 'sun' : w === 'cloudy' ? 'cloud' : 'cloud-showers-heavy'} text-xs`}></i></button>
                                     ))}
                                 </div>
-                                <div className="flex gap-1 flex-1"><TrafficBtn val="slow" label="冷清" color="sky" /><TrafficBtn val="normal" label="正常" color="orange" /><TrafficBtn val="busy" label="爆滿" color="rose" /></div>
+                                <div className="flex gap-1 flex-1">
+                                    <TrafficBtn val="slow" label="冷清" activeClass="bg-sky-500 text-white border-sky-500" inactiveClass="bg-white text-slate-400 border-slate-200" />
+                                    <TrafficBtn val="normal" label="正常" activeClass="bg-orange-500 text-white border-orange-500" inactiveClass="bg-white text-slate-400 border-slate-200" />
+                                    <TrafficBtn val="busy" label="爆滿" activeClass="bg-rose-500 text-white border-rose-500" inactiveClass="bg-white text-slate-400 border-slate-200" />
+                                </div>
                             </div>
                         )}
                     </div>
 
-                    {/* Scrollable Bottom Section */}
                     <div className="ops-scroll-list">
-                        
-                        {/* Calendar Toggle */}
                         {period === 'month' && (
                             <div className="mb-4 bg-white rounded-xl p-3 border border-slate-200 shadow-sm mt-4">
                                 <div className="flex justify-between items-center cursor-pointer" onClick={() => setIsCalExpanded(!isCalExpanded)}>
@@ -419,7 +414,6 @@
                             </div>
                         )}
 
-                        {/* Transaction List */}
                         <div className="mt-4">
                              <div className="flex items-center gap-2 mb-2 px-1">
                                 <div className="w-1 h-4 bg-slate-400 rounded-full"></div>
@@ -450,7 +444,6 @@
                         </div>
                     </div>
 
-                    {/* Add Modal */}
                     {showAddModal && (
                         <div className="fixed inset-0 bg-slate-900/40 z-[200] flex items-end sm:items-center justify-center sm:p-4 backdrop-blur-sm">
                             <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-sm p-6 shadow-2xl animate-slide-up">
@@ -479,7 +472,6 @@
                         </div>
                     )}
 
-                    {/* Settings Modal (Fixed Bug from v7.3) */}
                     {showSettingModal && (
                         <div className="fixed inset-0 bg-slate-900/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm">
                             <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl animate-fade-in">
@@ -530,14 +522,12 @@
 
             return (
                 <div className="page-container bg-slate-50 animate-slide-up">
-                     {/* Control Bar */}
                     <div className="fixed-controls px-4 pt-4 pb-2 bg-slate-50 sticky top-0 z-10">
                         <div className="flex bg-white p-1 rounded-xl mb-3 border border-slate-200 shadow-sm">
                             <button onClick={() => setDateTab('today')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${dateTab === 'today' ? 'bg-slate-700 text-white shadow' : 'text-slate-400'}`}>今日戰情</button>
                             <button onClick={() => setDateTab('tomorrow')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${dateTab === 'tomorrow' ? 'bg-orange-500 text-white shadow' : 'text-slate-400'}`}>明日預排</button>
                         </div>
                         
-                        {/* Input Area */}
                         <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-2">
                             <div className="flex gap-2 overflow-x-auto no-scrollbar mb-2">
                                 {categories.map(cat => (
@@ -641,7 +631,6 @@
 
             const saveSettings = (n) => { setSettings(n); localStorage.setItem(DB_KEY_SETTINGS, JSON.stringify(n)); };
 
-            // Timer Logic
             const startTimer = (m) => { setActiveTimer({ minutes: m, startTime: Date.now(), alarmTriggered: false }); };
             const stopTimer = () => { setActiveTimer(null); };
 
@@ -652,7 +641,6 @@
                         const elapsed = (Date.now() - activeTimer.startTime) / 1000;
                         if (elapsed >= activeTimer.minutes * 60 && !activeTimer.alarmTriggered) {
                             setActiveTimer(prev => ({ ...prev, alarmTriggered: true }));
-                            // 這裡可以加更強的通知，目前先用瀏覽器通知
                             if (Notification.permission === "granted") new Notification("SEAFOOD.BOSS", { body: "暫離時間結束！" });
                             if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
                             alert("時間到！請返回崗位");
@@ -661,7 +649,6 @@
                     }, 1000);
                 } return () => clearInterval(interval);
             }, [activeTimer]);
-
 
             const titles = { ops: '內部營運', todo: '待辦事項', note: '營運筆記', ai: '智慧秘書' };
 
@@ -690,15 +677,14 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // 自動清除舊版，註冊 v7.4
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                     for(let registration of registrations) {
-                        if (registration.active && !registration.active.scriptURL.includes('sw-v7.4.js')) {
+                        if (registration.active && !registration.active.scriptURL.includes('sw-v7.5.js')) {
                             registration.unregister();
                         }
                     }
                 }).then(() => {
-                    return navigator.serviceWorker.register('./sw-v7.4.js');
+                    return navigator.serviceWorker.register('./sw-v7.5.js');
                 });
             });
         }
