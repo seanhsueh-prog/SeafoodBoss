@@ -1,12 +1,12 @@
-<!-- 檔名：SeafoodBossApp_v7.5_Stable.html -->
-<!-- 版本：v7.5 (Stable Balance Edition) -->
-<!-- 修正：手機崩潰修復(移除動態class)、首頁自動填充平衡、Logo配色還原v7.3 -->
+<!-- 檔名：SeafoodBossApp_v7.6_Final.html -->
+<!-- 版本：v7.6 (Final Balance Edition) -->
+<!-- 修正：Logo置中放大、項目色塊回歸、計時器置底極簡化、月曆修復 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS v7.5</title>
+    <title>SEAFOOD.BOSS v7.6</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#F8FAFC"> 
@@ -29,9 +29,10 @@
                     colors: {
                         slate: { 50: '#F8FAFC', 100: '#F1F5F9', 200: '#E2E8F0', 300: '#CBD5E1', 400: '#94A3B8', 500: '#64748B', 600: '#475569', 700: '#334155', 800: '#1E293B' },
                         sky: { 50: '#F0F9FF', 100: '#E0F2FE', 500: '#0EA5E9', 600: '#0284C7' },     
-                        rose: { 500: '#F43F5E' },                    
-                        emerald: { 500: '#10B981' },                 
-                        orange: { 500: '#F97316' }, 
+                        rose: { 50: '#FFF1F2', 100: '#FFE4E6', 500: '#F43F5E' },                    
+                        emerald: { 50: '#ECFDF5', 100: '#D1FAE5', 500: '#10B981' },                 
+                        orange: { 50: '#FFF7ED', 500: '#F97316' }, 
+                        violet: { 50: '#F5F3FF', 100: '#EDE9FE', 500: '#8B5CF6' }
                     },
                     boxShadow: {
                         'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
@@ -74,7 +75,7 @@
         /* 內部營運專用佈局 */
         .ops-fixed-top {
             position: absolute; top: 60px; left: 0; right: 0; z-index: 20;
-            background-color: #F8FAFC; 
+            background-color: #F0F9FF; /* Sky-50 */
             padding: 16px;
             padding-bottom: 8px;
         }
@@ -101,11 +102,15 @@
             display: flex; align-items: center; justify-content: center;
             transition: all 0.2s; background: white;
         }
-        .todo-checkbox:checked { background-color: #334155; border-color: #334155; }
+        .todo-checkbox:checked { background-color: #F43F5E; border-color: #F43F5E; }
         .todo-checkbox:checked::after { content: '✔'; color: white; font-size: 0.8rem; }
         
-        .capsule-btn { border-width: 1px; transition: all 0.2s; }
-        .capsule-btn:active { transform: scale(0.95); }
+        .capsule-btn { 
+            border-width: 1px; 
+            transition: all 0.2s; 
+            background: transparent;
+        }
+        .capsule-btn:active { transform: scale(0.95); background: #F1F5F9; }
     </style>
 </head>
 <body>
@@ -155,113 +160,108 @@
 
         // --- Shared Components ---
 
-        // Header: 還原 v7.3 風格 (藍色 Logo)
-        const Header = ({ title, showBack, onBack }) => (
-            <div className="fixed top-0 left-0 right-0 h-[60px] z-50 glass-header flex items-center justify-between px-5">
-                <div className="flex items-center gap-3 w-full">
-                    {showBack ? (
-                        <button onClick={onBack} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 active:scale-90 transition-transform">
+        const Header = ({ title, showBack, onBack, themeColor }) => (
+            <div className={`fixed top-0 left-0 right-0 h-[60px] z-50 flex items-center justify-between px-5 ${showBack ? 'glass-header' : 'bg-transparent'}`}>
+                {showBack && (
+                    <div className="flex items-center gap-3 w-full">
+                         <button onClick={onBack} className="w-8 h-8 rounded-full bg-white/80 border border-slate-100 flex items-center justify-center text-slate-600 active:scale-90 transition-transform">
                             <i className="fa-solid fa-chevron-left"></i>
                         </button>
-                    ) : (
-                        <div className="flex items-center gap-3 animate-fade-in">
-                            <div className="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center shadow-sm border border-sky-100">
-                                <i className="fa-solid fa-fish text-sky-600 text-sm"></i>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-sm font-black text-slate-800 tracking-wide leading-none">SEAFOOD<span className="text-sky-500">.BOSS</span></span>
-                                <span className="text-[10px] text-slate-400 font-bold tracking-wider">PROFESSIONAL</span>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {showBack ? (
-                        <h1 className="text-base font-bold text-slate-700 tracking-wide absolute left-1/2 -translate-x-1/2">{title}</h1>
-                    ) : (
-                        <div className="ml-auto text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">v7.5</div>
-                    )}
-                </div>
+                        <h1 className={`text-base font-bold tracking-wide absolute left-1/2 -translate-x-1/2 ${themeColor}`}>{title}</h1>
+                    </div>
+                )}
             </div>
         );
 
         // --- Pages ---
 
-        // 1. Home Matrix (Balanced Layout)
+        // 1. Home Matrix (Center Logo, Colored Cards, Bottom Timer)
         const HomeMatrix = ({ setPage, todos, activeTimer, startTimer, stopTimer }) => {
             const pendingCount = todos.filter(t => t.date === getTodayStr() && !t.done).length;
             
-            // 硬編碼顏色，防止手機編譯失敗
+            // Thin Timer Capsules
             const timerCapsules = [
-                { min: 10, textCol: 'text-emerald-500', borderCol: 'border-emerald-500' },
-                { min: 15, textCol: 'text-orange-500', borderCol: 'border-orange-500' },
-                { min: 20, textCol: 'text-rose-500', borderCol: 'border-rose-500' },
+                { min: 10 },
+                { min: 15 },
+                { min: 20 },
             ];
 
             return (
-                <div className="h-full flex flex-col p-6 pt-[80px] animate-fade-in relative bg-slate-50">
+                <div className="h-full flex flex-col p-6 animate-fade-in relative bg-slate-50">
                     
-                    {/* Matrix 2x2: 使用 flex-1 讓它自動佔滿剩餘高度，解決下方留白問題 */}
-                    <div className="flex-1 grid grid-cols-2 gap-4 w-full mb-6">
+                    {/* 1. Top Center Logo (Enlarged) */}
+                    <div className="flex flex-col items-center justify-center pt-10 pb-6">
+                        <div className="w-16 h-16 rounded-2xl bg-sky-50 flex items-center justify-center shadow-sm border border-sky-100 mb-2">
+                            <i className="fa-solid fa-fish text-sky-600 text-3xl"></i>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-2xl font-black text-slate-800 tracking-wide leading-none">SEAFOOD<span className="text-sky-500">.BOSS</span></span>
+                            <span className="text-xs text-slate-400 font-bold tracking-[0.2em] mt-1">PROFESSIONAL</span>
+                        </div>
+                    </div>
+
+                    {/* 2. Main Matrix (Colored, Enlarged, Centered) */}
+                    <div className="flex-1 grid grid-cols-2 gap-4 w-full mb-20 content-start">
                         
-                        {/* 內部營運 */}
-                        <button onClick={() => setPage('ops')} className="bg-white rounded-2xl border border-slate-200 shadow-soft flex flex-col items-center justify-center active:scale-[0.98] transition-all h-full">
-                            <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-600">
+                        {/* 內部營運 (Blue) */}
+                        <button onClick={() => setPage('ops')} className="bg-sky-50 rounded-3xl border border-sky-100 shadow-sm flex flex-col items-center justify-center active:scale-[0.98] transition-all aspect-square">
+                            <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mb-3 text-sky-600 shadow-sm">
                                 <i className="fa-solid fa-calculator text-2xl"></i>
                             </div>
-                            <span className="text-sm font-bold text-slate-700">內部營運</span>
+                            <span className="text-base font-bold text-sky-700">內部營運</span>
                         </button>
 
-                        {/* 待辦事項 */}
-                        <button onClick={() => setPage('todo')} className="bg-white rounded-2xl border border-slate-200 shadow-soft flex flex-col items-center justify-center active:scale-[0.98] transition-all relative h-full">
+                        {/* 待辦事項 (Pink) */}
+                        <button onClick={() => setPage('todo')} className="bg-rose-50 rounded-3xl border border-rose-100 shadow-sm flex flex-col items-center justify-center active:scale-[0.98] transition-all relative aspect-square">
                             {pendingCount > 0 && (
                                 <div className="absolute top-4 right-4 w-3 h-3 bg-rose-500 rounded-full border-2 border-white animate-pulse"></div>
                             )}
-                            <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-600">
+                            <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mb-3 text-rose-500 shadow-sm">
                                 <i className="fa-solid fa-list-check text-2xl"></i>
                             </div>
-                            <span className="text-sm font-bold text-slate-700">待辦事項</span>
+                            <span className="text-base font-bold text-rose-700">待辦事項</span>
                             {pendingCount > 0 && <span className="text-[10px] text-rose-500 font-bold mt-1">{pendingCount} 筆未結</span>}
                         </button>
 
-                        {/* 營運筆記 */}
-                        <button onClick={() => setPage('note')} className="bg-white rounded-2xl border border-slate-200 shadow-soft flex flex-col items-center justify-center active:scale-[0.98] transition-all h-full">
-                            <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-600">
+                        {/* 營運筆記 (Green) */}
+                        <button onClick={() => setPage('note')} className="bg-emerald-50 rounded-3xl border border-emerald-100 shadow-sm flex flex-col items-center justify-center active:scale-[0.98] transition-all aspect-square">
+                            <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mb-3 text-emerald-500 shadow-sm">
                                 <i className="fa-solid fa-pen-to-square text-2xl"></i>
                             </div>
-                            <span className="text-sm font-bold text-slate-700">營運筆記</span>
+                            <span className="text-base font-bold text-emerald-700">營運筆記</span>
                         </button>
 
-                        {/* AI 秘書 */}
-                        <button onClick={() => setPage('ai')} className="bg-white rounded-2xl border border-slate-200 shadow-soft flex flex-col items-center justify-center active:scale-[0.98] transition-all h-full">
-                            <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-600">
+                        {/* AI 秘書 (Purple) */}
+                        <button onClick={() => setPage('ai')} className="bg-violet-50 rounded-3xl border border-violet-100 shadow-sm flex flex-col items-center justify-center active:scale-[0.98] transition-all aspect-square">
+                            <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mb-3 text-violet-500 shadow-sm">
                                 <i className="fa-solid fa-robot text-2xl"></i>
                             </div>
-                            <span className="text-sm font-bold text-slate-700">AI 智慧秘書</span>
-                            <span className="text-[10px] text-slate-400 font-bold mt-1 bg-slate-100 px-2 rounded-full">訂閱服務</span>
+                            <span className="text-base font-bold text-violet-700">AI 智慧秘書</span>
+                            <span className="text-[10px] text-violet-400 font-bold mt-1 bg-white/50 px-2 rounded-full">訂閱服務</span>
                         </button>
                     </div>
 
-                    {/* Timer Capsules (Fixed at Bottom) */}
-                    <div className="flex-none h-20 flex flex-col justify-end">
-                        <div className="flex gap-4 items-center justify-center w-full">
+                    {/* 3. Timer Capsules (Fixed at VERY Bottom, Minimalist) */}
+                    <div className="fixed bottom-0 left-0 right-0 h-20 bg-slate-50/90 backdrop-blur flex flex-col items-center justify-start pt-2 border-t border-slate-100 z-50">
+                        <div className="flex gap-6 items-center justify-center w-full">
                             {timerCapsules.map((t) => {
                                 const isActive = activeTimer && activeTimer.minutes === t.min;
                                 return (
                                     <button 
                                         key={t.min} 
                                         onClick={() => isActive ? stopTimer() : startTimer(t.min)}
-                                        className={`capsule-btn flex-1 h-12 rounded-full flex items-center justify-center text-xl font-black bg-white shadow-sm ${isActive ? 'bg-slate-800 text-white border-transparent' : `${t.borderCol} ${t.textCol}`}`}
+                                        className={`capsule-btn w-16 h-8 rounded-full flex items-center justify-center text-sm font-bold ${isActive ? 'bg-slate-800 text-white border-slate-800' : 'text-slate-400 border-slate-300'}`}
+                                        style={{ borderStyle: 'solid' }}
                                     >
-                                        {isActive ? <i className="fa-solid fa-pause text-sm"></i> : t.min}
+                                        {isActive ? <i className="fa-solid fa-pause text-xs"></i> : t.min}
                                     </button>
                                 );
                             })}
                         </div>
-                        {/* Status Text */}
-                         <div className="text-center h-6 mt-1 flex items-center justify-center">
+                         <div className="text-center h-4 mt-1 flex items-center justify-center">
                             {activeTimer && (
-                                <span className="text-xs font-bold text-slate-400 animate-pulse-slow">
-                                    暫離計時中... 
+                                <span className="text-[10px] font-bold text-slate-400 animate-pulse-slow">
+                                    計時中...
                                 </span>
                             )}
                         </div>
@@ -270,22 +270,21 @@
             );
         };
 
-        // 2. Operations Page
+        // 2. Operations Page (Blue Theme, Fixed Calendar)
         const OperationsPage = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
             const [showSettingModal, setShowSettingModal] = useState(false);
             const [editingId, setEditingId] = useState(null);
-            const [isCalExpanded, setIsCalExpanded] = useState(false);
             const [selectedDate, setSelectedDate] = useState(getTodayStr());
             const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
             
+            // Form State
             const [date, setDate] = useState(getTodayStr());
             const [type, setType] = useState('income');
             const [amount, setAmount] = useState('');
             const [cat, setCat] = useState('現金');
             const [note, setNote] = useState('');
-            
             const [tempFixedCost, setTempFixedCost] = useState(settings.dailyFixedCost || '');
             const [selectedCostItems, setSelectedCostItems] = useState(settings.costItems || []);
 
@@ -322,7 +321,6 @@
             const resetForm = () => { setAmount(''); setNote(''); setEditingId(null); setShowAddModal(false); };
             const openEdit = (item) => { setEditingId(item.id); setDate(item.date); setType(item.type); setAmount(item.amount); setCat(item.category); setNote(item.note); setShowAddModal(true); };
 
-            // Hardcoded classes to prevent crash
             const TrafficBtn = ({ val, label, activeClass, inactiveClass }) => (
                 <button onClick={() => updateEnv('traffic', val)} className={`flex-1 py-1 rounded text-xs font-bold transition-all border ${currentEnv.traffic === val ? activeClass : inactiveClass}`}>
                     {label}
@@ -330,36 +328,36 @@
             );
 
             return (
-                <div className="h-full bg-slate-50 relative">
-                    {/* Fixed Top Section */}
-                    <div className="ops-fixed-top shadow-sm border-b border-slate-200">
+                <div className="h-full bg-sky-50 relative">
+                    {/* Fixed Top Section (Blue Theme) */}
+                    <div className="ops-fixed-top shadow-sm border-b border-sky-100">
                         <div className="flex justify-between items-center mb-3">
-                            <div className="bg-white p-1 rounded-lg border border-slate-200 inline-flex shadow-sm">
+                            <div className="bg-white p-1 rounded-lg border border-sky-100 inline-flex shadow-sm">
                                 {['day', 'month', 'year'].map(p => (
-                                    <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1 rounded text-xs font-bold transition-all ${period === p ? 'bg-slate-700 text-white' : 'text-slate-400'}`}>{p === 'day' ? '日' : p === 'month' ? '月' : '年'}</button>
+                                    <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1 rounded text-xs font-bold transition-all ${period === p ? 'bg-sky-500 text-white' : 'text-slate-400'}`}>{p === 'day' ? '日' : p === 'month' ? '月' : '年'}</button>
                                 ))}
                             </div>
-                            {period === 'day' && <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="bg-white border border-slate-200 text-slate-600 text-xs font-bold py-1 px-2 rounded focus:outline-none shadow-sm" />}
+                            {period === 'day' && <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="bg-white border border-sky-100 text-sky-600 text-xs font-bold py-1 px-2 rounded focus:outline-none shadow-sm" />}
                             {period === 'month' && (
-                                <div className="flex items-center space-x-2 bg-white px-2 py-1 rounded border border-slate-200 shadow-sm">
-                                    <button onClick={() => setCurrentMonth(p => p===1?12:p-1)} className="text-slate-500"><i className="fa-solid fa-chevron-left text-xs"></i></button>
+                                <div className="flex items-center space-x-2 bg-white px-2 py-1 rounded border border-sky-100 shadow-sm">
+                                    <button onClick={() => setCurrentMonth(p => p===1?12:p-1)} className="text-sky-500"><i className="fa-solid fa-chevron-left text-xs"></i></button>
                                     <span className="text-xs font-bold text-slate-700 w-8 text-center">{currentMonth}月</span>
-                                    <button onClick={() => setCurrentMonth(p => p===12?1:p+1)} className="text-slate-500"><i className="fa-solid fa-chevron-right text-xs"></i></button>
+                                    <button onClick={() => setCurrentMonth(p => p===12?1:p+1)} className="text-sky-500"><i className="fa-solid fa-chevron-right text-xs"></i></button>
                                 </div>
                             )}
-                            <button onClick={() => setShowSettingModal(true)} className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-500 flex items-center justify-center active:scale-95 shadow-sm"><i className="fa-solid fa-gear"></i></button>
+                            <button onClick={() => setShowSettingModal(true)} className="w-8 h-8 rounded-full bg-white border border-sky-100 text-sky-500 flex items-center justify-center active:scale-95 shadow-sm"><i className="fa-solid fa-gear"></i></button>
                         </div>
 
-                        <div className="bg-slate-800 rounded-xl p-4 shadow-lg text-white mb-3 relative overflow-hidden">
-                            <div className="absolute right-0 top-0 p-4 opacity-5 text-white"><i className="fa-solid fa-chart-line text-6xl"></i></div>
+                        <div className="bg-sky-600 rounded-xl p-4 shadow-lg text-white mb-3 relative overflow-hidden">
+                            <div className="absolute right-0 top-0 p-4 opacity-10 text-white"><i className="fa-solid fa-chart-line text-6xl"></i></div>
                             <div className="relative z-10 flex justify-between items-center">
                                 <div>
-                                    <div className="text-[10px] text-slate-400 font-bold tracking-wider mb-1">淨利結餘</div>
-                                    <div className={`text-2xl font-black ${stats.net >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</div>
+                                    <div className="text-[10px] text-sky-200 font-bold tracking-wider mb-1">淨利結餘</div>
+                                    <div className={`text-2xl font-black ${stats.net >= 0 ? 'text-white' : 'text-rose-200'}`}>{stats.net > 0 ? '+' : ''}{stats.net.toLocaleString()}</div>
                                 </div>
                                 <div className="text-right space-y-1">
-                                    <div className="text-xs"><span className="text-slate-500 mr-2">進</span> <span className="text-emerald-400 font-bold">+{stats.income.toLocaleString()}</span></div>
-                                    <div className="text-xs"><span className="text-slate-500 mr-2">出</span> <span className="text-rose-400 font-bold">-{stats.expense.toLocaleString()}</span></div>
+                                    <div className="text-xs"><span className="text-sky-200 mr-2">進</span> <span className="text-emerald-300 font-bold">+{stats.income.toLocaleString()}</span></div>
+                                    <div className="text-xs"><span className="text-sky-200 mr-2">出</span> <span className="text-rose-300 font-bold">-{stats.expense.toLocaleString()}</span></div>
                                 </div>
                             </div>
                         </div>
@@ -371,9 +369,9 @@
                         
                          {period === 'day' && (
                             <div className="flex items-center gap-2">
-                                <div className="flex space-x-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
+                                <div className="flex space-x-1 bg-white p-1 rounded-lg border border-sky-100 shadow-sm">
                                     {['sunny','cloudy','rainy'].map(w => (
-                                        <button key={w} onClick={() => updateEnv('weather', w)} className={`w-6 h-6 rounded flex items-center justify-center transition-all ${currentEnv.weather === w ? 'bg-slate-600 text-white' : 'text-slate-300'}`}><i className={`fa-solid fa-${w === 'sunny' ? 'sun' : w === 'cloudy' ? 'cloud' : 'cloud-showers-heavy'} text-xs`}></i></button>
+                                        <button key={w} onClick={() => updateEnv('weather', w)} className={`w-6 h-6 rounded flex items-center justify-center transition-all ${currentEnv.weather === w ? 'bg-sky-500 text-white' : 'text-slate-300'}`}><i className={`fa-solid fa-${w === 'sunny' ? 'sun' : w === 'cloudy' ? 'cloud' : 'cloud-showers-heavy'} text-xs`}></i></button>
                                     ))}
                                 </div>
                                 <div className="flex gap-1 flex-1">
@@ -386,37 +384,31 @@
                     </div>
 
                     <div className="ops-scroll-list">
+                        {/* Calendar - Always Visible in Month Mode */}
                         {period === 'month' && (
-                            <div className="mb-4 bg-white rounded-xl p-3 border border-slate-200 shadow-sm mt-4">
-                                <div className="flex justify-between items-center cursor-pointer" onClick={() => setIsCalExpanded(!isCalExpanded)}>
-                                    <span className="text-xs font-bold text-slate-400">月曆視圖</span>
-                                    <i className={`fa-solid fa-chevron-${isCalExpanded ? 'up' : 'down'} text-slate-300 text-xs`}></i>
+                            <div className="mb-4 bg-white rounded-xl p-3 border border-sky-100 shadow-sm mt-4 animate-fade-in">
+                                <div className="mb-2 text-center text-xs font-bold text-sky-500">本月概況</div>
+                                <div className="grid grid-cols-7 gap-1 mb-2 text-center">{['日','一','二','三','四','五','六'].map(d => <span key={d} className="text-[10px] text-slate-400 font-bold">{d}</span>)}</div>
+                                <div className="grid grid-cols-7 gap-1">
+                                    {calendarDays.map((d, i) => {
+                                        if(!d) return <div key={i}></div>;
+                                        const s = stats.dailyStats[d.dateStr];
+                                        const hasData = s && (s.income > 0 || s.expense > 0);
+                                        const isSelected = selectedDate === d.dateStr;
+                                        return (
+                                            <div key={i} onClick={() => setSelectedDate(d.dateStr)} className={`aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer border transition-colors ${isSelected ? 'bg-sky-500 text-white border-sky-500' : 'border-transparent hover:bg-sky-50 text-slate-500'}`}>
+                                                <span className="text-xs font-bold">{d.day}</span>
+                                                <div className={`w-1 h-1 rounded-full mt-0.5 ${hasData ? (isSelected ? 'bg-white' : 'bg-emerald-500') : 'opacity-0'}`}></div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                                {isCalExpanded && (
-                                    <div className="animate-fade-in mt-2">
-                                        <div className="grid grid-cols-7 gap-1 mb-2 text-center">{['日','一','二','三','四','五','六'].map(d => <span key={d} className="text-[10px] text-slate-400 font-bold">{d}</span>)}</div>
-                                        <div className="grid grid-cols-7 gap-1">
-                                            {calendarDays.map((d, i) => {
-                                                if(!d) return <div key={i}></div>;
-                                                const s = stats.dailyStats[d.dateStr];
-                                                const hasData = s && (s.income > 0 || s.expense > 0);
-                                                const isSelected = selectedDate === d.dateStr;
-                                                return (
-                                                    <div key={i} onClick={() => setSelectedDate(d.dateStr)} className={`aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer border transition-colors ${isSelected ? 'bg-slate-700 text-white border-slate-700' : 'border-transparent hover:bg-slate-50 text-slate-500'}`}>
-                                                        <span className="text-xs font-bold">{d.day}</span>
-                                                        <div className={`w-1 h-1 rounded-full mt-0.5 ${hasData ? (isSelected ? 'bg-white' : 'bg-emerald-500') : 'opacity-0'}`}></div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         )}
 
-                        <div className="mt-4">
+                        <div className="mt-4 pb-20">
                              <div className="flex items-center gap-2 mb-2 px-1">
-                                <div className="w-1 h-4 bg-slate-400 rounded-full"></div>
+                                <div className="w-1 h-4 bg-sky-400 rounded-full"></div>
                                 <span className="text-xs font-bold text-slate-500">流水帳明細 ({selectedDate})</span>
                             </div>
 
@@ -424,7 +416,7 @@
                                 <div className="text-center py-10 opacity-40 text-slate-400"><i className="fa-solid fa-clipboard-list text-2xl mb-2"></i><p className="text-xs">本日無帳務</p></div>
                             ) : (
                                 stats.listData.map((item, idx) => (
-                                    <div key={idx} onClick={() => openEdit(item)} className="bg-white p-3 rounded-lg flex justify-between items-center mb-2 shadow-sm border-l-2 border-slate-200 active:bg-slate-50 cursor-pointer">
+                                    <div key={idx} onClick={() => openEdit(item)} className="bg-white p-3 rounded-lg flex justify-between items-center mb-2 shadow-sm border-l-2 border-sky-100 active:bg-sky-50 cursor-pointer">
                                         <div className="flex items-center">
                                             <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${item.type === 'income' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}`}>
                                                 <i className={`fa-solid ${item.type === 'income' ? 'fa-arrow-down' : 'fa-arrow-up'} text-xs`}></i>
@@ -459,13 +451,13 @@
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {(type === 'income' ? ['現金', '刷卡', '外送平台', '其他'] : ['進貨', '人事', '雜支', '修繕', '房租']).map(c => (
-                                            <button key={c} onClick={() => setCat(c)} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${cat === c ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-500 border-slate-200'}`}>{c}</button>
+                                            <button key={c} onClick={() => setCat(c)} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${cat === c ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-slate-500 border-slate-200'}`}>{c}</button>
                                         ))}
                                     </div>
                                     <input type="text" value={note} onChange={e => setNote(e.target.value)} className="w-full bg-slate-50 text-slate-700 rounded-lg p-3 text-sm outline-none border border-slate-200 focus:border-slate-400" placeholder="備註..." />
                                     <div className="flex gap-3 mt-4">
                                         <button onClick={() => setShowAddModal(false)} className="flex-1 py-3 text-slate-500 bg-slate-100 rounded-lg font-bold">取消</button>
-                                        <button onClick={handleSave} className="flex-1 py-3 bg-slate-800 text-white rounded-lg font-bold shadow-md">確認</button>
+                                        <button onClick={handleSave} className="flex-1 py-3 bg-sky-500 text-white rounded-lg font-bold shadow-md">確認</button>
                                     </div>
                                 </div>
                             </div>
@@ -480,7 +472,7 @@
                                 
                                 <div className="flex flex-wrap gap-2 mb-6">
                                     {costOptions.map(item => (
-                                        <button key={item} onClick={() => toggleCostItem(item)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${selectedCostItems.includes(item) ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-400 border-slate-200'}`}>
+                                        <button key={item} onClick={() => toggleCostItem(item)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${selectedCostItems.includes(item) ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-slate-400 border-slate-200'}`}>
                                             {selectedCostItems.includes(item) && <i className="fa-solid fa-check mr-1"></i>}{item}
                                         </button>
                                     ))}
@@ -496,7 +488,7 @@
                                     <button onClick={() => { 
                                         saveSettings({...settings, dailyFixedCost: parseInt(tempFixedCost) || 0, costItems: selectedCostItems}); 
                                         setShowSettingModal(false); 
-                                    }} className="flex-1 py-3 bg-slate-700 text-white rounded-lg font-bold">儲存</button>
+                                    }} className="flex-1 py-3 bg-sky-500 text-white rounded-lg font-bold">儲存</button>
                                 </div>
                             </div>
                         </div>
@@ -505,6 +497,7 @@
             );
         };
 
+        // 3. Todo Page (Pink Theme)
         const TodoPage = ({ todos, setTodos }) => {
             const categories = ['進料', '款項', '員工', '修繕', '其他'];
             const [dateTab, setDateTab] = useState('today');
@@ -521,23 +514,23 @@
             const deleteTodo = (id) => { const updated = todos.filter(t => t.id !== id); setTodos(updated); localStorage.setItem(DB_KEY_TODOS, JSON.stringify(updated)); };
 
             return (
-                <div className="page-container bg-slate-50 animate-slide-up">
-                    <div className="fixed-controls px-4 pt-4 pb-2 bg-slate-50 sticky top-0 z-10">
-                        <div className="flex bg-white p-1 rounded-xl mb-3 border border-slate-200 shadow-sm">
-                            <button onClick={() => setDateTab('today')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${dateTab === 'today' ? 'bg-slate-700 text-white shadow' : 'text-slate-400'}`}>今日戰情</button>
-                            <button onClick={() => setDateTab('tomorrow')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${dateTab === 'tomorrow' ? 'bg-orange-500 text-white shadow' : 'text-slate-400'}`}>明日預排</button>
+                <div className="page-container bg-rose-50 animate-slide-up">
+                    <div className="fixed-controls px-4 pt-4 pb-2 bg-rose-50 sticky top-0 z-10">
+                        <div className="flex bg-white p-1 rounded-xl mb-3 border border-rose-100 shadow-sm">
+                            <button onClick={() => setDateTab('today')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${dateTab === 'today' ? 'bg-rose-500 text-white shadow' : 'text-slate-400'}`}>今日戰情</button>
+                            <button onClick={() => setDateTab('tomorrow')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${dateTab === 'tomorrow' ? 'bg-orange-400 text-white shadow' : 'text-slate-400'}`}>明日預排</button>
                         </div>
                         
-                        <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-2">
+                        <div className="bg-white p-3 rounded-xl border border-rose-100 shadow-sm mb-2">
                             <div className="flex gap-2 overflow-x-auto no-scrollbar mb-2">
                                 {categories.map(cat => (
-                                    <button key={cat} onClick={() => setActiveCat(cat)} className={`px-3 py-1 rounded text-xs font-bold whitespace-nowrap transition-all ${activeCat === cat ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-500'}`}>{cat}</button>
+                                    <button key={cat} onClick={() => setActiveCat(cat)} className={`px-3 py-1 rounded text-xs font-bold whitespace-nowrap transition-all ${activeCat === cat ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-500'}`}>{cat}</button>
                                 ))}
                             </div>
                             <div className="flex gap-2">
-                                <input type="text" value={itemInput} onChange={e => setItemInput(e.target.value)} className="flex-1 bg-slate-50 rounded px-3 py-2 text-sm text-slate-700 focus:outline-none border border-slate-200 focus:border-slate-400" placeholder="任務名稱..." />
+                                <input type="text" value={itemInput} onChange={e => setItemInput(e.target.value)} className="flex-1 bg-slate-50 rounded px-3 py-2 text-sm text-slate-700 focus:outline-none border border-slate-200 focus:border-rose-300" placeholder="任務名稱..." />
                                 <button onClick={startListening} className={`w-10 rounded flex items-center justify-center shrink-0 ${isListening ? 'bg-rose-500 animate-pulse text-white' : 'bg-slate-100 text-slate-400'}`}><i className="fa-solid fa-microphone"></i></button>
-                                <button onClick={addTodo} className="w-10 rounded bg-slate-800 text-white flex items-center justify-center"><i className="fa-solid fa-plus"></i></button>
+                                <button onClick={addTodo} className="w-10 rounded bg-rose-500 text-white flex items-center justify-center"><i className="fa-solid fa-plus"></i></button>
                             </div>
                         </div>
                     </div>
@@ -545,11 +538,11 @@
                     <div className="flex-1 overflow-y-auto px-4 pb-20">
                         <div className="space-y-2">
                             {filteredTodos.map(item => (
-                                <div key={item.id} className={`flex items-start p-3 rounded-lg border transition-all ${item.done ? 'bg-slate-100/50 border-transparent opacity-50' : 'bg-white border-slate-200 shadow-sm'}`}>
+                                <div key={item.id} className={`flex items-start p-3 rounded-lg border transition-all ${item.done ? 'bg-white/50 border-transparent opacity-50' : 'bg-white border-rose-100 shadow-sm'}`}>
                                     <input type="checkbox" checked={item.done} onChange={() => toggleDone(item.id)} className="todo-checkbox shrink-0 mr-3 mt-1 cursor-pointer" />
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[10px] text-slate-500 bg-slate-100 px-1 rounded font-bold">{item.category}</span>
+                                            <span className="text-[10px] text-rose-500 bg-rose-50 px-1 rounded font-bold">{item.category}</span>
                                             <span className={`text-sm font-bold truncate ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>{item.text}</span>
                                         </div>
                                     </div>
@@ -563,25 +556,26 @@
             );
         };
 
+        // 4. Note Page (Green Theme)
         const NotePage = ({ logs, setLogs }) => {
             const [input, setInput] = useState('');
             const { isListening, startListening } = useVoiceInput((text) => setInput(prev => prev + text));
             const add = () => { if(!input.trim()) return; const n={id:Date.now(), date:getTodayStr(), timestamp:formatTime(), text:input}; const u=[n,...logs]; setLogs(u); localStorage.setItem(DB_KEY_LOGS, JSON.stringify(u)); setInput(''); };
             const del = (id) => { const u=logs.filter(l=>l.id!==id); setLogs(u); localStorage.setItem(DB_KEY_LOGS, JSON.stringify(u)); };
             return (
-                <div className="page-container bg-slate-50 animate-slide-up">
-                    <div className="fixed-controls px-4 pt-4 pb-2 bg-slate-50">
+                <div className="page-container bg-emerald-50 animate-slide-up">
+                    <div className="fixed-controls px-4 pt-4 pb-2 bg-emerald-50">
                         <div className="flex gap-2">
-                            <input value={input} onChange={e=>setInput(e.target.value)} placeholder="輸入筆記..." className="flex-1 bg-white border border-slate-200 text-slate-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-slate-400 shadow-sm" />
+                            <input value={input} onChange={e=>setInput(e.target.value)} placeholder="輸入筆記..." className="flex-1 bg-white border border-emerald-100 text-slate-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-emerald-400 shadow-sm" />
                             <button onClick={startListening} className="w-10 rounded-lg bg-white border border-slate-200 text-slate-400"><i className="fa-solid fa-microphone"></i></button>
-                            <button onClick={add} className="w-12 rounded-lg bg-slate-700 text-white font-bold shadow-sm"><i className="fa-solid fa-arrow-up"></i></button>
+                            <button onClick={add} className="w-12 rounded-lg bg-emerald-500 text-white font-bold shadow-sm"><i className="fa-solid fa-arrow-up"></i></button>
                         </div>
                     </div>
                     <div className="flex-1 overflow-y-auto px-4 pb-20">
                         <div className="space-y-3 pt-2">
                             {logs.map(l => (
-                                <div key={l.id} className="bg-white p-3 rounded-lg border-l-4 border-slate-400 shadow-sm relative group">
-                                    <div className="text-[10px] text-slate-400 font-mono mb-1">{l.date} {l.timestamp}</div>
+                                <div key={l.id} className="bg-white p-3 rounded-lg border-l-4 border-emerald-400 shadow-sm relative group">
+                                    <div className="text-[10px] text-emerald-600 font-mono mb-1">{l.date} {l.timestamp}</div>
                                     <div className="text-sm text-slate-700 whitespace-pre-wrap">{l.text}</div>
                                     <button onClick={() => del(l.id)} className="absolute right-2 top-2 text-slate-300 opacity-0 group-hover:opacity-100 hover:text-rose-500"><i className="fa-solid fa-times"></i></button>
                                 </div>
@@ -594,16 +588,16 @@
 
         const AiPage = () => {
              return (
-                <div className="page-container bg-slate-50 animate-slide-up items-center justify-center p-6 text-center">
-                    <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-soft mb-6 text-slate-600">
+                <div className="page-container bg-violet-50 animate-slide-up items-center justify-center p-6 text-center">
+                    <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-soft mb-6 text-violet-500">
                         <i className="fa-solid fa-robot text-3xl"></i>
                     </div>
                     <h2 className="text-xl font-black text-slate-700 mb-2">AI 智慧顧問</h2>
-                    <div className="bg-slate-200 text-slate-600 px-3 py-1 rounded-full text-xs font-bold mb-6 inline-block">訂閱制服務</div>
+                    <div className="bg-violet-200 text-violet-700 px-3 py-1 rounded-full text-xs font-bold mb-6 inline-block">訂閱制服務</div>
                     <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
                         本功能為進階訂閱項目。<br/>提供自動化庫存預測與營運分析報告。
                     </p>
-                    <button className="mt-8 px-6 py-3 bg-slate-800 text-white rounded-lg font-bold text-sm shadow-lg w-full max-w-xs">了解訂閱方案</button>
+                    <button className="mt-8 px-6 py-3 bg-violet-600 text-white rounded-lg font-bold text-sm shadow-lg w-full max-w-xs">了解訂閱方案</button>
                 </div>
              )
         }
@@ -651,6 +645,7 @@
             }, [activeTimer]);
 
             const titles = { ops: '內部營運', todo: '待辦事項', note: '營運筆記', ai: '智慧秘書' };
+            const themeColors = { ops: 'text-sky-600', todo: 'text-rose-500', note: 'text-emerald-500', ai: 'text-violet-500' };
 
             return (
                 <div className="h-full w-full bg-slate-50 text-slate-700">
@@ -661,7 +656,7 @@
                         </>
                     ) : (
                         <>
-                            <Header title={titles[page]} showBack={true} onBack={() => setPage('home')} />
+                            <Header title={titles[page]} showBack={true} onBack={() => setPage('home')} themeColor={themeColors[page]} />
                             {page === 'ops' && <OperationsPage transactions={transactions} setTransactions={setTransactions} settings={settings} saveSettings={saveSettings} envData={envData} setEnvData={setEnvData} />}
                             {page === 'todo' && <TodoPage todos={todos} setTodos={setTodos} />}
                             {page === 'note' && <NotePage logs={logs} setLogs={setLogs} />}
@@ -679,12 +674,12 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                     for(let registration of registrations) {
-                        if (registration.active && !registration.active.scriptURL.includes('sw-v7.5.js')) {
+                        if (registration.active && !registration.active.scriptURL.includes('sw-v7.6.js')) {
                             registration.unregister();
                         }
                     }
                 }).then(() => {
-                    return navigator.serviceWorker.register('./sw-v7.5.js');
+                    return navigator.serviceWorker.register('./sw-v7.6.js');
                 });
             });
         }
