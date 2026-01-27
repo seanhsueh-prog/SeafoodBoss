@@ -1,12 +1,16 @@
-<!-- 檔名：SeafoodBossApp_v7.6_Final.html -->
-<!-- 版本：v7.6 (Final Balance Edition) -->
-<!-- 修正：Logo置中放大、項目色塊回歸、計時器置底極簡化、月曆修復 -->
+<!-- 檔名：SeafoodBossApp_v7.6.2.html -->
+<!-- 版本：v7.6.2 (Flexbox Fix & Wide Timer) -->
+<!-- 修正：
+     1. 營運中心改用 Flex-col 佈局，徹底解決月曆與流水帳跑位問題。
+     2. 計時膠囊加寬、加粗邊框，底部增加「暫離提醒」文字。
+     3. 確保月曆視圖切換正常。
+-->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS v7.6</title>
+    <title>SEAFOOD.BOSS v7.6.2</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#F8FAFC"> 
@@ -71,23 +75,6 @@
             flex-direction: column;
             padding-top: 60px; /* Header Height */
         }
-        
-        /* 內部營運專用佈局 */
-        .ops-fixed-top {
-            position: absolute; top: 60px; left: 0; right: 0; z-index: 20;
-            background-color: #F0F9FF; /* Sky-50 */
-            padding: 16px;
-            padding-bottom: 8px;
-        }
-        .ops-scroll-list {
-            position: absolute; top: 350px; 
-            bottom: 0; left: 0; right: 0;
-            overflow-y: auto; 
-            -webkit-overflow-scrolling: touch;
-            padding: 16px;
-            padding-top: 0;
-            padding-bottom: 40px;
-        }
 
         .glass-header {
             background: rgba(255, 255, 255, 0.95);
@@ -106,11 +93,14 @@
         .todo-checkbox:checked::after { content: '✔'; color: white; font-size: 0.8rem; }
         
         .capsule-btn { 
-            border-width: 1px; 
+            border-width: 2px; /* 加粗邊框 */
             transition: all 0.2s; 
             background: transparent;
         }
         .capsule-btn:active { transform: scale(0.95); background: #F1F5F9; }
+        
+        /* 底部安全區 */
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body>
@@ -164,7 +154,7 @@
             <div className={`fixed top-0 left-0 right-0 h-[60px] z-50 flex items-center justify-between px-5 ${showBack ? 'glass-header' : 'bg-transparent'}`}>
                 {showBack && (
                     <div className="flex items-center gap-3 w-full">
-                         <button onClick={onBack} className="w-8 h-8 rounded-full bg-white/80 border border-slate-100 flex items-center justify-center text-slate-600 active:scale-90 transition-transform">
+                         <button onClick={onBack} className="w-8 h-8 rounded-full bg-white/80 border border-slate-100 flex items-center justify-center text-slate-600 active:scale-90 transition-transform shadow-sm">
                             <i className="fa-solid fa-chevron-left"></i>
                         </button>
                         <h1 className={`text-base font-bold tracking-wide absolute left-1/2 -translate-x-1/2 ${themeColor}`}>{title}</h1>
@@ -175,22 +165,21 @@
 
         // --- Pages ---
 
-        // 1. Home Matrix (Center Logo, Colored Cards, Bottom Timer)
+        // 1. Home Matrix
         const HomeMatrix = ({ setPage, todos, activeTimer, startTimer, stopTimer }) => {
             const pendingCount = todos.filter(t => t.date === getTodayStr() && !t.done).length;
             
-            // Thin Timer Capsules
             const timerCapsules = [
-                { min: 10 },
-                { min: 15 },
-                { min: 20 },
+                { min: 10, activeClass: 'bg-emerald-500 text-white border-emerald-500', inactiveClass: 'border-slate-300 text-slate-500' },
+                { min: 15, activeClass: 'bg-orange-500 text-white border-orange-500', inactiveClass: 'border-slate-300 text-slate-500' },
+                { min: 20, activeClass: 'bg-rose-500 text-white border-rose-500', inactiveClass: 'border-slate-300 text-slate-500' },
             ];
 
             return (
                 <div className="h-full flex flex-col p-6 animate-fade-in relative bg-slate-50">
                     
-                    {/* 1. Top Center Logo (Enlarged) */}
-                    <div className="flex flex-col items-center justify-center pt-10 pb-6">
+                    {/* 1. Top Center Logo */}
+                    <div className="flex flex-col items-center justify-center pt-8 pb-4">
                         <div className="w-16 h-16 rounded-2xl bg-sky-50 flex items-center justify-center shadow-sm border border-sky-100 mb-2">
                             <i className="fa-solid fa-fish text-sky-600 text-3xl"></i>
                         </div>
@@ -200,8 +189,8 @@
                         </div>
                     </div>
 
-                    {/* 2. Main Matrix (Colored, Enlarged, Centered) */}
-                    <div className="flex-1 grid grid-cols-2 gap-4 w-full mb-20 content-start">
+                    {/* 2. Main Matrix (Auto-Fill Space) */}
+                    <div className="flex-1 grid grid-cols-2 gap-4 w-full mb-24 content-start">
                         
                         {/* 內部營運 (Blue) */}
                         <button onClick={() => setPage('ops')} className="bg-sky-50 rounded-3xl border border-sky-100 shadow-sm flex flex-col items-center justify-center active:scale-[0.98] transition-all aspect-square">
@@ -241,36 +230,32 @@
                         </button>
                     </div>
 
-                    {/* 3. Timer Capsules (Fixed at VERY Bottom, Minimalist) */}
-                    <div className="fixed bottom-0 left-0 right-0 h-20 bg-slate-50/90 backdrop-blur flex flex-col items-center justify-start pt-2 border-t border-slate-100 z-50">
-                        <div className="flex gap-6 items-center justify-center w-full">
+                    {/* 3. Timer Capsules (Fixed Bottom) */}
+                    <div className="fixed bottom-0 left-0 right-0 bg-slate-50/95 backdrop-blur border-t border-slate-200 z-50 pb-safe pt-3 pb-4 flex flex-col items-center">
+                        <div className="flex gap-4 items-center justify-center w-full px-6 mb-1">
                             {timerCapsules.map((t) => {
                                 const isActive = activeTimer && activeTimer.minutes === t.min;
                                 return (
                                     <button 
                                         key={t.min} 
                                         onClick={() => isActive ? stopTimer() : startTimer(t.min)}
-                                        className={`capsule-btn w-16 h-8 rounded-full flex items-center justify-center text-sm font-bold ${isActive ? 'bg-slate-800 text-white border-slate-800' : 'text-slate-400 border-slate-300'}`}
+                                        className={`capsule-btn w-24 h-10 rounded-full flex items-center justify-center text-lg font-bold ${isActive ? t.activeClass : t.inactiveClass}`}
                                         style={{ borderStyle: 'solid' }}
                                     >
-                                        {isActive ? <i className="fa-solid fa-pause text-xs"></i> : t.min}
+                                        {isActive ? <i className="fa-solid fa-pause text-sm"></i> : t.min}
                                     </button>
                                 );
                             })}
                         </div>
-                         <div className="text-center h-4 mt-1 flex items-center justify-center">
-                            {activeTimer && (
-                                <span className="text-[10px] font-bold text-slate-400 animate-pulse-slow">
-                                    計時中...
-                                </span>
-                            )}
+                        <div className="text-[10px] font-bold text-slate-400">
+                            {activeTimer ? <span className="animate-pulse text-orange-500">計時進行中...</span> : "暫離提醒"}
                         </div>
                     </div>
                 </div>
             );
         };
 
-        // 2. Operations Page (Blue Theme, Fixed Calendar)
+        // 2. Operations Page (Flexbox Fix - Critical!)
         const OperationsPage = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
@@ -328,9 +313,9 @@
             );
 
             return (
-                <div className="h-full bg-sky-50 relative">
-                    {/* Fixed Top Section (Blue Theme) */}
-                    <div className="ops-fixed-top shadow-sm border-b border-sky-100">
+                <div className="h-full bg-sky-50 flex flex-col pt-[60px]">
+                    {/* Top Section (Auto Height) */}
+                    <div className="flex-none p-4 pb-2 shadow-sm border-b border-sky-100 bg-sky-50 z-10">
                         <div className="flex justify-between items-center mb-3">
                             <div className="bg-white p-1 rounded-lg border border-sky-100 inline-flex shadow-sm">
                                 {['day', 'month', 'year'].map(p => (
@@ -383,10 +368,11 @@
                         )}
                     </div>
 
-                    <div className="ops-scroll-list">
+                    {/* Bottom Section (Scrollable & Fills Remaining Space) */}
+                    <div className="flex-1 overflow-y-auto p-4 pt-2 pb-20">
                         {/* Calendar - Always Visible in Month Mode */}
                         {period === 'month' && (
-                            <div className="mb-4 bg-white rounded-xl p-3 border border-sky-100 shadow-sm mt-4 animate-fade-in">
+                            <div className="mb-4 bg-white rounded-xl p-3 border border-sky-100 shadow-sm mt-2 animate-fade-in">
                                 <div className="mb-2 text-center text-xs font-bold text-sky-500">本月概況</div>
                                 <div className="grid grid-cols-7 gap-1 mb-2 text-center">{['日','一','二','三','四','五','六'].map(d => <span key={d} className="text-[10px] text-slate-400 font-bold">{d}</span>)}</div>
                                 <div className="grid grid-cols-7 gap-1">
@@ -406,7 +392,7 @@
                             </div>
                         )}
 
-                        <div className="mt-4 pb-20">
+                        <div className="mt-2">
                              <div className="flex items-center gap-2 mb-2 px-1">
                                 <div className="w-1 h-4 bg-sky-400 rounded-full"></div>
                                 <span className="text-xs font-bold text-slate-500">流水帳明細 ({selectedDate})</span>
@@ -674,12 +660,12 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                     for(let registration of registrations) {
-                        if (registration.active && !registration.active.scriptURL.includes('sw-v7.6.js')) {
+                        if (registration.active && !registration.active.scriptURL.includes('sw-v7.6.2.js')) {
                             registration.unregister();
                         }
                     }
                 }).then(() => {
-                    return navigator.serviceWorker.register('./sw-v7.6.js');
+                    return navigator.serviceWorker.register('./sw-v7.6.2.js');
                 });
             });
         }
