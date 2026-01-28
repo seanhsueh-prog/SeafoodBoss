@@ -1,19 +1,17 @@
-<!-- 檔名：SeafoodBossApp_v7.7_Final.html -->
-<!-- 版本：v7.7 (Final Polish) -->
+<!-- 檔名：SeafoodBossApp_v8.0.html -->
+<!-- 版本：v8.0 (Final Architecture) -->
 <!-- 修正：
-     1. 營運中心：月曆與流水帳整合滑動 (Flex-col + Overflow-y-auto)。
-     2. 首頁：新增「待辦馬賽克儀表板」於計時器上方。
-     3. 計時器：底部增加「暫離提醒」文字。
-     4. Logo：顯示 v7.7 版本號。
-     5. AI頁面：頂部 Padding 加大防切頭。
-     6. 文案：今日戰情 -> 今日待辦。
+     1. 營運中心：月曆與流水帳整合滑動容器 (Flex-col fix)。
+     2. 首頁底部：監控區與計時區視覺分層 (灰底 vs 白底)。
+     3. 監控邏輯：未完成顯色(粉紅)，完成取消色塊(變透明)。
+     4. 計時提醒：加入 Beep 音效代碼。
 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SEAFOOD.BOSS v7.7</title>
+    <title>SEAFOOD.BOSS v8.0</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#F8FAFC"> 
@@ -43,6 +41,7 @@
                     },
                     boxShadow: {
                         'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        'top': '0 -4px 6px -1px rgba(0, 0, 0, 0.05)',
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.3s ease-out',
@@ -151,6 +150,24 @@
             return { isListening, startListening };
         };
 
+        // Audio Beep Function
+        const playBeep = () => {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.value = 880; // A5
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5); // Beep for 0.5s
+            } catch (e) { console.error("Audio play failed", e); }
+        };
+
         // --- Shared Components ---
 
         const Header = ({ title, showBack, onBack, themeColor }) => (
@@ -168,7 +185,7 @@
 
         // --- Pages ---
 
-        // 1. Home Matrix (Center Logo, Dashboard, Timer)
+        // 1. Home Matrix (Revised Bottom Console)
         const HomeMatrix = ({ setPage, todos, activeTimer, startTimer, stopTimer }) => {
             const todayStr = getTodayStr();
             const todayTodos = todos.filter(t => t.date === todayStr);
@@ -183,7 +200,7 @@
             return (
                 <div className="h-full flex flex-col p-6 animate-fade-in relative bg-slate-50">
                     
-                    {/* 1. Top Center Logo (v7.7) */}
+                    {/* 1. Top Center Logo (v8.0) */}
                     <div className="flex flex-col items-center justify-center pt-8 pb-4">
                         <div className="w-16 h-16 rounded-2xl bg-sky-50 flex items-center justify-center shadow-sm border border-sky-100 mb-2">
                             <i className="fa-solid fa-fish text-sky-600 text-3xl"></i>
@@ -192,13 +209,13 @@
                             <span className="text-2xl font-black text-slate-800 tracking-wide leading-none">SEAFOOD<span className="text-sky-500">.BOSS</span></span>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="text-xs text-slate-400 font-bold tracking-wider">PROFESSIONAL</span>
-                                <span className="text-[10px] text-white bg-slate-300 px-1.5 py-0.5 rounded font-mono">v7.7</span>
+                                <span className="text-[10px] text-white bg-slate-300 px-1.5 py-0.5 rounded font-mono">v8.0</span>
                             </div>
                         </div>
                     </div>
 
                     {/* 2. Main Matrix */}
-                    <div className="flex-1 grid grid-cols-2 gap-4 w-full mb-32 content-start">
+                    <div className="flex-1 grid grid-cols-2 gap-4 w-full mb-36 content-start">
                         
                         {/* 內部營運 (Blue) */}
                         <button onClick={() => setPage('ops')} className="bg-sky-50 rounded-3xl border border-sky-100 shadow-sm flex flex-col items-center justify-center active:scale-[0.98] transition-all aspect-square">
@@ -238,11 +255,11 @@
                         </button>
                     </div>
 
-                    {/* 3. Bottom Control Console (Fixed) */}
-                    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 z-50 pb-safe pt-2 pb-3 flex flex-col shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                    {/* 3. Bottom Control Console (Dual Layer: Monitor & Timer) */}
+                    <div className="fixed bottom-0 left-0 right-0 z-50 flex flex-col shadow-top">
                         
-                        {/* New: Mosaic Dashboard */}
-                        <div className="px-8 mb-3 flex items-center justify-between">
+                        {/* Upper Layer: Dashboard Monitor (Grey Background) */}
+                        <div className="bg-slate-50 border-t border-slate-200 px-6 py-2 flex items-center justify-between h-10">
                             <div className="flex items-center gap-2 text-slate-400">
                                 <i className="fa-solid fa-bell text-xs animate-pulse"></i>
                                 <span className="text-[10px] font-bold tracking-wider">今日待辦監控</span>
@@ -252,41 +269,42 @@
                                     <span className="text-[10px] text-slate-300 font-mono">NO TASKS</span>
                                 ) : (
                                     todayTodos.map((t, i) => (
-                                        <div key={i} className={`w-3 h-3 rounded-sm shadow-sm transition-all ${t.done ? 'bg-emerald-400 shadow-emerald-200' : 'bg-slate-300'}`}></div>
+                                        // 邏輯修正：未完成顯示粉紅，完成顯示透明空心框(取消色塊)
+                                        <div key={i} className={`w-3 h-3 rounded-sm transition-all duration-500 ${t.done ? 'bg-transparent border border-rose-100' : 'bg-rose-500 shadow-sm'}`}></div>
                                     ))
                                 )}
                             </div>
                         </div>
 
-                        {/* Timer Capsules */}
-                        <div className="flex gap-4 items-center justify-center w-full px-6 mb-1">
-                            {timerCapsules.map((t) => {
-                                const isActive = activeTimer && activeTimer.minutes === t.min;
-                                return (
-                                    <button 
-                                        key={t.min} 
-                                        onClick={() => isActive ? stopTimer() : startTimer(t.min)}
-                                        className={`capsule-btn w-24 h-10 rounded-full flex items-center justify-center text-lg font-bold ${isActive ? t.activeClass : t.inactiveClass}`}
-                                        style={{ borderStyle: 'solid' }}
-                                    >
-                                        {isActive ? <i className="fa-solid fa-pause text-sm"></i> : t.min}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        
-                        {/* Reminder Text */}
-                        <div className="text-center">
-                            <span className={`text-[10px] font-bold ${activeTimer ? 'text-orange-500 animate-pulse' : 'text-slate-400'}`}>
-                                {activeTimer ? '計時進行中...' : '暫離提醒'}
-                            </span>
+                        {/* Lower Layer: Timer Controls (White Background) */}
+                        <div className="bg-white pb-safe pt-4 pb-4 flex flex-col items-center shadow-lg relative z-20">
+                            <div className="flex gap-4 items-center justify-center w-full px-6 mb-2">
+                                {timerCapsules.map((t) => {
+                                    const isActive = activeTimer && activeTimer.minutes === t.min;
+                                    return (
+                                        <button 
+                                            key={t.min} 
+                                            onClick={() => isActive ? stopTimer() : startTimer(t.min)}
+                                            className={`capsule-btn w-24 h-10 rounded-full flex items-center justify-center text-lg font-bold ${isActive ? t.activeClass : t.inactiveClass}`}
+                                            style={{ borderStyle: 'solid' }}
+                                        >
+                                            {isActive ? <i className="fa-solid fa-pause text-sm"></i> : t.min}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <div className="text-center">
+                                <span className={`text-[10px] font-bold ${activeTimer ? 'text-orange-500 animate-pulse' : 'text-slate-400'}`}>
+                                    {activeTimer ? '計時進行中...' : '暫離提醒'}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        // 2. Operations Page (Fix: Scroll Month + List together)
+        // 2. Operations Page (FIX: Single Scroll Container for Calendar & List)
         const OperationsPage = ({ transactions, setTransactions, settings, saveSettings, envData, setEnvData }) => {
             const [period, setPeriod] = useState('day'); 
             const [showAddModal, setShowAddModal] = useState(false);
@@ -400,8 +418,10 @@
                     </div>
 
                     {/* SCROLLABLE BOTTOM PART: Calendar AND List scroll together */}
+                    {/* KEY FIX: flex-1, overflow-y-auto, containing BOTH calendar and list */}
                     <div className="flex-1 overflow-y-auto p-4 pt-2 pb-20">
-                        {/* Calendar - Shows here when period is Month, scrolls with list */}
+                        
+                        {/* Calendar - Inserted HERE inside scroll container */}
                         {period === 'month' && (
                             <div className="mb-4 bg-white rounded-xl p-3 border border-sky-100 shadow-sm mt-2 animate-fade-in">
                                 <div className="mb-2 text-center text-xs font-bold text-sky-500">本月概況</div>
@@ -514,7 +534,7 @@
             );
         };
 
-        // 3. Todo Page (Rename: 今日待辦)
+        // 3. Todo Page (Today's Tasks)
         const TodoPage = ({ todos, setTodos }) => {
             const categories = ['進料', '款項', '員工', '修繕', '其他'];
             const [dateTab, setDateTab] = useState('today');
@@ -603,7 +623,7 @@
             );
         };
 
-        // 5. AI Page (Fix: Padding Top)
+        // 5. AI Page
         const AiPage = () => {
              return (
                 <div className="page-container bg-violet-50 animate-slide-up items-center justify-center p-6 text-center pt-24">
@@ -653,6 +673,8 @@
                         const elapsed = (Date.now() - activeTimer.startTime) / 1000;
                         if (elapsed >= activeTimer.minutes * 60 && !activeTimer.alarmTriggered) {
                             setActiveTimer(prev => ({ ...prev, alarmTriggered: true }));
+                            // Alert Combo
+                            playBeep();
                             if (Notification.permission === "granted") new Notification("SEAFOOD.BOSS", { body: "暫離時間結束！" });
                             if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
                             alert("時間到！請返回崗位");
@@ -692,12 +714,12 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                     for(let registration of registrations) {
-                        if (registration.active && !registration.active.scriptURL.includes('sw-v7.7.js')) {
+                        if (registration.active && !registration.active.scriptURL.includes('sw-v8.0.js')) {
                             registration.unregister();
                         }
                     }
                 }).then(() => {
-                    return navigator.serviceWorker.register('./sw-v7.7.js');
+                    return navigator.serviceWorker.register('./sw-v8.0.js');
                 });
             });
         }
